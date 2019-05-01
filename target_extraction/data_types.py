@@ -115,11 +115,20 @@ class Target_Text(MutableMapping):
                  spans: Optional[List['Span']] = None, 
                  sentiments: Optional[List[int]] = None, 
                  categories: Optional[List[str]] = None):
+        # Ensure that the arguments that should be lists are lists.
+        name_argument = [('targets', targets), ('spans', spans),
+                         ('sentiments', sentiments), ('categories', categories)]
+        for argument_name, list_argument in name_argument:
+            if list_argument is None:
+                continue
+            assert_err = f'{argument_name} should be a list not '\
+                         f'{type(list_argument)}'
+            assert isinstance(list_argument, list), assert_err
 
         temp_dict = dict(text=text, text_id=text_id, targets=targets,
                          spans=spans, sentiments=sentiments, 
                          categories=categories)
-        self.protected_keys = set(['text', 'text_id'])
+        self._protected_keys = set(['text', 'text_id'])
         self._storage = temp_dict
         self.check_list_sizes()
 
@@ -185,9 +194,9 @@ class Target_Text(MutableMapping):
 
         :param key: Key and its respective value to delete from this object.
         '''
-        if key in self.protected_keys:
+        if key in self._protected_keys:
             raise KeyError('Cannot delete a key that is protected, list of '
-                           f' protected keys: {self.protected_keys}')
+                           f' protected keys: {self._protected_keys}')
         del self._storage[key]
         self.check_list_sizes()
 
@@ -201,8 +210,8 @@ class Target_Text(MutableMapping):
         :param key: Key to be added or changed
         :param value: Value associated to the given key.
         '''
-        if key in self.protected_keys:
+        if key in self._protected_keys:
             raise KeyError('Cannot change a key that is protected, list of '
-                           f' protected keys: {self.protected_keys}')
+                           f' protected keys: {self._protected_keys}')
         self._storage[key] = value
         self.check_list_sizes()

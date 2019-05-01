@@ -1,14 +1,71 @@
+import copy
+from itertools import repeat
 import traceback
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Iterable
+
+import pytest
 
 from target_extraction.data_types import Target_Text, Span
 
 class Test_Target_Text:
 
+    def _exception_examples(self) -> Iterable[Dict[str, Any]]:
+        '''
+        :returns: The opposite of _passable_examples this returns a list of
+                  key word arguments to give to the constructor of 
+                  Target_Text the SHOULD raise a ValueError by the 
+                  check_list_sizes function.
+        '''
+        texts = ['The laptop case was great and cover was rubbish'] * 3
+        text_ids = ['0', 'another_id', '2']
+        possible_spans = [[Span(4, 15)], [Span(30, 35)], 
+                          [Span(4, 15), Span(30, 35)]]
+        possibe_sentiments = [[0], [1], [0, 1]]
+        possible_targets = [['laptop case'], ['cover'], 
+                            ['laptop case', 'cover']]
+        possible_categories = [['LAPTOP#CASE'], ['LAPTOP'],
+                               ['LAPTOP#CASE', 'LAPTOP']]
+        # Mismatch in list lengths.
+        # Target and Spans length mismatch
+        targets_spans = [[possible_targets[0], possible_spans[2]],
+                         [possible_targets[2], possible_spans[0]]]
+        for target, span in targets_spans:
+            yield {'text_id': text_ids[0], 'text': texts[0], 
+                   'targets': target, 'spans': span}
+        # Sentiment, Categories and spans mismatch
+        sentiments_categories_spans = [[possibe_sentiments[0], possible_categories[0], possible_spans[2]],
+                                       [possibe_sentiments[0], possible_categories[2], possible_spans[0]],
+                                       [possibe_sentiments[2], possible_categories[0], possible_spans[0]]]
+        for sentiment, category, span in sentiments_categories_spans:
+            yield {'text_id': text_ids[0], 'text': texts[0],
+                   'categories': category, 'spans': span, 
+                   'sentiments': sentiment}
+
+        # Shouldn't work as the target does not have a reference span
+        values = zip(text_ids, texts, possible_targets,
+                     possibe_sentiments, possible_categories)
+        for _id, text, target, sentiment, category in values:
+            yield {'text_id': _id, 'text': text, 'targets': target, 
+                   'sentiments': sentiment, 'categories': category}
+        # Shouldn't work as the spans and targets do not align, the impossible 
+        # Spans are either closer to the target or in-corporate a zero element.
+        impossible_spans = [[Span(0, 11)], [Span(31, 35)]]
+        span_target_mismatchs = [[possible_spans[0], possible_targets[1]],
+                                 [impossible_spans[0], possible_targets[1]],
+                                 [impossible_spans[1], possible_targets[1]],
+                                 [impossible_spans[0], possible_targets[0]],
+                                 [impossible_spans[1], possible_targets[0]],
+                                 [possible_spans[1], possible_targets[0]]]
+        values = zip(text_ids, texts, span_target_mismatchs)
+        for _id, text, span_target in values:
+            span, target = span_target
+            yield {'text_id': _id, 'text': text, 'spans': span,
+                   'targets': target}
+
     def _passable_examples(self) -> List[Tuple[str, Dict[str, Any]]]:
         '''
-        :returns: A list of dictionaries where the keys are error messages and 
-                  the values are key word parameters to give to the constructor 
+        :returns: A list of tuples where the first values is an error messages  
+                  the second are key word parameters to give to the constructor 
                   of Target_Text. If the Target_Text cannot be constructed from
                   these parameters then the Error raise from the construction 
                   should be returned with the error message that is associated 
@@ -115,6 +172,32 @@ class Test_Target_Text:
                            same_length_end_err
         all_passable_cases.append((multiple_all_err, multiple_all))
         return all_passable_cases
+
+    def test_list_only(self):
+        '''
+        Ensures that the assertion is raised if the any of the list only 
+        arguments are not lists. This is tested by changing one of the list 
+        only arguments to a tuple for each of the possible list only arguments.
+        '''
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '0'
+        span = [Span(4, 15)]
+        sentiment = [0]
+        target = ['laptop case']
+        category = ['LAPTOP#CASE']
+        all_list_arguments = [span, sentiment, target, category]
+        num_repeats = len(all_list_arguments)
+        for index, list_arguments in enumerate(repeat(all_list_arguments, num_repeats)):
+            copy_list_arguments = copy.deepcopy(list_arguments)
+            copy_list_arguments[index] = tuple(copy_list_arguments[index])
+
+            full_arguments = {'text': text, 'text_id': text_id,
+                              'spans': copy_list_arguments[0], 
+                              'sentiments': copy_list_arguments[1], 
+                              'targets': copy_list_arguments[2], 
+                              'categories': copy_list_arguments[3]}
+            with pytest.raises(AssertionError):
+                Target_Text(**full_arguments)
             
     def test_check_list_sizes(self):
         for passable_err_msg, passable_arguments in self._passable_examples():
@@ -123,4 +206,7 @@ class Test_Target_Text:
             except:
                 traceback.print_exc()
                 raise Exception(passable_err_msg)
+        for value_error_arguments in self._exception_examples():
+            with pytest.raises(ValueError):
+                Target_Text(**value_error_arguments)
         
