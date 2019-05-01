@@ -116,8 +116,7 @@ class Test_Target_Text:
         all_passable_cases.append((multiple_all_err, multiple_all))
         return all_passable_cases
             
-
-    def test_check_list(self):
+    def test_check_list_sizes(self):
         for passable_err_msg, passable_arguments in self._passable_examples():
             try:
                 Target_Text(**passable_arguments)
