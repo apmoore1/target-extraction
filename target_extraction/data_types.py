@@ -13,12 +13,12 @@ class Span(NamedTuple):
     start: int
     end: int
 
-class Target_Text(MutableMapping):
+class TargetText(MutableMapping):
     '''
     This is a data structure that inherits from MutableMapping which is 
     essentially a python dictionary.
 
-    The following are the default keys that are in all `Target_Text` 
+    The following are the default keys that are in all `TargetText` 
     objects, additional items can be added through __setitem__ but the default 
     items cannot be deleted.
 
@@ -43,8 +43,8 @@ class Target_Text(MutableMapping):
     
     Static Functions:
 
-    1. from_json -- Returns a Target_Text object given a json string. For 
-       example the json string can be the return of Target_Text.to_json.
+    1. from_json -- Returns a TargetText object given a json string. For 
+       example the json string can be the return of TargetText.to_json.
     '''
 
     def _check_is_list(self, item: List[Any], item_name: str) -> None:
@@ -193,19 +193,19 @@ class Target_Text(MutableMapping):
         :returns: String returned is what user see when the instance is 
                   printed or printed within a interpreter.
         '''
-        return f'Target_Text({self._storage})'
+        return f'TargetText({self._storage})'
 
-    def __eq__(self, other: 'Target_Text') -> bool:
+    def __eq__(self, other: 'TargetText') -> bool:
         '''
-        Two Target_Text instances are equal if they both have the same `text_id`
+        Two TargetText instances are equal if they both have the same `text_id`
         value.
 
-        :param other: Another Target_Text object that is being compared to this 
-                      Target_Text object.
+        :param other: Another TargetText object that is being compared to this 
+                      TargetText object.
         :returns: True if they have the same `text_id` value else False.
         '''
 
-        if not isinstance(other, Target_Text):
+        if not isinstance(other, TargetText):
             return False
         elif self['text_id'] != other['text_id']:
             return False
@@ -249,22 +249,22 @@ class Target_Text(MutableMapping):
 
     def to_json(self) -> str:
         '''
-        Required as Target_Text is not json serlizable due to the 'spans'.
+        Required as TargetText is not json serlizable due to the 'spans'.
 
         :returns: The object as a dictionary and then encoded using json.dumps
         '''
         return json.dumps(self._storage)
 
     @staticmethod
-    def from_json(json_text: str) -> 'Target_Text':
+    def from_json(json_text: str) -> 'TargetText':
         '''
         This is required as the 'spans' are Span objects which are not json 
-        serlizable and are required for Target_Text therefore this handles 
+        serlizable and are required for TargetText therefore this handles 
         that special case.
 
-        :param json_text: JSON representation of Target_Text 
-                          (can be from Target_Text.to_json)
-        :returns: A Target_Text object
+        :param json_text: JSON representation of TargetText 
+                          (can be from TargetText.to_json)
+        :returns: A TargetText object
         '''
         json_target_text = json.loads(json_text)
         for key, value in json_target_text.items():
@@ -273,4 +273,9 @@ class Target_Text(MutableMapping):
                 for span in value:
                     all_spans.append(Span(*span))
                 json_target_text[key] = all_spans
-        return Target_Text(**json_target_text)
+        return TargetText(**json_target_text)
+
+
+class TargetTextCollection(MutableMapping):
+    def __init__(self):
+        pass

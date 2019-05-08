@@ -5,23 +5,23 @@ from typing import List, Dict, Any, Tuple, Iterable
 
 import pytest
 
-from target_extraction.data_types import Target_Text, Span
+from target_extraction.data_types import TargetText, Span
 
 
-class Test_Target_Text:
+class TestTargetText:
 
-    def _regular_examples(self) -> Tuple[List[Target_Text],
+    def _regular_examples(self) -> Tuple[List[TargetText],
                                          Tuple[str, List[str], List[List[Span]],
                                                List[int], List[List[str]],
                                                List[List[str]]]]:
         '''
-        The furst argument `text` in each of the Target_Text returned are 
+        The furst argument `text` in each of the TargetText returned are 
         all the same hence why in the second item in the returned tuple the 
         text argument is not a list.
 
-        :returns: A tuple the first item is a list of Target_Text and the 
+        :returns: A tuple the first item is a list of TargetText and the 
                   second is a tuple of length 6 containing all of the 
-                  arguments that were used to create the Target_Texts.
+                  arguments that were used to create the TargetTexts.
         '''
         text = 'The laptop case was great and cover was rubbish'
         text_ids = ['0', 'another_id', '2']
@@ -32,9 +32,9 @@ class Test_Target_Text:
 
         examples = []
         for i in range(3):
-            example = Target_Text(text, text_ids[i], targets=targets[i],
-                                  spans=spans[i], sentiments=sentiments[i],
-                                  categories=categories[i])
+            example = TargetText(text, text_ids[i], targets=targets[i],
+                                 spans=spans[i], sentiments=sentiments[i],
+                                 categories=categories[i])
             examples.append(example)
         return examples, (text, text_ids, spans, sentiments, targets, categories)
 
@@ -42,7 +42,7 @@ class Test_Target_Text:
         '''
         :returns: The opposite of _passable_examples this returns a list of
                   key word arguments to give to the constructor of 
-                  Target_Text the SHOULD raise a ValueError by the 
+                  TargetText the SHOULD raise a ValueError by the 
                   check_list_sizes function.
         '''
         texts = ['The laptop case was great and cover was rubbish'] * 3
@@ -96,7 +96,7 @@ class Test_Target_Text:
         '''
         :returns: A list of tuples where the first values is an error messages  
                   the second are key word parameters to give to the constructor 
-                  of Target_Text. If the Target_Text cannot be constructed from
+                  of TargetText. If the TargetText cannot be constructed from
                   these parameters then the Error raise from the construction 
                   should be returned with the error message that is associated 
                   to those parameters
@@ -227,30 +227,30 @@ class Test_Target_Text:
                               'targets': copy_list_arguments[2],
                               'categories': copy_list_arguments[3]}
             with pytest.raises(TypeError):
-                Target_Text(**full_arguments)
+                TargetText(**full_arguments)
 
     def test_check_list_sizes(self):
         for passable_err_msg, passable_arguments in self._passable_examples():
             try:
-                Target_Text(**passable_arguments)
+                TargetText(**passable_arguments)
             except:
                 traceback.print_exc()
                 raise Exception(passable_err_msg)
         for value_error_arguments in self._exception_examples():
             with pytest.raises(ValueError):
-                Target_Text(**value_error_arguments)
+                TargetText(**value_error_arguments)
 
     def test_eq(self):
         '''
-        Check that the equality between two Target_Text is correct
+        Check that the equality between two TargetText is correct
         '''
         # At the moment all the 1's should be the same
-        item_1 = Target_Text('some text', 'item_1')
-        item_1_a = Target_Text('some text', 'item_1')
-        item_1_b = Target_Text('the same', 'item_1')
+        item_1 = TargetText('some text', 'item_1')
+        item_1_a = TargetText('some text', 'item_1')
+        item_1_b = TargetText('the same', 'item_1')
         # At the moment all items below should not be the same as item_1
-        item_2 = Target_Text('some text', 'item_2')
-        item_3 = Target_Text('another text', 'item_3')
+        item_2 = TargetText('some text', 'item_2')
+        item_3 = TargetText('another text', 'item_3')
 
         assert item_1 == item_1_a
         assert item_1 == item_1_b
@@ -342,7 +342,7 @@ class Test_Target_Text:
                      '"text_id": "2", "targets": ["laptop case", "cover"], '
                      '"spans": [[4, 15], [30, 35]], "sentiments": [0, 1], '
                      '"categories": ["LAPTOP#CASE", "LAPTOP"]}')
-        example_from_json = Target_Text.from_json(json_text)
+        example_from_json = TargetText.from_json(json_text)
         example_spans: List[Span] = example_from_json['spans']
         for span in example_spans:
             assert isinstance(span, Span), f'{span} should be of type Span'
