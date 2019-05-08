@@ -1,4 +1,6 @@
 from collections.abc import MutableMapping
+from collections import OrderedDict
+import copy
 import json
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any
 
@@ -277,5 +279,131 @@ class TargetText(MutableMapping):
 
 
 class TargetTextCollection(MutableMapping):
-    def __init__(self):
-        pass
+    '''
+    This is a data structure that inherits from MutableMapping which is 
+    essentially a python dictionary, however the underlying storage is a 
+    OrderedDict therefore if you iterate over it, the iteration will always be 
+    in the same order.
+
+    This structure only contains TargetText instances.
+    '''
+    def __init__(self, target_texts: Optional[List['TargetText']] = None,
+                 name: Optional[str] = None) -> None:
+        '''
+        :param target_texts: A list of TargetText instances to add to the 
+                             collection.
+        :param name: Name to call the collection.
+        '''
+        self._storage = OrderedDict()
+
+        if target_texts is not None:
+            for target_text in target_texts:
+                self.add(target_text)
+        
+        if name is None:
+            name = ''
+        self.name = name
+
+    def add(self, value: 'TargetText') -> None:
+        '''
+        Wrapper around set item. Instead of having to add the value the 
+        usual way of finding the instances 'text_id' and setting this containers
+        key to this value, it does this for you.
+
+        e.g. performs self[value['text_id']] = value
+
+        :param value: The TargetText instance to store in the collection
+        '''
+
+        self[value['text_id']] = value
+
+    def __setitem__(self, key: str, value: 'TargetText') -> None:
+        '''
+        Will add the TargetText instance to the collection where the key 
+        should be the same as the TargetText instance 'text_id'.
+
+        :param key: Key to be added or changed
+        :param value: TargetText instance associated to this key. Where the 
+                      key should be the same value as the TargetText instance 
+                      'text_id' value.
+        '''
+        if not isinstance(value, TargetText):
+            raise TypeError('The value should be of type TargetText and not '
+                            f'{type(value)}')
+        text_id = value['text_id']
+        if text_id != key:
+            raise ValueError(f'The value `text_id`: {text_id} should be the '
+                             f'same value as the key: {key}')
+        # We copy it to stop any mutable objects from changing outside of the 
+        # collection
+        value_copy = copy.deepcopy(value)
+        self._storage[key] = value_copy
+
+    def __delitem__(self, key: str) -> None:
+        '''
+        Given a key that matches a key within self._storage or self.keys() 
+        it will delete that key and value from this object.
+
+        :param key: Key and its respective value to delete from this object.
+        '''
+        del self._storage[key]
+
+    def __eq__(self, other: 'TargetTextCollection') -> bool:
+        '''
+        Two TargetTextCollection instances are equal if they both have 
+        the same TargetText instances within it.
+
+        :param other: Another TargetTextCollection object that is being  
+                      compared to this TargetTextCollection object.
+        :returns: True if they have the same TargetText instances within it.
+        '''
+
+        if not isinstance(other, TargetTextCollection):
+            return False
+
+        if len(self) != len(other):
+            return False
+
+        for key in self.keys():
+            if key not in other:
+                return False
+        return True
+
+    def __repr__(self) -> str:
+        '''
+        :returns: String returned is what user see when the instance is 
+                  printed or printed within a interpreter.
+        '''
+        rep_text = 'TargetTextCollection('
+        for key, value in self.items():
+            rep_text += f'key: {key}, value: {value}'
+            break
+        if len(self) > 1:
+            rep_text += '...)'
+        else:
+            rep_text += ')'
+        return rep_text
+
+    def __len__(self) -> int:
+        '''
+        :returns: The number of TargetText instances in the collection.
+        '''
+        return len(self._storage)
+
+    def __iter__(self) -> Iterable[str]:
+        '''
+        Returns as interator over the TargetText instances 'text_id''s that 
+        are stored in this collection. This is an ordered iterator as the 
+        underlying dictionary used to store the TargetText instances is an 
+        OrderedDict in self._storage.
+
+        :returns: TargetText instances 'text_id''s that are stored in this 
+                  collection
+        '''
+        return iter(self._storage)
+
+    def __getitem__(self, key: str) -> 'TargetText':
+        '''
+        :returns: A TargetText instance that is stored within this collection.
+        '''
+        return self._storage[key]
