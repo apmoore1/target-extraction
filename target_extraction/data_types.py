@@ -35,6 +35,16 @@ class Target_Text(MutableMapping):
        cases the target will be `NULL` and if there are sentiment values the 
        sentiment will be with respect to both the target and the category 
        value.
+
+    Methods:
+    
+    1. to_json -- Returns the object as a dictionary and then encoded using 
+       json.dumps
+    
+    Static Functions:
+
+    1. from_json -- Returns a Target_Text object given a json string. For 
+       example the json string can be the return of Target_Text.to_json.
     '''
 
     def _check_is_list(self, item: List[Any], item_name: str) -> None:
