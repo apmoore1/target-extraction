@@ -36,6 +36,21 @@ class Target_Text(MutableMapping):
        value.
     '''
 
+    def _check_is_list(self, item: List[Any], item_name: str) -> None:
+        '''
+        This will check that the argument given is a List and if not will raise 
+        a TypeError.
+
+        :param item: The argument that is going to be checked to ensure it is a
+                     list.
+        :param item_name: Name of the item. This is used within the raised 
+                          error message, if an error is raised.
+        :raises: TypeError
+        '''
+        type_err = f'{item_name} should be a list not {type(item)}'
+        if not isinstance(item, list):
+            raise TypeError(type_err)
+
     def check_list_sizes(self) -> None:
         '''
         This will check that all of the core lists:
@@ -116,19 +131,19 @@ class Target_Text(MutableMapping):
                  sentiments: Optional[List[int]] = None, 
                  categories: Optional[List[str]] = None):
         # Ensure that the arguments that should be lists are lists.
-        name_argument = [('targets', targets), ('spans', spans),
-                         ('sentiments', sentiments), ('categories', categories)]
-        for argument_name, list_argument in name_argument:
+        self._list_argument_names = ['targets', 'spans', 'sentiments', 
+                                     'categories']
+        self._list_arguments = [targets, spans, sentiments, categories]
+        names_arguments = zip(self._list_argument_names, self._list_arguments)
+        for argument_name, list_argument in names_arguments:
             if list_argument is None:
                 continue
-            assert_err = f'{argument_name} should be a list not '\
-                         f'{type(list_argument)}'
-            assert isinstance(list_argument, list), assert_err
+            self._check_is_list(list_argument, argument_name)
 
         temp_dict = dict(text=text, text_id=text_id, targets=targets,
                          spans=spans, sentiments=sentiments, 
                          categories=categories)
-        self._protected_keys = set(['text', 'text_id'])
+        self._protected_keys = set(['text', 'text_id', 'targets', 'spans'])
         self._storage = temp_dict
         self.check_list_sizes()
 
@@ -190,7 +205,8 @@ class Target_Text(MutableMapping):
         Given a key that matches a key within self._storage or self.keys() 
         it will delete that key and value from this object.
 
-        NOTE: Currently  'text' and 'text_id' are keys that cannot be deleted.
+        NOTE: Currently  'text', 'text_id', 'spans', and 'targets' are keys 
+        that cannot be deleted.
 
         :param key: Key and its respective value to delete from this object.
         '''
@@ -198,14 +214,14 @@ class Target_Text(MutableMapping):
             raise KeyError('Cannot delete a key that is protected, list of '
                            f' protected keys: {self._protected_keys}')
         del self._storage[key]
-        self.check_list_sizes()
 
     def __setitem__(self, key: str, value: Any) -> None:
         '''
         Given a key and a respected value it will either change that current 
         keys value to the one gien here or create a new key with that value.
 
-        NOTE: Currently  'text' and 'text_id' are keys that cannot be changed.
+        NOTE: Currently  'text', 'text_id', 'spans', and 'targets' are keys 
+        that cannot be changed.
 
         :param key: Key to be added or changed
         :param value: Value associated to the given key.
@@ -213,5 +229,9 @@ class Target_Text(MutableMapping):
         if key in self._protected_keys:
             raise KeyError('Cannot change a key that is protected, list of '
                            f' protected keys: {self._protected_keys}')
+        # If the key value should be a list ensure that the new value is a 
+        # list as well.
+        if key in self._list_argument_names:
+            self._check_is_list(value, key)
         self._storage[key] = value
         self.check_list_sizes()
