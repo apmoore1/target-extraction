@@ -327,3 +327,29 @@ class Test_Target_Text:
         assert len(example) == 6
         del example['sentiments']
         assert len(example) == 5
+    
+    def test_to_json(self):
+        true_json_text = ('{"text": "The laptop case was great and cover was rubbish", '
+                          '"text_id": "2", "targets": ["laptop case", "cover"], '
+                          '"spans": [[4, 15], [30, 35]], "sentiments": [0, 1], '
+                          '"categories": ["LAPTOP#CASE", "LAPTOP"]}')
+        examples, _ = self._regular_examples()
+        example = examples[-1]
+        assert example.to_json() == true_json_text
+
+    def test_from_json(self):
+        json_text = ('{"text": "The laptop case was great and cover was rubbish", '
+                     '"text_id": "2", "targets": ["laptop case", "cover"], '
+                     '"spans": [[4, 15], [30, 35]], "sentiments": [0, 1], '
+                     '"categories": ["LAPTOP#CASE", "LAPTOP"]}')
+        example_from_json = Target_Text.from_json(json_text)
+        example_spans: List[Span] = example_from_json['spans']
+        for span in example_spans:
+            assert isinstance(span, Span), f'{span} should be of type Span'
+        
+        examples, _ = self._regular_examples()
+        example = examples[-1]
+        for key, value in example.items():
+            assert value == example_from_json[key]
+                    
+                

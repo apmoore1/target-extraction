@@ -1,4 +1,5 @@
 from collections.abc import MutableMapping
+import json
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any
 
 class Span(NamedTuple):
@@ -235,3 +236,31 @@ class Target_Text(MutableMapping):
             self._check_is_list(value, key)
         self._storage[key] = value
         self.check_list_sizes()
+
+    def to_json(self) -> str:
+        '''
+        Required as Target_Text is not json serlizable due to the 'spans'.
+
+        :returns: The object as a dictionary and then encoded using json.dumps
+        '''
+        return json.dumps(self._storage)
+
+    @staticmethod
+    def from_json(json_text: str) -> 'Target_Text':
+        '''
+        This is required as the 'spans' are Span objects which are not json 
+        serlizable and are required for Target_Text therefore this handles 
+        that special case.
+
+        :param json_text: JSON representation of Target_Text 
+                          (can be from Target_Text.to_json)
+        :returns: A Target_Text object
+        '''
+        json_target_text = json.loads(json_text)
+        for key, value in json_target_text.items():
+            if key == 'spans':
+                all_spans = []
+                for span in value:
+                    all_spans.append(Span(*span))
+                json_target_text[key] = all_spans
+        return Target_Text(**json_target_text)
