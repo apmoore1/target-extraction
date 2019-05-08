@@ -279,7 +279,7 @@ class Test_Target_Text:
     def test_set(self, test_is_list: bool, test_list_length: bool):
         '''
         Ensure that any key can be changed as long as it is not a protected 
-        key
+        key and that it follows the check_list_sizes sanity checks.
         '''
         examples, _ = self._regular_examples()
         protected_keys = examples[0]._protected_keys
