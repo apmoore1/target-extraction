@@ -317,6 +317,17 @@ class TargetTextCollection(MutableMapping):
 
         self[value['text_id']] = value
 
+    def to_json(self) -> str:
+        '''
+        Required as TargetTextCollection is not json serlizable due to the 
+        'spans' in the TargetText instances.
+
+        
+
+        :returns: The object as a list of dictionarys where each the TargetText
+                  instances are dictionaries.
+        '''
+
     def __setitem__(self, key: str, value: 'TargetText') -> None:
         '''
         Will add the TargetText instance to the collection where the key 
