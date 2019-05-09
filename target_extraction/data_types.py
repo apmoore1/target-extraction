@@ -286,6 +286,21 @@ class TargetTextCollection(MutableMapping):
     in the same order.
 
     This structure only contains TargetText instances.
+
+    Methods:
+    
+    1. to_json -- Writes each TargetText instances as a dictionary using it's 
+       own to_json function on a new line within the returned String. The 
+       returned String is not json comptable but if split by new line it is and 
+       is also comptable with the from_json method of TargetText.
+    2. add -- Wrapper around __setitem__. Given as an argument a TargetText 
+       instance it will be added to the collection.
+    
+    Static Functions:
+
+    1. from_json -- Returns a TargetTextCollection object given the json like 
+       String from to_json. For example the json string can be the return of 
+       TargetTextCollection.to_json.
     '''
     def __init__(self, target_texts: Optional[List['TargetText']] = None,
                  name: Optional[str] = None) -> None:
@@ -322,11 +337,38 @@ class TargetTextCollection(MutableMapping):
         Required as TargetTextCollection is not json serlizable due to the 
         'spans' in the TargetText instances.
 
-        
-
         :returns: The object as a list of dictionarys where each the TargetText
                   instances are dictionaries.
         '''
+        json_text = ''
+        for index, target_text_instance in enumerate(self.values()):
+            if index != 0:
+                json_text += '\n'
+            target_text_instance: TargetText
+            json_text += target_text_instance.to_json()
+        return json_text
+
+    @staticmethod
+    def from_json(json_text: str) -> 'TargetTextCollection':
+        '''
+        Required as the json text is expected to be the return from the 
+        self.to_json method. This string is not passable by a standard json 
+        decoder.
+
+        :param json_text: This is expected to be a dictionary like object for 
+                          each new line in this text
+        :returns: A TargetTextCollection based on each new line in the given 
+                  text to be passable by TargetText.from_json method.
+        '''
+        if json_text.strip() == '':
+            return TargetTextCollection()
+
+        target_text_instances = []
+        for line in json_text.split('\n'):
+            target_text_instances.append(TargetText.from_json(line))
+        if target_text_instances:
+            return TargetTextCollection(target_text_instances)
+        return TargetTextCollection()
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
         '''

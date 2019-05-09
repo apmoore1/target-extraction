@@ -131,6 +131,50 @@ class TestTargetTextCollection:
         new_collection = TargetTextCollection(target_texts=self._target_text_examples())
         assert len(new_collection) == 3
         assert '2' in new_collection
+
+    def test_to_json(self):
+        # no target text instances in the collection (empty collection)
+        new_collection = TargetTextCollection()
+        assert new_collection.to_json() == ''
+
+        # One target text in the collection
+        new_collection = TargetTextCollection([self._target_text_example()])
+        true_json_version = ('{"text": "The laptop case was great and cover '
+                             'was rubbish", "text_id": "2", "targets": ["laptop '
+                             'case", "cover"], "spans": [[4, 15], [30, 35]], '
+                             '"sentiments": [0, 1], "categories": '
+                             '["LAPTOP#CASE", "LAPTOP"]}')
+        assert new_collection.to_json() == true_json_version
+
+        # Multiple target text in the collection
+        new_collection = TargetTextCollection(self._target_text_examples()[:2])
+        true_json_version = ('{"text": "The laptop case was great and cover '
+                             'was rubbish", "text_id": "0", "targets": '
+                             '["laptop case"], "spans": [[4, 15]], '
+                             '"sentiments": [0], "categories": '
+                             '["LAPTOP#CASE"]}\n{"text": "The laptop case was '
+                             'great and cover was rubbish", "text_id": '
+                             '"another_id", "targets": ["cover"], "spans": '
+                             '[[30, 35]], "sentiments": [1], "categories": '
+                             '["LAPTOP"]}')
+        assert new_collection.to_json() == true_json_version
+
+    def test_from_json(self):
+        # no text given
+        assert TargetTextCollection() == TargetTextCollection.from_json('')
+
+        # One target text instance in the text
+        new_collection = TargetTextCollection([self._target_text_example()])
+        json_one_collection = new_collection.to_json()
+        assert new_collection == TargetTextCollection.from_json(json_one_collection)
+
+        # Multiple target text instances in the text
+        new_collection = TargetTextCollection(self._target_text_examples()[:2])
+        json_multi_collection = new_collection.to_json()
+        assert new_collection == TargetTextCollection.from_json(json_multi_collection)
+
+
+        
         
 
 
