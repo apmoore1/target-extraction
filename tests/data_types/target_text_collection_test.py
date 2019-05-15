@@ -1,10 +1,14 @@
 from typing import List
+from pathlib import Path
 
 import pytest
 
 from target_extraction.data_types import TargetTextCollection, TargetText, Span
 
 class TestTargetTextCollection:
+
+    def _json_data_dir(self) -> Path:
+        return Path(__file__, '..', 'data').resolve()
 
     def _target_text_examples(self) -> List[TargetText]:
         text = 'The laptop case was great and cover was rubbish'
@@ -177,6 +181,34 @@ class TestTargetTextCollection:
         new_collection = TargetTextCollection(self._target_text_examples()[:2])
         json_multi_collection = new_collection.to_json()
         assert new_collection == TargetTextCollection.from_json(json_multi_collection)
+
+    @pytest.mark.parametrize("name", ('', 'test_name'))
+    def test_load_json(self, name):
+        empty_json_fp = Path(self._json_data_dir(), 'empty_target_instance.json')
+        empty_collection = TargetTextCollection.load_json(empty_json_fp, name=name)
+        assert TargetTextCollection() == empty_collection
+        assert empty_collection.name == name
+
+        # Ensure that it raises an error when loading a bad json file
+        wrong_json_fp = Path(self._json_data_dir(),
+                             'wrong_target_instance.json')
+        with pytest.raises(ValueError):
+            TargetTextCollection.load_json(wrong_json_fp, name=name)
+        # Ensure that it can load a single target text instance correctly
+        one_target_json_fp = Path(self._json_data_dir(), 
+                                  'one_target_instance.json')
+        one_target_collection = TargetTextCollection.load_json(one_target_json_fp)
+        assert len(one_target_collection) == 1
+        assert one_target_collection['0']['text'] == 'The laptop case was great and cover was rubbish'
+        assert one_target_collection['0']['sentiments'] == [0]
+        assert one_target_collection['0']['categories'] == ['LAPTOP#CASE']
+        assert one_target_collection['0']['spans'] == [Span(4, 15)]
+        assert one_target_collection['0']['targets'] == ['laptop case']
+
+        # Ensure that it can load multiple target text instances
+        two_target_json_fp = Path(self._json_data_dir(), 'one_target_one_empty_instance.json')
+        two_target_collection = TargetTextCollection.load_json(two_target_json_fp)
+        assert len(two_target_collection) == 2
 
 
         

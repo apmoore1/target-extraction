@@ -2,6 +2,7 @@ from collections.abc import MutableMapping
 from collections import OrderedDict
 import copy
 import json
+from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any
 
 class Span(NamedTuple):
@@ -301,6 +302,8 @@ class TargetTextCollection(MutableMapping):
     1. from_json -- Returns a TargetTextCollection object given the json like 
        String from to_json. For example the json string can be the return of 
        TargetTextCollection.to_json.
+    2. load_json -- Returns a TargetTextCollection based on each new line in 
+       the given json file.
     '''
     def __init__(self, target_texts: Optional[List['TargetText']] = None,
                  name: Optional[str] = None) -> None:
@@ -374,6 +377,32 @@ class TargetTextCollection(MutableMapping):
             return TargetTextCollection(target_text_instances, 
                                         **target_text_collection_kwargs)
         return TargetTextCollection(**target_text_collection_kwargs)
+
+    @staticmethod
+    def load_json(json_fp: Path, **target_text_collection_kwargs
+                  ) -> 'TargetTextCollection':
+        '''
+        Allows loading a dataset from json. Where the json file is expected to 
+        be output from TargetTextCollection.to_json_file as the file will be 
+        a json String on each line generated from TargetText.to_json.
+
+        :param json_fp: File that contains json strings generated from 
+                        TargetTextCollection.to_json_file
+        :param target_text_collection_kwargs: Key word arguments to give to 
+                                              the TargetTextCollection 
+                                              constructor.
+        :returns: A TargetTextCollection based on each new line in the given 
+                  json file.
+        '''
+        target_text_instances = []
+        with json_fp.open('r') as json_file:
+            for line in json_file:
+                if line.strip():
+                    target_text_instance = TargetText.from_json(line)
+                    target_text_instances.append(target_text_instance)
+        return TargetTextCollection(target_text_instances, 
+                                    **target_text_collection_kwargs)
+
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
         '''
