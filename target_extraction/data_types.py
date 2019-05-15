@@ -349,7 +349,8 @@ class TargetTextCollection(MutableMapping):
         return json_text
 
     @staticmethod
-    def from_json(json_text: str) -> 'TargetTextCollection':
+    def from_json(json_text: str, **target_text_collection_kwargs
+                  ) -> 'TargetTextCollection':
         '''
         Required as the json text is expected to be the return from the 
         self.to_json method. This string is not passable by a standard json 
@@ -357,18 +358,22 @@ class TargetTextCollection(MutableMapping):
 
         :param json_text: This is expected to be a dictionary like object for 
                           each new line in this text
+        :param target_text_collection_kwargs: Key word arguments to give to 
+                                              the TargetTextCollection 
+                                              constructor.
         :returns: A TargetTextCollection based on each new line in the given 
                   text to be passable by TargetText.from_json method.
         '''
         if json_text.strip() == '':
-            return TargetTextCollection()
+            return TargetTextCollection(**target_text_collection_kwargs)
 
         target_text_instances = []
         for line in json_text.split('\n'):
             target_text_instances.append(TargetText.from_json(line))
         if target_text_instances:
-            return TargetTextCollection(target_text_instances)
-        return TargetTextCollection()
+            return TargetTextCollection(target_text_instances, 
+                                        **target_text_collection_kwargs)
+        return TargetTextCollection(**target_text_collection_kwargs)
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
         '''

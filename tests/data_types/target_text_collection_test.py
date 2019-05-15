@@ -159,14 +159,19 @@ class TestTargetTextCollection:
                              '["LAPTOP"]}')
         assert new_collection.to_json() == true_json_version
 
-    def test_from_json(self):
+    @pytest.mark.parametrize("name", ('', 'test_name'))
+    def test_from_json(self, name):
         # no text given
-        assert TargetTextCollection() == TargetTextCollection.from_json('')
+        test_collection = TargetTextCollection.from_json('', name=name)
+        assert TargetTextCollection() == test_collection
+        assert test_collection.name == name
 
         # One target text instance in the text
-        new_collection = TargetTextCollection([self._target_text_example()])
+        new_collection = TargetTextCollection([self._target_text_example()], 
+                                              name=name)
         json_one_collection = new_collection.to_json()
         assert new_collection == TargetTextCollection.from_json(json_one_collection)
+        assert new_collection.name == name
 
         # Multiple target text instances in the text
         new_collection = TargetTextCollection(self._target_text_examples()[:2])
