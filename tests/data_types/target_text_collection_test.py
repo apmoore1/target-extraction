@@ -1,5 +1,6 @@
 from typing import List
 from pathlib import Path
+import tempfile
 
 import pytest
 
@@ -209,6 +210,30 @@ class TestTargetTextCollection:
         two_target_json_fp = Path(self._json_data_dir(), 'one_target_one_empty_instance.json')
         two_target_collection = TargetTextCollection.load_json(two_target_json_fp)
         assert len(two_target_collection) == 2
+
+    def test_to_json_file(self):
+        test_collection = TargetTextCollection()
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_fp:
+            temp_path = Path(temp_fp.name)
+            test_collection.to_json_file(temp_path)
+            assert len(TargetTextCollection.load_json(temp_path)) == 0
+
+            # Ensure that it can load more than one Target Text examples
+            test_collection = TargetTextCollection(self._target_text_examples())
+            test_collection.to_json_file(temp_path)
+            assert len(TargetTextCollection.load_json(temp_path)) == 3
+
+            # Ensure that if it saves to the same file that it overwrites that 
+            # file
+            test_collection = TargetTextCollection(self._target_text_examples())
+            test_collection.to_json_file(temp_path)
+            assert len(TargetTextCollection.load_json(temp_path)) == 3
+
+            # Ensure that it can just load one examples
+            test_collection = TargetTextCollection([self._target_text_example()])
+            test_collection.to_json_file(temp_path)
+            assert len(TargetTextCollection.load_json(temp_path)) == 1
+
 
 
         

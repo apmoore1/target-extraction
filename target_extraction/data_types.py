@@ -296,6 +296,11 @@ class TargetTextCollection(MutableMapping):
        is also comptable with the from_json method of TargetText.
     2. add -- Wrapper around __setitem__. Given as an argument a TargetText 
        instance it will be added to the collection.
+    3. to_json_file -- Saves the current TargetTextCollection to a json file 
+       which won't be strictly json but each line in the file will be and each 
+       line in the file can be loaded in from String via TargetText.from_json. 
+       Also the file can be reloaded into a TargetTextCollection using 
+       TargetTextCollection.load_json.
     
     Static Functions:
 
@@ -402,6 +407,25 @@ class TargetTextCollection(MutableMapping):
                     target_text_instances.append(target_text_instance)
         return TargetTextCollection(target_text_instances, 
                                     **target_text_collection_kwargs)
+
+    def to_json_file(self, json_fp: Path) -> None:
+        '''
+        Saves the current TargetTextCollection to a json file which won't be 
+        strictly json but each line in the file will be and each line in the 
+        file can be loaded in from String via TargetText.from_json. Also the 
+        file can be reloaded into a TargetTextCollection using 
+        TargetTextCollection.load_json.
+
+        :param json_fp: File path to the json file to save the current data to.
+        '''
+        with json_fp.open('w+') as json_file:
+            for index, target_text_instance in enumerate(self.values()):
+                target_text_instance: TargetText
+                target_text_string = target_text_instance.to_json()
+                if index != 0:
+                    target_text_string = f'\n{target_text_string}'
+                json_file.write(target_text_string)
+
 
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
