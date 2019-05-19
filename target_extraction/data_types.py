@@ -3,7 +3,7 @@ from collections import OrderedDict
 import copy
 import json
 from pathlib import Path
-from typing import Optional, List, Tuple, Iterable, NamedTuple, Any
+from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
 
 class Span(NamedTuple):
     '''
@@ -301,6 +301,9 @@ class TargetTextCollection(MutableMapping):
        line in the file can be loaded in from String via TargetText.from_json. 
        Also the file can be reloaded into a TargetTextCollection using 
        TargetTextCollection.load_json.
+    4. tokenize_text -- This will add a new key `tokenized_text` to each of the 
+       TargetText instances within the collection of which it will contain the 
+       current TargetText instance text tokenized.
     
     Static Functions:
 
@@ -425,6 +428,39 @@ class TargetTextCollection(MutableMapping):
                 if index != 0:
                     target_text_string = f'\n{target_text_string}'
                 json_file.write(target_text_string)
+
+    def tokenize_text(self, tokenizer: Callable[[str], List[str]]) -> None:
+        '''
+        This will add a new key `tokenized_text` to each of the TargetText 
+        instances within the collection of which it will contain the 
+        current TargetText instance text tokenized.
+
+        For a set of tokenizers that are definetly comptable see 
+        target_extraction.tokenizers module.
+
+        :param tokenizer: The tokenizer to use tokenize the text for each 
+                          TargetText instance in the current collection
+        :raises ValueError: This is raised if any of the TargetText instances 
+                            in the collection contain an empty string.
+        '''
+        for index, target_text_instance in enumerate(self.values()):
+            text = target_text_instance['text']
+            tokenized_text = tokenizer(text)
+            if index == 0:
+                if not isinstance(tokenized_text, list):
+                    raise TypeError('The return type of the tokenizer function ',
+                                    f'{tokenizer} should be a list and not '
+                                    f'{type(tokenized_text)}')
+                for token in tokenized_text:
+                    if not isinstance(token, str):
+                        raise TypeError('The return type of the tokenizer function ',
+                                        f'{tokenizer} should be a list of Strings'
+                                        f' and not a list of {type(token)}')
+                    
+            if len(tokenized_text) == 0:
+                raise ValueError('There is no tokens for this TargetText '
+                                 f'instance {target_text_instance}')
+            target_text_instance['tokenized_text'] = tokenized_text
 
 
 

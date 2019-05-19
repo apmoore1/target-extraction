@@ -5,6 +5,7 @@ import tempfile
 import pytest
 
 from target_extraction.data_types import TargetTextCollection, TargetText, Span
+from target_extraction.tokenizers import spacy_tokenizer
 
 class TestTargetTextCollection:
 
@@ -233,6 +234,35 @@ class TestTargetTextCollection:
             test_collection = TargetTextCollection([self._target_text_example()])
             test_collection.to_json_file(temp_path)
             assert len(TargetTextCollection.load_json(temp_path)) == 1
+    
+    def test_tokenize_text(self):
+        # Test the normal case with one TargetText Instance in the collection
+        test_collection = TargetTextCollection([self._target_text_example()])
+        test_collection.tokenize_text(str.split)
+        tokenized_answer = ['The', 'laptop', 'case', 'was', 'great', 'and', 
+                            'cover', 'was', 'rubbish']
+        test_collection['2']['tokenized_text'] = tokenized_answer
+
+        # Test the normal case with multiple TargetText Instance in the 
+        # collection
+        test_collection = TargetTextCollection(self._target_text_examples())
+        test_collection.tokenize_text(spacy_tokenizer())
+        test_collection['2']['tokenized_text'] = tokenized_answer
+
+        # Test the case where the tokenizer function given does not return a 
+        # List
+        with pytest.raises(TypeError):
+            test_collection.tokenize_text(str.strip)
+        # Test the case where the tokenizer function given returns a list but 
+        # not a list of strings
+        token_len = lambda text: [len(token) for token in text.split()]
+        with pytest.raises(TypeError):
+            test_collection.tokenize_text(token_len)
+        # Test the case where the TargetTextCollection contains instances 
+        # but the instances have no text therefore returns a ValueError
+        test_collection = TargetTextCollection([TargetText('', '5')])
+        with pytest.raises(ValueError):
+            test_collection.tokenize_text(spacy_tokenizer())
 
 
 

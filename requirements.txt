@@ -1,2 +1,5 @@
 pylint
 pytest
+spacy==2.1.4
+torch==1.0.0
+stanfordnlp
