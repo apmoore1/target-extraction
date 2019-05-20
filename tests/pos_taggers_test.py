@@ -1,0 +1,68 @@
+from typing import List
+
+import pytest
+
+from target_extraction.pos_taggers import stanford
+
+class TestPOSTaggers:
+
+    def _en_emoji_sentence(self) -> str:
+        return "Hello how are you, with other's :)"
+    def _de_emoji_sentence(self) -> str:
+        return "Hallo wie geht es dir bei anderen :)"
+    def _no_sentence(self) -> str:
+        return ""
+
+    def _stanford_en_ans(self, fine: bool, treebank: str) -> List[str]:
+        if treebank is None:
+            treebank = 'ewt'
+        if fine and treebank == 'gum':
+            return ['UH', 'WRB', 'VBP', 'PRP', ',', 'IN', 'JJ', 'POS', 'SYM']
+        elif fine and treebank == 'ewt':
+            return ['UH', 'WRB', 'VBP', 'PRP', ',', 'IN', 'JJ', 'POS', 'NFP']
+        elif not fine and treebank == 'gum':
+            return ['INTJ', 'SCONJ', 'AUX', 'PRON', 'PUNCT', 'ADP', 'ADJ', 
+                    'PART', 'PUNCT']
+        elif not fine and treebank == 'ewt':
+            return ['INTJ', 'ADV', 'AUX', 'PRON', 'PUNCT', 'ADP', 'ADJ', 
+                    'PART', 'SYM']
+        else:
+            raise ValueError(f'Do not recognise these arguments {fine} '
+                             f'{treebank}')
+    
+    def _stanford_de_ans(self, fine: bool, treebank: str) -> List[str]:
+        if treebank is not None:
+            raise ValueError('Treebank should always be None for the '
+                             f'German language. But it is {treebank}')
+        if fine:
+            return ['ADV', 'PWAV', 'VVFIN', 'PPER', 'PPER', 'APPR', 'PIS', '$.', 
+                    '$(']
+        else:
+            return ['ADV', 'ADV', 'VERB', 'PRON', 'PRON', 'ADP', 'PRON', 
+                    'PUNCT', 'PUNCT']
+            
+
+    @pytest.mark.parametrize("fine", (True, False))
+    @pytest.mark.parametrize("lang", ('en', 'de'))
+    @pytest.mark.parametrize("treebank", (None, 'ewt', 'gum'))
+    def test_stanford(self, fine: bool, lang: str, treebank: str):
+        if treebank is not None and lang == 'de':
+            pass
+        elif lang == 'en':
+            # Tests a sentence on two treebanks and across UPOS and XPOS tags
+            pos_tagger = stanford(fine=fine, lang=lang, treebank=treebank)
+            emoji_pos = pos_tagger(self._en_emoji_sentence())
+            emoji_ans = self._stanford_en_ans(fine=fine, treebank=treebank)
+            assert emoji_ans == emoji_pos
+            # Ensures that it can handle no text input
+            no_tags = pos_tagger(self._no_sentence())
+            assert [] == no_tags
+        elif lang == 'de':
+            # Tests a sentence on default treebank and across UPOS and XPOS tags
+            pos_tagger = stanford(fine=fine, lang=lang, treebank=treebank)
+            emoji_pos = pos_tagger(self._de_emoji_sentence())
+            emoji_ans = self._stanford_de_ans(fine=fine, treebank=treebank)
+            assert emoji_ans == emoji_pos
+            # Ensures that it can handle no text input
+            no_tags = pos_tagger(self._no_sentence())
+            assert [] == no_tags
