@@ -1,4 +1,5 @@
 # Target Extraction
+[![Build Status](https://travis-ci.org/apmoore1/target-extraction.svg?branch=master)](https://travis-ci.org/apmoore1/target-extraction)
 
 ## Datasets that can be parsed
 In all of our commands and cases we expect the raw data to be downloaded in to the following folder `../target_data/`
