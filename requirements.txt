@@ -1,5 +1,5 @@
-pylint
-pytest
+pylint==4.4.1
+pytest==2.3.1
 spacy==2.1.4
 torch==1.0.0
 stanfordnlp
