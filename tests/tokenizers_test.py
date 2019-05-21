@@ -32,23 +32,27 @@ class TestTokenizers:
         assert comma_tokens == ['today', 'Is', 'a', 'great,', 'day', 'I', 
                                 'think']
     
-    @pytest.mark.parametrize("lang", ('en', 'de'))
+    @pytest.mark.parametrize("lang", ('en', 'de', 'nn'))
     def test_spacy_tokenizer(self, lang: str):
-        spacy_tok = spacy_tokenizer(lang=lang)
-        
-        emoji_tokens = spacy_tok(self._emoji_sentence())
-        assert emoji_tokens == ['Hello', 'how', 'are', 'you', ',', 'with',
-                                "other", "'s", ':)']
+        if lang == 'nn':
+            with pytest.raises(ValueError):
+                spacy_tok = spacy_tokenizer(lang=lang)
+        else:
+            spacy_tok = spacy_tokenizer(lang=lang)
+            
+            emoji_tokens = spacy_tok(self._emoji_sentence())
+            assert emoji_tokens == ['Hello', 'how', 'are', 'you', ',', 'with',
+                                    "other", "'s", ':)']
 
-        no_sentence_tokens = spacy_tok(self._no_sentence())
-        assert no_sentence_tokens == []
+            no_sentence_tokens = spacy_tok(self._no_sentence())
+            assert no_sentence_tokens == []
 
-        whitespace_tokens = spacy_tok(self._whitespace_sentence())
-        assert whitespace_tokens == ['another', 'day', 'is', 'today']
+            whitespace_tokens = spacy_tok(self._whitespace_sentence())
+            assert whitespace_tokens == ['another', 'day', 'is', 'today']
 
-        comma_tokens = spacy_tok(self._comma_sentence())
-        assert comma_tokens == ['today', 'Is', 'a', 'great', ',', 'day', 'I',
-                                'think']
+            comma_tokens = spacy_tok(self._comma_sentence())
+            assert comma_tokens == ['today', 'Is', 'a', 'great', ',', 'day', 'I',
+                                    'think']
 
     @pytest.mark.parametrize("lang", ('en', 'de'))
     @pytest.mark.parametrize("treebank", (None, 'ewt', 'gum'))

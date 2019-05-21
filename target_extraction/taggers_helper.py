@@ -8,12 +8,72 @@ Functions:
 
 1. stanford_downloader - Downloads the specific Stanford NLP Neural Network 
    pipeline.
+2. spacy_downloader - This in affect downloads the relevant spacy model and 
+   loads the model with the relevant taggers e.g. POS, Parse and NER taggers 
+   for that spacy model which is language dependent.
 '''
-from typing import Optional
+from typing import Optional, Dict, Tuple
 from pathlib import Path
 
+import spacy
+from spacy.cli.download import download as spacy_download
+from spacy.language import Language as SpacyModelType
 import stanfordnlp
 from stanfordnlp.utils import resources
+
+LOADED_SPACY_MODELS: Dict[Tuple[str, bool, bool, bool], SpacyModelType] = {}
+
+def spacy_downloader(spacy_model_name: str, pos_tags: bool, parse: bool, 
+                     ner: bool) -> SpacyModelType:
+    '''
+    This is a copy of allennlp.common.util.get_spacy_model function. This in  
+    affect downloads the relevant spacy model and loads the model with the  
+    relevant taggers e.g. POS, Parse and NER taggers for that spacy model which  
+    is language dependent.
+
+    Spacy can have multiple trained models per language based on size.
+
+    :param spacy_model_name: Name of the Spacy model e.g. en_core_web_sm
+    :param pos_tags: Whether or not the returned Spacy model should perform 
+                     POS tagging.
+    :param parse: Whether or not the returned Spacy model should perform 
+                  Parsing.
+    :param ner: Whether or not the returned Spacy model should perform 
+                  NER.
+    :returns: The relevant Spacy model.
+    '''
+
+    options = (spacy_model_name, pos_tags, parse, ner)
+    if options not in LOADED_SPACY_MODELS:
+        # This needs manually updating each time Spacy is updated. Supported 
+        # languages can be found here: https://spacy.io/usage/models
+        supported_codes = ['de', 'el', 'en', 'es', 'fr', 'it', 'nl', 'pt', 'xx']
+        lang_code = spacy_model_name[:2]
+        if lang_code not in supported_codes:
+            raise ValueError('Spacy does not support the following language '
+                             f'{lang_code}. These languages are supported '
+                             f'{supported_codes}')
+        
+        disable = ['vectors', 'textcat']
+        if not pos_tags:
+            disable.append('tagger')
+        if not parse:
+            disable.append('parser')
+        if not ner:
+            disable.append('ner')
+        try:
+            spacy_model = spacy.load(spacy_model_name, disable=disable)
+        except OSError:
+            print(f"Spacy models '{spacy_model_name}' not found. "
+                  "Downloading and installing.")
+            spacy_download(spacy_model_name)
+            from spacy.cli import link
+            from spacy.util import get_package_path
+            package_path = get_package_path(spacy_model_name)
+            link(spacy_model_name, spacy_model_name, model_path=package_path)
+            spacy_model = spacy.load(spacy_model_name, disable=disable)
+        LOADED_SPACY_MODELS[options] = spacy_model
+    return LOADED_SPACY_MODELS[options]
 
 def stanford_downloader(lang: str, treebank: Optional[str] = None, 
                         download: bool = False) -> str:

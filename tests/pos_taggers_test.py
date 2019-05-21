@@ -2,7 +2,7 @@ from typing import List
 
 import pytest
 
-from target_extraction.pos_taggers import stanford
+from target_extraction.pos_taggers import stanford, spacy_tagger
 
 class TestPOSTaggers:
 
@@ -12,6 +12,23 @@ class TestPOSTaggers:
         return "Hallo wie geht es dir bei anderen :)"
     def _no_sentence(self) -> str:
         return ""
+
+    def _spacy_ans(self, fine: bool, lang: str) -> List[str]:
+        if lang == 'en':
+            if fine:
+                return ['UH', 'WRB', 'VBP', 'PRP', ',', 'IN', 'JJ', 'POS', '.']
+            else:
+                return ['INTJ', 'ADV', 'VERB', 'PRON', 'PUNCT', 'ADP', 'ADJ', 
+                        'PART', 'PUNCT']
+        elif lang == 'de':
+            if fine:
+                return ['NE', 'PWAV', 'VVFIN', 'PPER', 'PPER', 'APPR', 'ADJA', 
+                        'NN']
+            else:
+                return ['PROPN', 'ADV', 'VERB', 'PRON', 'PRON', 'ADP', 'ADJ', 
+                        'NOUN']
+        else:
+            raise ValueError(f'Do not recognise this language {lang}')
 
     def _stanford_en_ans(self, fine: bool, treebank: str) -> List[str]:
         if treebank is None:
@@ -66,3 +83,21 @@ class TestPOSTaggers:
             # Ensures that it can handle no text input
             no_tags = pos_tagger(self._no_sentence())
             assert [] == no_tags
+    
+    @pytest.mark.parametrize("fine", (True, False))
+    @pytest.mark.parametrize("lang", ('en', 'de'))
+    def test_spacy(self, fine: bool, lang: str):
+        if lang == 'en':
+            model_name = 'en_core_web_sm'
+            emoji_sentence = self._en_emoji_sentence()
+        elif lang == 'de':
+            model_name = 'de_core_news_sm'
+            emoji_sentence = self._de_emoji_sentence()
+        # Tests a sentence across UPOS and XPOS tags
+        pos_tagger = spacy_tagger(fine=fine, spacy_model_name=model_name)
+        emoji_pos = pos_tagger(emoji_sentence)
+        emoji_ans = self._spacy_ans(fine=fine, lang=lang)
+        assert emoji_ans == emoji_pos
+        # Ensures that it can handle no text input
+        no_tags = pos_tagger(self._no_sentence())
+        assert [] == no_tags

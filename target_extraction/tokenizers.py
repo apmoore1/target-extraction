@@ -6,6 +6,7 @@ keyword arguments.
 '''
 from typing import List, Callable, Optional
 from pathlib import Path
+import pkgutil
 
 import spacy
 import stanfordnlp
@@ -23,6 +24,13 @@ def spacy_tokenizer(lang: str = 'en') -> Callable[[str], List[str]]:
     :returns: A callable that takes a String and returns the tokens for that 
               String.
     '''
+    spacy_lang_modules = pkgutil.iter_modules(spacy.lang.__path__)
+    spacy_lang_codes = [lang_code for _, lang_code, _ in spacy_lang_modules 
+                        if len(lang_code) == 2]
+    if lang not in spacy_lang_codes:
+        raise ValueError('Spacy does not support the following language '
+                         f'{lang}. These languages are supported '
+                         f'{spacy_lang_codes}')
     sapcy_tokenizer_func = spacy.blank(lang)
     def _spacy_token_to_text(text: str) -> Callable[[str], List[str]]:
         return [spacy_token.text for spacy_token in sapcy_tokenizer_func(text)]

@@ -1,6 +1,6 @@
 import pytest
 
-from target_extraction.taggers_helper import stanford_downloader
+from target_extraction.taggers_helper import stanford_downloader, spacy_downloader
 
 class TestTaggersHelper:
 
@@ -26,3 +26,19 @@ class TestTaggersHelper:
                 assert f'{lang}_{treebank}' == resolved_treebank
             else:
                 assert f'{lang}_{treebank}' == resolved_treebank
+    
+    @pytest.mark.parametrize("ner", (True, False))
+    @pytest.mark.parametrize("parse", (True, False))
+    @pytest.mark.parametrize("pos_tags", (True, False))
+    @pytest.mark.parametrize("model_name", ('en_core_web_sm', 'it_core_news_sm', 
+                                            'ar_core_web_sm'))
+    def test_spacy_downloader(self, model_name: str, pos_tags: bool, 
+                              parse: bool, ner: bool):
+        if model_name == 'ar_core_web_sm':
+            with pytest.raises(ValueError):
+                spacy_downloader(model_name, pos_tags, parse, ner)
+        else:
+            spacy_downloader(model_name, pos_tags, parse, ner)
+
+        
+        

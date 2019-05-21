@@ -22,7 +22,40 @@ from pathlib import Path
 import stanfordnlp
 from stanfordnlp.utils import resources
 
-from target_extraction.taggers_helper import stanford_downloader
+from target_extraction.taggers_helper import stanford_downloader, spacy_downloader
+
+def spacy_tagger(fine: bool = False, spacy_model_name: str = 'en_core_web_sm'
+                 ) -> Callable[[str], List[str]]:
+    '''
+    Spacy Neural Network POS tagger which returns both UPOS and XPOS tags.
+
+    Choice of two different POS tags:
+    1. UPOS - Universal POS tags, coarse grained POS tags.
+    2. XPOS - Target language fine grained POS tags.
+
+    The XPOS for English I think is Penn Treebank set.
+
+    Languages supported: 
+    https://spacy.io/usage/models
+
+    :param fine: If True then returns XPOS else returns UPOS tags.
+    :param spacy_model_name: Name of the Spacy model e.g. en_core_web_sm
+    :returns: A callable that takes a String and returns the POS tags for 
+              that String.
+    '''
+    spacy_model = spacy_downloader(spacy_model_name, pos_tags=True, 
+                                   parse=False, ner=False)
+    def _spacy_tagger(text: str) -> Callable[[str], List[str]]:
+        doc = spacy_model(text)
+        pos_tokens = []
+        for token in doc:
+            if fine:
+                pos_tokens.append(token.tag_)
+            else:
+                pos_tokens.append(token.pos_)
+        return pos_tokens
+    return _spacy_tagger
+    
 
 def stanford(fine: bool = False, lang: str = 'en', 
              treebank: Optional[str] = None, 
@@ -37,7 +70,7 @@ def stanford(fine: bool = False, lang: str = 'en',
     1. UPOS - Universal POS tags, coarse grained POS tags.
     2. XPOS - Target language fine grained POS tags.
 
-    The XPOS for English I think is Penn Treebank.
+    The XPOS for English I think is Penn Treebank set.
 
     ASSUMPTIONS: The returned callable pos tagger will assume that all text 
     that is given to it, is one sentence, as this method performs sentence 
