@@ -7,9 +7,9 @@ from target_extraction.pos_taggers import stanford, spacy_tagger
 class TestPOSTaggers:
 
     def _en_emoji_sentence(self) -> str:
-        return "Hello how are you, with other's :)"
+        return "  Hello how are  you, with other's :)"
     def _de_emoji_sentence(self) -> str:
-        return "Hallo wie geht es dir bei anderen :)"
+        return "  Hallo wie geht  es dir bei anderen :)"
     def _no_sentence(self) -> str:
         return ""
 

@@ -1,11 +1,12 @@
 import copy
 from itertools import repeat
 import traceback
-from typing import List, Dict, Any, Tuple, Iterable
+from typing import List, Dict, Any, Tuple, Iterable, Callable
 
 import pytest
 
 from target_extraction.data_types import TargetText, Span
+from target_extraction.tokenizers import spacy_tokenizer
 
 
 class TestTargetText:
@@ -351,5 +352,55 @@ class TestTargetText:
         example = examples[-1]
         for key, value in example.items():
             assert value == example_from_json[key]
+
+    @pytest.mark.parametrize("tokenizer", (str.split, spacy_tokenizer()))
+    @pytest.mark.parametrize("type_checks", (True, False))
+    def test_tokenize(self, tokenizer: Callable[[str], List[str]], 
+                      type_checks: bool):
+        def not_char_preserving_tokenizer(text: str) -> List[str]:
+            tokens = text.split()
+            alt_tokens = []
+            for token in tokens:
+                if token == 'laptop':
+                    alt_tokens.append('latop')
+                else:
+                    alt_tokens.append(token)
+            return alt_tokens
+        # Test the normal case with one TargetText Instance in the collection
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        test_target_text = TargetText(text=text, text_id=text_id)
+        test_target_text.tokenize(tokenizer, perform_type_checks=type_checks)
+        tokenized_answer = ['The', 'laptop', 'case', 'was', 'great', 'and',
+                            'cover', 'was', 'rubbish']
+        test_target_text['tokenized_text'] = tokenized_answer
+
+        # Test the case where the tokenizer function given does not return a
+        # List
+        test_target_text = TargetText(text=text, text_id=text_id)
+        if type_checks:
+            with pytest.raises(TypeError):
+                test_target_text.tokenize(str.strip, perform_type_checks=type_checks)
+        else:
+            # Raises an error through _is_character_preserving
+            with pytest.raises(ValueError):
+                test_target_text.tokenize(str.strip, perform_type_checks=type_checks)
+        # Test the case where the tokenizer function given returns a list but
+        # not a list of strings
+        test_target_text = TargetText(text=text, text_id=text_id)
+        def token_len(text): return [len(token) for token in text.split()]
+        if type_checks:
+            with pytest.raises(TypeError):
+                test_target_text.tokenize(token_len, perform_type_checks=type_checks)
+
+        # Test the case where the TargetTextCollection contains instances
+        # but the instances have no text therefore returns a ValueError
+        test_target_text = TargetText(text='', text_id=text_id)
+        with pytest.raises(ValueError):
+            test_target_text.tokenize(tokenizer, perform_type_checks=type_checks)
+        # Test the case when the tokenizer is not character preserving
+        test_target_text = TargetText(text=text, text_id=text_id)
+        with pytest.raises(ValueError):
+            test_target_text.tokenize(not_char_preserving_tokenizer, perform_type_checks=type_checks)
                     
                 

@@ -35,6 +35,9 @@ def spacy_tagger(fine: bool = False, spacy_model_name: str = 'en_core_web_sm'
 
     The XPOS for English I think is Penn Treebank set.
 
+    If the whitespace between two words is more than one token then the Spacy 
+    tagger tags it as a space, however we remove these tags.
+
     Languages supported: 
     https://spacy.io/usage/models
 
@@ -49,6 +52,8 @@ def spacy_tagger(fine: bool = False, spacy_model_name: str = 'en_core_web_sm'
         doc = spacy_model(text)
         pos_tokens = []
         for token in doc:
+            if token.is_space:
+                continue
             if fine:
                 pos_tokens.append(token.tag_)
             else:

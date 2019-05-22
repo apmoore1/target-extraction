@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
 
+from target_extraction.tokenizers import is_character_preserving
+
 class Span(NamedTuple):
     '''
     Span is a named tuple. It has two fields:
@@ -43,6 +45,9 @@ class TargetText(MutableMapping):
     
     1. to_json -- Returns the object as a dictionary and then encoded using 
        json.dumps
+    2. tokenize -- This will add a new key `tokenized_text` to this TargetText 
+       instance that will store the tokens of the text that is associated to 
+       this TargetText instance.
     
     Static Functions:
 
@@ -258,6 +263,47 @@ class TargetText(MutableMapping):
         '''
         return json.dumps(self._storage)
 
+    def tokenize(self, tokenizer: Callable[[str], List[str]],
+                 perform_type_checks: bool = False) -> None:
+        '''
+        This will add a new key `tokenized_text` to this TargetText instance
+        that will store the tokens of the text that is associated to this 
+        TargetText instance.
+
+        For a set of tokenizers that are definetly comptable see 
+        target_extraction.tokenizers module.
+
+        Ensures that the tokenization is character preserving.
+
+        :param tokenizer: The tokenizer to use tokenize the text for each 
+                          TargetText instance in the current collection
+        :raises ValueError: This is raised if the TargetText instance contains
+                            empty text.
+        :raises ValueError: If the tokenization is not character preserving.
+        '''
+        text = self['text']
+        tokenized_text = tokenizer(text)
+        if perform_type_checks:
+            if not isinstance(tokenized_text, list):
+                raise TypeError('The return type of the tokenizer function ',
+                                f'{tokenizer} should be a list and not '
+                                f'{type(tokenized_text)}')
+            for token in tokenized_text:
+                if not isinstance(token, str):
+                    raise TypeError('The return type of the tokenizer function ',
+                                    f'{tokenizer} should be a list of Strings'
+                                    f' and not a list of {type(token)}')
+
+        if len(tokenized_text) == 0:
+            raise ValueError('There are no tokens for this TargetText '
+                             f'instance {self}')
+        if not is_character_preserving(text, tokenized_text):
+            raise ValueError('The tokenization method used is not character'
+                             f' preserving. Original text `{text}`\n'
+                             f'Tokenized text `{tokenized_text}`')
+        self['tokenized_text'] = tokenized_text
+
+
     @staticmethod
     def from_json(json_text: str) -> 'TargetText':
         '''
@@ -307,6 +353,9 @@ class TargetTextCollection(MutableMapping):
     5. pos_text -- This will add a new key `pos_tags` to each of the TargetText 
        instances within the collection. This key will store the pos tags of the 
        text that is associated to that Target Text instance.
+    6. target_sequence_tags -- Given the text has not been tokenized this will 
+       add the BIO type tags to each TargetText instance. In the future other 
+       tagging schema's other than BIO will be supported.
     
     Static Functions:
 
@@ -434,9 +483,9 @@ class TargetTextCollection(MutableMapping):
 
     def tokenize_text(self, tokenizer: Callable[[str], List[str]]) -> None:
         '''
-        This will add a new key `tokenized_text` to each of the TargetText 
-        instances within the collection. This key will store the tokens of the 
-        text that is associated to that Target Text instance.
+        This will perform TargetText.tokenize method to each TargetText 
+        instance in the collection, where the tokenizer is passed to the 
+        tokenizer argument in TargetText.tokenize method.
 
         For a set of tokenizers that are definetly comptable see 
         target_extraction.tokenizers module.
@@ -449,44 +498,12 @@ class TargetTextCollection(MutableMapping):
                             in the collection contain an empty string.
         :raises ValueError: If the tokenization is not character preserving.
         '''
-        def _is_character_preserving(original_text: str, text_tokens: List[str]
-                                     ) -> bool:
-            '''
-            :param original_text: Text that has been tokenized
-            :param text_tokens: List of tokens after the text has been tokenized
-            :returns: True if the tokenized text when all characters are joined 
-                      together is equal to the original text with all it's 
-                      characters joined together.
-            '''
-            tokens_text = ''.join(text_tokens)
-            original_text = ''.join(original_text.split())
-            if tokens_text == original_text:
-                return True
-            else:
-                return False
 
         for index, target_text_instance in enumerate(self.values()):
-            text = target_text_instance['text']
-            tokenized_text = tokenizer(text)
             if index == 0:
-                if not isinstance(tokenized_text, list):
-                    raise TypeError('The return type of the tokenizer function ',
-                                    f'{tokenizer} should be a list and not '
-                                    f'{type(tokenized_text)}')
-                for token in tokenized_text:
-                    if not isinstance(token, str):
-                        raise TypeError('The return type of the tokenizer function ',
-                                        f'{tokenizer} should be a list of Strings'
-                                        f' and not a list of {type(token)}')
-                    
-            if len(tokenized_text) == 0:
-                raise ValueError('There is no tokens for this TargetText '
-                                 f'instance {target_text_instance}')
-            if not _is_character_preserving(text, tokenized_text):
-                raise ValueError('The tokenization method used is not character'
-                                 f' preserving. Original text `{text}`\n'
-                                 f'Tokenized text `{tokenized_text}`')
-            target_text_instance['tokenized_text'] = tokenized_text
+                target_text_instance.tokenize(tokenizer, True)
+            else:
+                target_text_instance.tokenize(tokenizer, False)
     
     def pos_text(self, tagger: Callable[[str], List[str]]) -> None:
         '''
@@ -533,6 +550,31 @@ class TargetTextCollection(MutableMapping):
                                  f'same as the number of tokens {tokens}')
             
             target_text_instance['pos_tags'] = pos_tags
+
+    def target_sequence_tags(self, tokenizer: Callable[[str], List[str]],
+                             force: bool = False) -> None:
+        '''
+        NOTE: force should not be used on the test set as it does not reflect  
+        the real world i.e. force removes the errors that tokenization 
+        propagates into the target extraction system.
+
+        :param tokenizer: The tokenizer to use to tokenize the text so that the 
+                          sequence tags can match the tokens.
+        :param force: Ensure that the target tokens are not within another 
+                      seperate String e.g. target = `priced` but the sentence 
+                      is `the laptop;priced is high` and the tokenizer is on 
+                      whitespace it will not have `priced` seperated therefore 
+                      the BIO tagging is not determinstric thus force will add 
+                      whitespace around the target word 
+                      e.g. `the laptop; priced`.
+        '''
+        #for index, target_text_instance in enumerate(self.values()):
+        #    if index == 0:
+        #        target_text_instance.tokenize(tokenizer, True)
+        #    else:
+        #        target_text_instance.tokenize(tokenizer, False)
+
+        return None
 
 
 
