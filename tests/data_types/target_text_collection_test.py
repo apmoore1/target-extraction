@@ -257,14 +257,14 @@ class TestTargetTextCollection:
         test_collection.pos_text(spacy_tagger())
         pos_answer = ['DET', 'NOUN', 'NOUN', 'VERB', 'ADJ', 'CCONJ', 'NOUN', 
                       'VERB', 'ADJ']
-        test_collection['2']['pos_text'] = pos_answer
+        assert test_collection['2']['pos_tags'] == pos_answer
 
         # Test the normal case with multiple TargetText Instance in the 
         # collection
         test_collection = TargetTextCollection(self._target_text_examples())
         test_collection.tokenize_text(spacy_tokenizer())
         test_collection.pos_text(spacy_tagger())
-        test_collection['2']['pos_text'] = pos_answer
+        assert test_collection['2']['pos_tags'] == pos_answer
 
         # Test the case where the tagger function given does not return a 
         # List

@@ -7,6 +7,7 @@ import pytest
 
 from target_extraction.data_types import TargetText, Span
 from target_extraction.tokenizers import spacy_tokenizer
+from target_extraction.pos_taggers import spacy_tagger
 
 
 class TestTargetText:
@@ -402,5 +403,48 @@ class TestTargetText:
         test_target_text = TargetText(text=text, text_id=text_id)
         with pytest.raises(ValueError):
             test_target_text.tokenize(not_char_preserving_tokenizer, perform_type_checks=type_checks)
+
+    @pytest.mark.parametrize("type_checks", (True, False))
+    def test_pos_text(self, type_checks: bool):
+        # Test the normal case
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        tokenizer = spacy_tokenizer()
+        pos_tagger = spacy_tagger()
+        test_target_text = TargetText(text=text, text_id=text_id)
+        test_target_text.tokenize(tokenizer)
+        test_target_text.pos_text(pos_tagger, perform_type_checks=type_checks)
+
+        pos_answer = ['DET', 'NOUN', 'NOUN', 'VERB', 'ADJ', 'CCONJ', 'NOUN',
+                      'VERB', 'ADJ']
+        test_target_text['pos_tags'] = pos_answer
+
+        # Test the case where the tagger function given does not return a
+        # List
+        if type_checks:
+            with pytest.raises(TypeError):
+                test_target_text.pos_text(str.strip, perform_type_checks=type_checks)
+        else:
+            with pytest.raises(ValueError):
+                test_target_text.pos_text(str.strip, perform_type_checks=type_checks)
+        
+        # Test the case where the tagger function given returns a list but
+        # not a list of strings
+        def token_len(text): return [len(token) for token in text.split()]
+        if type_checks:
+            with pytest.raises(TypeError):
+                test_target_text.pos_text(token_len, perform_type_checks=type_checks)
+        else:
+            test_target_text.pos_text(token_len, perform_type_checks=type_checks)
+        del test_target_text['tokenized_text']
+        # Test the case where the TargetText has not be tokenized
+        with pytest.raises(ValueError):
+            test_target_text.pos_text(pos_tagger)
+        # Test the case where the tokenization is different to the POS tagger
+        text = 'Hello how are you? I am good thank you'
+        target_text_example = TargetText(text=text, text_id='1')
+        target_text_example.tokenize(str.split)
+        with pytest.raises(ValueError):
+            target_text_example.pos_text(pos_tagger)
                     
                 

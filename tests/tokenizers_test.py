@@ -126,7 +126,7 @@ class TestTokenizers:
         text = self._whitespace_sentence()
         token_indexs = [('another', (0, 7)), ('day', (8, 11)), 
                         ('is', (12, 14)), ('today', (15, 20))]
-        assert token_indexs == token_index_alignment(text, tokenizer)
+        assert token_indexs == token_index_alignment(text, tokenizer(text))
         
         # Test a sentence where we have a comma which will cause extra 
         # whitespace on the tokenization side
@@ -135,12 +135,12 @@ class TestTokenizers:
                         ('great', (11, 16)), (',', (16,17)), ('day', (18,21)), 
                         ('I', (22,23)), ('think', (24,29))]
         if tokenizer != whitespace():
-            assert token_indexs == token_index_alignment(text, tokenizer)
+            assert token_indexs == token_index_alignment(text, tokenizer(text))
         else:
             token_indexs = [('today', (0, 5)), ('Is', (6, 8)), ('a', (9, 10)),
                             ('great,', (11, 17)), ('day', (18, 21)),
                             ('I', (22, 23)), ('think', (24, 29))]
-            assert token_indexs == token_index_alignment(text, tokenizer)
+            assert token_indexs == token_index_alignment(text, tokenizer(text))
 
         # Test a sentence where we have multiple spaces in the text at the 
         # start, end and in between tokens
@@ -148,10 +148,11 @@ class TestTokenizers:
         token_indexs = [('I', (2, 3)), ('had', (4, 7)), (',', (7, 8)),
                         ('great', (11, 16)), ('day', (17, 20))]
         if tokenizer != whitespace():
-            assert token_indexs == token_index_alignment(text, tokenizer)
+            assert token_indexs == token_index_alignment(text, tokenizer(text))
         else:
-            token_indexs = [('I', (2, 3)), ('had', (4, 6)),
-                            ('great', (10, 15)), ('day', (16, 19))]
+            token_indexs = [('I', (2, 3)), ('had,', (4, 8)),
+                            ('great', (11, 16)), ('day', (17, 20))]
+            assert token_indexs == token_index_alignment(text, tokenizer(text))
 
         # Test a sentence that has multiple space commas hyphens etc.
         text = "  I had,  isn't  great day  doesn't'"
@@ -161,10 +162,10 @@ class TestTokenizers:
                         ('day', (23, 26)), ("does", (28, 32)),
                         ("n't", (32, 35)), ("'", (35, 36))]
         if tokenizer != whitespace():
-            assert token_indexs == token_index_alignment(text, tokenizer)
+            assert token_indexs == token_index_alignment(text, tokenizer(text))
         else:
             token_indexs = [('I', (2, 3)), ('had,', (4, 8)),
                             ("isn't", (10, 15)),
                             ("great", (17, 22)),
                             ('day', (23, 26)), ("doesn't'", (28, 36))]
-            assert token_indexs == token_index_alignment(text, tokenizer)
+            assert token_indexs == token_index_alignment(text, tokenizer(text))

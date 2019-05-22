@@ -124,9 +124,16 @@ def stanford(lang: str = 'en', treebank: Optional[str] = None,
     return _stanford_doc_to_text
 
 
-def token_index_alignment(text: str, tokenizer: Callable[[str], List[str]]
+def token_index_alignment(text: str, tokens: List[str]
                           ) -> List[Tuple[str, Tuple[int, int]]]:
-    tokens = tokenizer(text)
+    '''
+    :param text: text that has been tokenized
+    :param tokens: The tokens that were the output of the text and a tokenizer
+                   (tokenizer has to be character preserving)
+    :returns: A list of tuples where each tuple contains the token from the 
+              tokenised text with another tuple stating the index from the 
+              original text.
+    '''
     if not is_character_preserving(text, tokens):
         raise ValueError('The tokenization method used is not character'
                          f' preserving. Original text `{text}`\n'
@@ -174,72 +181,5 @@ def token_index_alignment(text: str, tokenizer: Callable[[str], List[str]]
         raise ValueError(f'Did not get to the end of the text: {text}\n'
                          f'Character index {char_index}\n'
                          f'Token index list {token_index_list}')
-    return token_index_list
-
-
-def token_index_alignment_1(text: str, tokenizer: Callable[[str], List[str]]
-                          ) -> List[Tuple[str, Tuple[int, int]]]:
-    '''
-    :param text: text to tokenise
-    :param tokenizer: The tokenizer to use to tokenize the text 
-                      (has to be character preserving)
-    :returns: A list of tuples where each tuple contains the token from the 
-              tokenised text with another tuple stating the index from the 
-              original text.
-    '''
-    tokens = tokenizer(text)
-    if not is_character_preserving(text, tokens):
-        raise ValueError('The tokenization method used is not character'
-                         f' preserving. Original text `{text}`\n'
-                         f'Tokenized text `{tokens}`')
-    token_index = 0
-    token_char_index = 0
-    token_start_index = 0
-    token_end_index = 0
-    token_index_list = []
-    token = tokens[token_index]
-    finished = False
-    for char_index, char in enumerate(text):
-        # The case where the tokenization produces more whitespace than their 
-        # is naturally due to the tokenization
-        last_char_index = char_index - 1
-        if len(token) == token_char_index:
-            # end of one token start of another
-            finished = True
-        elif char == ' ' and token[token_char_index] == text[last_char_index]:
-            token_char_index += 1
-            #if char != 
-
-        if finished:
-            finished = False
-            token_end_index = last_char_index
-            end_char = text[token_end_index]
-            if end_char == ' ':
-                raise ValueError('Token cannot end on whitespace '
-                                 f'{token}, text {text} start and end index '
-                                 f'{token_start_index} {last_char_index}')
-            token_index_list.append((token, (token_start_index, char_index)))
-            token_start_index = 0
-            token_end_index = 0
-            token_index += 1
-            token = tokens[token_index]
-            token_char_index = 0
-        else:
-            if char == token[token_char_index]:
-                if token_char_index == 0:
-                    if char == ' ':
-                        raise ValueError('Token cannot start on whitespace '
-                                        f'{token}, text {text} char index {char_index}')
-                    token_start_index = char_index
-            else:
-                raise ValueError(f'{token} {text} {char} {char_index} {token_index}')
-            token_char_index += 1
-    if token_end_index == 0 and token_start_index != 0:
-        token_index_list.append((token, (token_start_index, char_index + 1)))
-    if len(token_index_list) != len(tokens):
-        raise ValueError('The number of tokens through tokenization is not '
-                         'the same as the number of tokens produced through '
-                         f'appending the token index: Original tokens {tokens}'
-                         f'\nTokens index: {token_index_list}')
     return token_index_list
 
