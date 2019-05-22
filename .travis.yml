@@ -8,4 +8,4 @@ install:
   - pip install -U pip
   - travis_wait pip install --progress-bar off -r requirements.txt
 script:
-  - python -m pytest
+  - travis_wait python -m pytest
