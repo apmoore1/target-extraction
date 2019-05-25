@@ -125,14 +125,14 @@ def stanford(lang: str = 'en', treebank: Optional[str] = None,
 
 
 def token_index_alignment(text: str, tokens: List[str]
-                          ) -> List[Tuple[str, Tuple[int, int]]]:
+                          ) -> List[Tuple[int, int]]:
     '''
     :param text: text that has been tokenized
     :param tokens: The tokens that were the output of the text and a tokenizer
                    (tokenizer has to be character preserving)
-    :returns: A list of tuples where each tuple contains the token from the 
-              tokenised text with another tuple stating the index from the 
-              original text.
+    :returns: A list of tuples where each tuple contains two ints each 
+              representing the start and end index for each of the associated 
+              tokens given as an argument.
     '''
     if not is_character_preserving(text, tokens):
         raise ValueError('The tokenization method used is not character'
@@ -162,7 +162,7 @@ def token_index_alignment(text: str, tokens: List[str]
                                  f'index {token_char_index}\nTokens {tokens}')
                 
         token_end = char_index
-        token_index_list.append((token, (token_start, token_end)))
+        token_index_list.append((token_start, token_end))
         # Covers the whitespaces of n length between tokens and after the text
         if len(text) > char_index:
             print(f'index {char_index} token {token}')
