@@ -548,7 +548,7 @@ class TargetTextCollection(MutableMapping):
        line in the file can be loaded in from String via TargetText.from_json. 
        Also the file can be reloaded into a TargetTextCollection using 
        TargetTextCollection.load_json.
-    4. tokenize_text -- This applies the TargetText.tokenize method across all 
+    4. tokenize -- This applies the TargetText.tokenize method across all 
        of the TargetText instances within the collection.
     5. pos_text -- This applies the TargetText.pos_text method across all of 
         the TargetText instances within the collection.
@@ -681,7 +681,7 @@ class TargetTextCollection(MutableMapping):
                     target_text_string = f'\n{target_text_string}'
                 json_file.write(target_text_string)
 
-    def tokenize_text(self, tokenizer: Callable[[str], List[str]]) -> None:
+    def tokenize(self, tokenizer: Callable[[str], List[str]]) -> None:
         '''
         This applies the TargetText.tokenize method across all of 
         the TargetText instances within the collection.

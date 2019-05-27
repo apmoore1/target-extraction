@@ -236,10 +236,10 @@ class TestTargetTextCollection:
             test_collection.to_json_file(temp_path)
             assert len(TargetTextCollection.load_json(temp_path)) == 1
     
-    def test_tokenize_text(self):
+    def test_tokenize(self):
         # Test the normal case with one TargetText Instance in the collection
         test_collection = TargetTextCollection([self._target_text_example()])
-        test_collection.tokenize_text(str.split)
+        test_collection.tokenize(str.split)
         tokenized_answer = ['The', 'laptop', 'case', 'was', 'great', 'and', 
                             'cover', 'was', 'rubbish']
         test_collection['2']['tokenized_text'] = tokenized_answer
@@ -247,13 +247,13 @@ class TestTargetTextCollection:
         # Test the normal case with multiple TargetText Instance in the 
         # collection
         test_collection = TargetTextCollection(self._target_text_examples())
-        test_collection.tokenize_text(spacy_tokenizer())
+        test_collection.tokenize(spacy_tokenizer())
         test_collection['2']['tokenized_text'] = tokenized_answer
 
     def test_pos_text(self):
         # Test the normal case with one TargetText Instance in the collection
         test_collection = TargetTextCollection([self._target_text_example()])
-        test_collection.tokenize_text(spacy_tokenizer())
+        test_collection.tokenize(spacy_tokenizer())
         test_collection.pos_text(spacy_tagger())
         pos_answer = ['DET', 'NOUN', 'NOUN', 'VERB', 'ADJ', 'CCONJ', 'NOUN', 
                       'VERB', 'ADJ']
@@ -262,7 +262,7 @@ class TestTargetTextCollection:
         # Test the normal case with multiple TargetText Instance in the 
         # collection
         test_collection = TargetTextCollection(self._target_text_examples())
-        test_collection.tokenize_text(spacy_tokenizer())
+        test_collection.tokenize(spacy_tokenizer())
         test_collection.pos_text(spacy_tagger())
         assert test_collection['2']['pos_tags'] == pos_answer
 
@@ -283,7 +283,7 @@ class TestTargetTextCollection:
         text = 'Hello how are you? I am good thank you'
         target_text_example = TargetText(text=text, text_id='1')
         test_collection = TargetTextCollection([target_text_example])
-        test_collection.tokenize_text(str.split)
+        test_collection.tokenize(str.split)
         with pytest.raises(ValueError):
             test_collection.pos_text(spacy_tagger())
 
@@ -319,14 +319,14 @@ class TestTargetTextCollection:
     def test_sequence_labels(self):
         # Test the single case
         test_collection = TargetTextCollection([self._target_text_example()])
-        test_collection.tokenize_text(spacy_tokenizer())
+        test_collection.tokenize(spacy_tokenizer())
         test_collection.sequence_labels()
         correct_sequence = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
         assert test_collection['2']['sequence_labels'] == correct_sequence
 
         # Test the multiple case
         test_collection = TargetTextCollection(self._target_text_examples())
-        test_collection.tokenize_text(spacy_tokenizer())
+        test_collection.tokenize(spacy_tokenizer())
         test_collection.sequence_labels()
         correct_sequence = ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O']
         assert test_collection['another_id']['sequence_labels'] == correct_sequence
