@@ -287,6 +287,52 @@ class TestTargetTextCollection:
         with pytest.raises(ValueError):
             test_collection.pos_text(spacy_tagger())
 
+    def test_force_targets(self):
+        text = 'The laptop casewas great and cover was rubbish'
+        spans = [Span(4, 15), Span(29, 34)]
+        targets = ['laptop case', 'cover']
+        target_text = TargetText(text=text, text_id='0', targets=targets, 
+                                 spans=spans)
+        text_1 = 'The laptop casewas great andcover was rubbish'
+        spans_1 = [Span(4, 15), Span(28, 33)]
+        target_text_1 = TargetText(text=text_1, text_id='1', targets=targets,
+                                   spans=spans_1)
+
+        perfect_text = 'The laptop case was great and cover was rubbish'
+        perfect_spans = [Span(4, 15), Span(30, 35)]
+
+        # Test the single case
+        test_collection = TargetTextCollection([target_text])
+        test_collection.force_targets()
+        assert test_collection['0']['text'] == perfect_text
+        assert test_collection['0']['spans'] == perfect_spans
+
+        # Test the multiple case
+        test_collection = TargetTextCollection([target_text, target_text_1])
+        test_collection.force_targets()
+        for target_key in ['0', '1']:
+            assert test_collection[target_key]['text'] == perfect_text
+            assert test_collection[target_key]['spans'] == perfect_spans
+
+
+
+    def test_sequence_labels(self):
+        # Test the single case
+        test_collection = TargetTextCollection([self._target_text_example()])
+        test_collection.tokenize_text(spacy_tokenizer())
+        test_collection.sequence_labels()
+        correct_sequence = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
+        assert test_collection['2']['sequence_labels'] == correct_sequence
+
+        # Test the multiple case
+        test_collection = TargetTextCollection(self._target_text_examples())
+        test_collection.tokenize_text(spacy_tokenizer())
+        test_collection.sequence_labels()
+        correct_sequence = ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O']
+        assert test_collection['another_id']['sequence_labels'] == correct_sequence
+
+
+
 
 
         

@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Tuple, Iterable, Callable
 import pytest
 
 from target_extraction.data_types import TargetText, Span
-from target_extraction.tokenizers import spacy_tokenizer
+from target_extraction.tokenizers import spacy_tokenizer, stanford
 from target_extraction.pos_taggers import spacy_tagger
 
 
@@ -242,6 +242,101 @@ class TestTargetText:
             with pytest.raises(ValueError):
                 TargetText(**value_error_arguments)
 
+    def test_force_targets(self):
+        # Simple example that nothing should change
+        text = 'The laptop case was great and cover was rubbish'
+        spans = [Span(4, 15)]
+        targets = ['laptop case']
+        simple_example = TargetText(text_id='1', spans=spans, text=text, 
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == text
+        assert simple_example['spans'] == spans
+        assert simple_example['targets'] == targets
+        # Simple example with two targets where again nothing should change
+        spans = [Span(4, 15), Span(30, 35)]
+        targets = ['laptop case', 'cover']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == text
+        assert simple_example['spans'] == spans
+        assert simple_example['targets'] == targets
+        # Edge case example where nothing should change but the targets are at 
+        # begining and end of the text.
+        spans = [Span(0,3), Span(40,47)]
+        targets = ['The', 'rubbish']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == text
+        assert simple_example['spans'] == spans
+        assert simple_example['targets'] == targets
+        # Only the text should change due to the second target linking with a 
+        # non-relevant target word.
+        text = 'The laptop case was great and coverwas rubbish'
+        spans = [Span(4, 15), Span(30, 35)]
+        targets = ['laptop case', 'cover']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and cover was rubbish'
+        assert simple_example['spans'] == spans
+        assert simple_example['targets'] == targets
+        # The second target spans should change as well as the text
+        text = 'The laptop case was great andcover was rubbish'
+        spans = [Span(4, 15), Span(29, 34)]
+        targets = ['laptop case', 'cover']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and cover was rubbish'
+        assert simple_example['spans'] == [Span(4, 15), Span(30, 35)]
+        assert simple_example['targets'] == targets
+        # The second target spans should change as well as the text
+        text = 'The laptop case was great andcoverwas rubbish'
+        spans = [Span(4, 15), Span(29, 34)]
+        targets = ['laptop case', 'cover']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and cover was rubbish'
+        assert simple_example['spans'] == [Span(4, 15), Span(30, 35)]
+        assert simple_example['targets'] == targets
+        # The second target should change due to the first target changing
+        text = 'The laptop casewas great and cover was rubbish'
+        spans = [Span(4, 15), Span(29, 34)]
+        targets = ['laptop case', 'cover']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and cover was rubbish'
+        assert simple_example['spans'] == [Span(4, 15), Span(30, 35)]
+        assert simple_example['targets'] == targets
+
+        # All the targets should change
+        text = 'Thelaptop casewas great andcoverwas rubbish'
+        spans = [Span(3, 14), Span(27, 32)]
+        targets = ['laptop case', 'cover']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and cover was rubbish'
+        assert simple_example['spans'] == [Span(4, 15), Span(30, 35)]
+        assert simple_example['targets'] == targets
+        # Edge case with regards to the target being at the end and being
+        # changed.
+        text = 'Thelaptop casewas great and awfulcover'
+        spans = [Span(3, 14), Span(33, 38)]
+        targets = ['laptop case', 'cover']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and awful cover'
+        assert simple_example['spans'] == [Span(4, 15), Span(36, 41)]
+        assert simple_example['targets'] == targets
+
+
     def test_eq(self):
         '''
         Check that the equality between two TargetText is correct
@@ -446,5 +541,92 @@ class TestTargetText:
         target_text_example.tokenize(str.split)
         with pytest.raises(ValueError):
             target_text_example.pos_text(pos_tagger)
+
+    def test_sequence_labels(self):
+        # Test that it will raise a KeyError if it has not been tokenized
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        spans = [Span(4, 15), Span(30, 35)]
+        targets = ['laptop case', 'cover']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        with pytest.raises(KeyError):
+            test.sequence_labels()
+        # Test that it will raise a KeyError if it has been tokenized but no 
+        # targets or spans
+        test = TargetText(text=text, text_id=text_id)
+        test.tokenize(str.split)
+        with pytest.raises(KeyError):
+            test.sequence_labels()
+        # Test the basic case where we have only one target of one word
+        text = 'The laptop'
+        spans = [Span(4, 10)]
+        targets = ['laptop']
+        test = TargetText(text=text, text_id=text_id, spans=spans,
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'B']
+        # Test the case where the sequence is greater more than one word
+        text = 'The laptop case'
+        spans = [Span(4, 15)]
+        targets = ['laptop case']
+        test = TargetText(text=text, text_id=text_id, spans=spans,
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'B', 'I']
+        # Test the case where the target is the first word
+        text = 'laptop case is great'
+        spans = [Span(0, 11)]
+        targets = ['laptop case']
+        test = TargetText(text=text, text_id=text_id, spans=spans,
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['B', 'I', 'O', 'O']
+        # Test the case where there is more than one target
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        spans = [Span(4, 15), Span(30, 35)]
+        targets = ['laptop case', 'cover']
+        test = TargetText(text=text, text_id=text_id, spans=spans,
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'B', 'I', 'O', 'O', 'O', 
+                                           'B', 'O', 'O']
+        # Test the case where the tokens do not perfectly align the target text 
+        # spans and therefore only match on one of the perfectly aligned tokens
+        text = 'The laptop;priced was high and the laptop cover-ed was based'
+        text_id = '2'
+        spans = [Span(11, 17), Span(35, 47)]
+        targets = ['priced', 'laptop cover']
+        test = TargetText(text=text, text_id=text_id, spans=spans,
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'O', 'O', 'O', 'O', 'O',
+                                           'B', 'O', 'O', 'O']
+        # Different tokenizer would get a different result
+        test.tokenize(spacy_tokenizer())
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'O', 'O', 'O', 'O', 'O',
+                                           'B', 'I', 'O', 'O', 'O', 'O']
+        test.tokenize(stanford())
+        test.sequence_labels()
+        ['The', 'laptop', ';', 'priced', 'was', 'high', 'and',
+            'the', 'laptop', 'cover', '-', 'ed', 'was', 'based']
+        assert test['sequence_labels'] == ['O', 'O', 'O', 'B', 'O', 'O',
+                                           'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O']
+        # Test if using force targets will correct the above mistakes which it
+        # should
+        test.force_targets()
+        assert test['text'] == 'The laptop; priced was high and the laptop cover -ed was based'
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'O', 'B', 'O', 'O', 'O', 'O',
+                                           'B', 'I', 'O', 'O', 'O']
+
                     
                 

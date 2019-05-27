@@ -51,6 +51,14 @@ class TargetText(MutableMapping):
     3. pos_text -- This will add a new key `pos_tags` to this TargetText 
        instance. This key will store the pos tags of the text that is 
        associated to this Target Text instance.
+    4. force_targets -- Does not return anything but modifies the `spans` and 
+       `text` values as whitespace is prefixed and suffixed the target unless 
+       the prefix or suffix is whitespace. NOTE that this is the only method 
+       that currently can change the `spans` and `text` key values after they 
+       have been set.
+    5. sequence_labels -- Adds the `sequence_labels` key to this TargetText 
+       instance which can be used to train a machine learning algorthim to 
+       detect targets.
     
     Static Functions:
 
@@ -266,6 +274,84 @@ class TargetText(MutableMapping):
         '''
         return json.dumps(self._storage)
 
+    def _shift_spans(self, num_shifts: int, target_span: Span) -> None:
+        '''
+        This only affects the current state of the TargetText attributes. 
+        The attributes this affects is the `spans` attribute.
+
+        NOTE: This is only used within self.force_targets method.
+
+        :param num_shifts: The number of whitespaces that the target at 
+                            span_index is going to be added. 1 if it is 
+                            just prefix or suffix space added, 2 if both or 
+                            0 if none.
+        :param spans: The current target span indexs that are having extra 
+                        whitespace added either prefix or suffix.
+        '''
+        relevant_span_indexs: List[int] = []
+        target_span_end = target_span.end
+        for span_index, other_target_span in enumerate(self['spans']):
+            if other_target_span == target_span:
+                continue
+            elif other_target_span.start > target_span_end:
+                relevant_span_indexs.append(span_index)
+
+        for relevant_span_index in relevant_span_indexs:
+            start, end = self['spans'][relevant_span_index]
+            start += num_shifts
+            end += num_shifts
+            self._storage['spans'][relevant_span_index] = Span(start, end)
+
+    def force_targets(self) -> None:
+        '''
+        :NOTE: As this affects the following attributes `spans` and `text` it 
+        therefore has to modify these through self._storage as both of these 
+        attributes are within self._protected_keys.
+
+        Does not return anything but modifies the `spans` and `text` values 
+        as whitespace is prefixed and suffixed the target unless the prefix 
+        or suffix is whitespace.
+
+        Motivation:
+        Ensure that the target tokens are not within another seperate String 
+        e.g. target = `priced` but the sentence is `the laptop;priced is high` 
+        and the tokenizer is on whitespace it will not have `priced` seperated 
+        therefore the BIO tagging is not determinstric thus force will add 
+        whitespace around the target word e.g. `the laptop; priced`. This was 
+        mainly added for the TargetText.sequence_tags method.
+        '''
+    
+        for span_index in range(len(self['spans'])):
+            text = self['text']
+            last_token_index = len(text) - 1
+
+            span = self['spans'][span_index]
+            prefix = False
+            suffix = False
+
+            start, end = span
+            if start != 0:
+                if text[start - 1] != ' ':
+                    prefix = True
+            if end < last_token_index:
+                if text[end] != ' ':
+                    suffix = True
+
+            text_before = text[:start]
+            text_after = text[end:]
+            target = text[start:end]
+            if prefix and suffix:
+                self._storage['text'] = f'{text_before} {target} {text_after}'
+                self._shift_spans(2, span)
+                self._storage['spans'][span_index] = Span(start + 1, end + 1)
+            elif prefix:
+                self._storage['text'] = f'{text_before} {target}{text_after}'
+                self._shift_spans(1, span)
+                self._storage['spans'][span_index] = Span(start + 1, end + 1)
+            elif suffix:
+                self._storage['text'] = f'{text_before}{target} {text_after}'
+                self._shift_spans(1, span)
+
     def tokenize(self, tokenizer: Callable[[str], List[str]],
                  perform_type_checks: bool = False) -> None:
         '''
@@ -361,6 +447,63 @@ class TargetText(MutableMapping):
 
         self['pos_tags'] = pos_tags
 
+    def sequence_labels(self) -> None:
+        '''
+        Adds the `sequence_labels` key to this TargetText instance which can 
+        be used to train a machine learning algorthim to detect targets.
+
+        The `force_targets` method might come in useful here for training 
+        and validation data to ensure that more of the targets are not 
+        affected by tokenization error as only tokens that are fully within 
+        the target span are labelled with `B` or `I` tags.
+
+        Currently the only sequence labels supported is IOB-2 labels for the 
+        targets only. Future plans look into different sequence label order
+        e.g. IOB see link below for more details of the difference between the 
+        two sequence, of which there are more sequence again.
+        https://en.wikipedia.org/wiki/Inside%E2%80%93outside%E2%80%93beginning_(tagging)
+
+        :raises KeyError: If the current TargetText has not been tokenized.
+        :raises ValueError: If two targets overlap the same token(s) e.g 
+                            `Laptop cover was great` if `Laptop` and 
+                            `Laptop cover` are two seperate targets this should 
+                            riase a ValueError as a token should only be 
+                            associated to one target.
+        '''
+        text = self['text']
+        if 'tokenized_text' not in self:
+            raise KeyError(f'Expect the current TargetText {self} to have '
+                           'been tokenized using the self.tokenize method.')
+        if self['spans'] is None or self['targets'] is None:
+            raise KeyError(f'Expect to have `spans` and `targets` to not be '
+                            'None')
+        tokens = self['tokenized_text']
+        target_spans: List[Span] = self['spans']
+        tokens_index = token_index_alignment(text, tokens)
+
+        sequence_labels = ['O' for _ in range(len(tokens))]
+
+        for target_span in target_spans:
+            target_span_range = list(range(*target_span))
+            same_target = False
+            for sequence_index, token_index in enumerate(tokens_index):
+                token_start, token_end = token_index
+                token_end = token_end - 1
+                if (token_start in target_span_range and
+                        token_end in target_span_range):
+                    if sequence_labels[sequence_index] != 'O':
+                        err_msg = ('Cannot have two sequence labels for one '
+                                    f'token, text {text}\ntokens {tokens}\n'
+                                    f'token indexs {tokens_index}\nTarget '
+                                    f'spans {target_spans}')
+                        raise ValueError(err_msg)
+                    if same_target:
+                        sequence_labels[sequence_index] = 'I'
+                    else:
+                        sequence_labels[sequence_index] = 'B'
+                    same_target = True
+        self['sequence_labels'] = sequence_labels
+
 
     @staticmethod
     def from_json(json_text: str) -> 'TargetText':
@@ -405,15 +548,14 @@ class TargetTextCollection(MutableMapping):
        line in the file can be loaded in from String via TargetText.from_json. 
        Also the file can be reloaded into a TargetTextCollection using 
        TargetTextCollection.load_json.
-    4. tokenize_text -- This will add a new key `tokenized_text` to each of the 
-       TargetText instances within the collection. This key will store the 
-       tokens of the text that is associated to that Target Text instance.
-    5. pos_text -- This will add a new key `pos_tags` to each of the TargetText 
-       instances within the collection. This key will store the pos tags of the 
-       text that is associated to that Target Text instance.
-    6. target_sequence_tags -- Given the text has not been tokenized this will 
-       add the BIO type tags to each TargetText instance. In the future other 
-       tagging schema's other than BIO will be supported.
+    4. tokenize_text -- This applies the TargetText.tokenize method across all 
+       of the TargetText instances within the collection.
+    5. pos_text -- This applies the TargetText.pos_text method across all of 
+        the TargetText instances within the collection.
+    6. sequence_labels -- This applies the TargetText.sequence_labels 
+       method across all of the TargetText instances within the collection.
+    7. force_targets -- This applies the TargetText.force_targets method 
+       across all of the TargetText instances within the collection.
     
     Static Functions:
 
@@ -541,9 +683,8 @@ class TargetTextCollection(MutableMapping):
 
     def tokenize_text(self, tokenizer: Callable[[str], List[str]]) -> None:
         '''
-        This will perform TargetText.tokenize method to each TargetText 
-        instance in the collection, where the tokenizer is passed to the 
-        tokenizer argument in TargetText.tokenize method.
+        This applies the TargetText.tokenize method across all of 
+        the TargetText instances within the collection.
 
         For a set of tokenizers that are definetly comptable see 
         target_extraction.tokenizers module.
@@ -567,9 +708,8 @@ class TargetTextCollection(MutableMapping):
     
     def pos_text(self, tagger: Callable[[str], List[str]]) -> None:
         '''
-        This will add a new key `pos_tags` to each of the TargetText 
-        instances within the collection. This key will store the pos tags of the 
-        text that is associated to that Target Text instance.
+        This applies the TargetText.pos_text method across all of 
+        the TargetText instances within the collection.
 
         For a set of pos taggers that are definetly comptable see 
         target_extraction.pos_taggers module.
@@ -591,35 +731,29 @@ class TargetTextCollection(MutableMapping):
             else:
                 target_text_instance.pos_text(tagger, False)
 
-    def target_sequence_tags(self, tokenizer: Callable[[str], List[str]],
-                             force: bool = False) -> None:
+    def force_targets(self) -> None:
         '''
-        NOTE: force should not be used on the test set as it does not reflect  
-        the real world i.e. force removes the errors that tokenization 
-        propagates into the target extraction system.
-
-        :param tokenizer: The tokenizer to use to tokenize the text so that the 
-                          sequence tags can match the tokens.
-        :param force: Ensure that the target tokens are not within another 
-                      seperate String e.g. target = `priced` but the sentence 
-                      is `the laptop;priced is high` and the tokenizer is on 
-                      whitespace it will not have `priced` seperated therefore 
-                      the BIO tagging is not determinstric thus force will add 
-                      whitespace around the target word 
-                      e.g. `the laptop; priced`.
+        This applies the TargetText.force_targets method across all of the 
+        TargetText instances within the collection.
         '''
-        token_index_alignment
-        for index, target_text_instance in enumerate(self.values()):
-            if index == 0:
-                target_text_instance.tokenize(tokenizer, True)
-            else:
-                target_text_instance.tokenize(tokenizer, False)
-            target_text_instance.add_sequen
-            text = target_text_instance['text']
-            tokens = target_text_instance['tokenized_text']
-            tokens_index = token_index_alignment(text, tokens)
+        for target_text_instance in self.values():
+            target_text_instance.force_targets()
 
-        return None
+    def sequence_labels(self) -> None:
+        '''
+        This applies the TargetText.sequence_labels method across all of 
+        the TargetText instances within the collection.
+
+        :raises KeyError: If the current TargetText has not been tokenized.
+        :raises ValueError: If two targets overlap the same token(s) e.g 
+                            `Laptop cover was great` if `Laptop` and 
+                            `Laptop cover` are two seperate targets this should 
+                            riase a ValueError as a token should only be 
+                            associated to one target.
+        '''
+
+        for target_text_instance in self.values():
+            target_text_instance.sequence_labels()
 
 
 
