@@ -1,3 +1,14 @@
+'''
+Moudle that contains the two main data types 
+`target_extraction.data_types.TargetText` and 
+`target_extraction.data_types.TargetTextCollection` where the later is a
+container for the former.
+
+classes:
+
+1. `target_extraction.data_types.TargetText`
+2. `target_extraction.data_types.TargetTextCollection`
+'''
 from collections.abc import MutableMapping
 from collections import OrderedDict
 import copy
