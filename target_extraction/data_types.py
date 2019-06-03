@@ -529,6 +529,9 @@ class TargetText(MutableMapping):
                              when you have predicted sequence labels.
         :returns: The span indexs from the sequence labels given assuming that 
                   the sequence labels are in BIO format.
+        :raises ValueError: If the sequence labels that are contained in the 
+                            sequence key value contain values other than 
+                            `B`, `I`, or `O`.
         '''
         def found_target(start_index: int, end_index: int) -> Span:
             if end_index == 0:
