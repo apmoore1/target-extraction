@@ -14,6 +14,22 @@ class TestTargetTextCollection:
     def _json_data_dir(self) -> Path:
         return Path(__file__, '..', 'data').resolve()
 
+    def _target_text_measure_examples(self) -> List[TargetText]:
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '0'
+        spans = [Span(4, 15), Span(30, 35)]
+        targets = ['laptop case', 'cover']
+        target_text_0 = TargetText(text=text, text_id=text_id, spans=spans, 
+                                   targets=targets)
+        text = 'The laptop price was awful'
+        text_id = '1'
+        spans = [Span(4, 16)]
+        targets = ['laptop price']
+        target_text_1 = TargetText(text=text, text_id=text_id, spans=spans,
+                                   targets=targets)
+        
+        return [target_text_0, target_text_1]
+
     def _target_text_examples(self) -> List[TargetText]:
         text = 'The laptop case was great and cover was rubbish'
         text_ids = ['0', 'another_id', '2']
@@ -29,6 +45,14 @@ class TestTargetTextCollection:
                                  categories=categories[i])
             target_text_examples.append(example)
         return target_text_examples
+
+    def _target_text_not_align_example(self) -> TargetText:
+        text = 'The laptop case; was awful'
+        text_id = 'inf'
+        spans = [Span(4, 15)]
+        targets = ['laptop case']
+        return TargetText(text=text, text_id=text_id, spans=spans, targets=targets)
+
 
     def _target_text_example(self) -> TargetText:
         return self._target_text_examples()[-1]
@@ -315,8 +339,6 @@ class TestTargetTextCollection:
             assert test_collection[target_key]['text'] == perfect_text
             assert test_collection[target_key]['spans'] == perfect_spans
 
-
-
     def test_sequence_labels(self):
         # Test the single case
         test_collection = TargetTextCollection([self._target_text_example()])
@@ -340,6 +362,82 @@ class TestTargetTextCollection:
         measures = test_collection.exact_match_score('sequence_labels')
         for measure in measures:
             assert measure == 1.0
+
+        # Something that has perfect precision but misses one therefore does 
+        # not have perfect recall nor f1
+        test_collection = TargetTextCollection(self._target_text_measure_examples())
+        test_collection.tokenize(str.split)
+        # text = 'The laptop case was great and cover was rubbish'
+        sequence_labels_0 = ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O']
+        test_collection['0']['sequence_labels'] = sequence_labels_0
+        # text = 'The laptop price was awful'
+        sequence_labels_1 = ['O', 'B', 'I', 'O', 'O']
+        test_collection['1']['sequence_labels'] = sequence_labels_1
+        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        assert precision == 1.0
+        assert recall == 2.0/3.0
+        assert f1 == 0.8
+
+        # Something that has perfect recall but not precision as it over 
+        # predicts 
+        sequence_labels_0 = ['O', 'B', 'I', 'B', 'O', 'O', 'B', 'O', 'O']
+        test_collection['0']['sequence_labels'] = sequence_labels_0
+        sequence_labels_1 = ['O', 'B', 'I', 'O', 'O']
+        test_collection['1']['sequence_labels'] = sequence_labels_1
+        recall, precision, f1 = test_collection.exact_match_score(
+            'sequence_labels')
+        assert precision == 3/4
+        assert recall == 1.0
+        assert round(f1, 3) == 0.857
+
+        # Does not predict anything for a whole sentence therefore will have 
+        # perfect precision but bad recall (mainly testing the if not 
+        # getting anything for a sentence matters)
+        sequence_labels_0 = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+        test_collection['0']['sequence_labels'] = sequence_labels_0
+        sequence_labels_1 = ['O', 'B', 'I', 'O', 'O']
+        test_collection['1']['sequence_labels'] = sequence_labels_1
+        recall, precision, f1 = test_collection.exact_match_score(
+            'sequence_labels')
+        assert precision == 1.0
+        assert recall == 1/3
+        assert f1 == 0.5
+
+        # Handle the edge case of not getting anything
+        sequence_labels_0 = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+        test_collection['0']['sequence_labels'] = sequence_labels_0
+        sequence_labels_1 = ['O', 'O', 'O', 'O', 'O']
+        test_collection['1']['sequence_labels'] = sequence_labels_1
+        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        assert precision == 0.0
+        assert recall == 0.0
+        assert f1 == 0.0
+
+        # The case where the tokens and the text do not align
+        not_align_example = self._target_text_not_align_example()
+        # text = 'The laptop case; was awful'
+        sequence_labels_align = ['O', 'B', 'I', 'O', 'O']
+        test_collection.add(not_align_example)
+        test_collection.tokenize(str.split)
+        test_collection['inf']['sequence_labels'] = sequence_labels_align
+        sequence_labels_0 = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
+        test_collection['0']['sequence_labels'] = sequence_labels_0
+        sequence_labels_1 = ['O', 'B', 'I', 'O', 'O']
+        test_collection['1']['sequence_labels'] = sequence_labels_1
+        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        assert recall == 3/4
+        assert precision == 3/4
+        assert f1 == 0.75
+
+        # This time it can get a perfect score as the token alignment will be 
+        # perfect
+        test_collection.tokenize(spacy_tokenizer())
+        sequence_labels_align = ['O', 'B', 'I', 'O', 'O', 'O']
+        test_collection['inf']['sequence_labels'] = sequence_labels_align
+        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        assert recall == 1.0
+        assert precision == 1.0
+        assert f1 == 1.0
 
 
 

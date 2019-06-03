@@ -856,6 +856,9 @@ class TargetTextCollection(MutableMapping):
                   sequence label measures.
         :raises KeyError: If there are no `sequence_labels` or `spans` or 
                           predicted sequence label key within this TargetText.
+        :raises ValueError: If the predicted or true spans contain multiple 
+                            spans that have the same span e.g. 
+                            [Span(4, 15), Span(4, 15)]
         '''
         # tp = True Positive count
         tp = 0.0
@@ -889,7 +892,8 @@ class TargetTextCollection(MutableMapping):
             for predicted_span in predicted_spans:
                 if predicted_span in true_spans:
                     tp += 1
-        
+        if tp == 0.0:
+            return 0.0, 0.0, 0.0
         recall = tp / num_actually_true
         precision = tp / num_pred_true
         f1 = (2 * precision * recall) / (precision + recall)
