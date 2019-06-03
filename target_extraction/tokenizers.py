@@ -13,6 +13,7 @@ import stanfordnlp
 from stanfordnlp.utils import resources
 
 from target_extraction.taggers_helper import stanford_downloader
+from target_extraction.data_types_util import Span
 
 
 def is_character_preserving(original_text: str, text_tokens: List[str]
@@ -125,7 +126,7 @@ def stanford(lang: str = 'en', treebank: Optional[str] = None,
 
 
 def token_index_alignment(text: str, tokens: List[str]
-                          ) -> List[Tuple[int, int]]:
+                          ) -> List[Span]:
     '''
     :param text: text that has been tokenized
     :param tokens: The tokens that were the output of the text and a tokenizer
@@ -138,7 +139,7 @@ def token_index_alignment(text: str, tokens: List[str]
         raise ValueError('The tokenization method used is not character'
                          f' preserving. Original text `{text}`\n'
                          f'Tokenized text `{tokens}`')
-    token_index_list: List[Tuple[str, Tuple[int, int]]] = []
+    token_index_list: List[Span] = []
     char_index = 0
     # Handle whitespace at the start of the text
     if len(text) > char_index:
@@ -162,22 +163,15 @@ def token_index_alignment(text: str, tokens: List[str]
                                  f'index {token_char_index}\nTokens {tokens}')
                 
         token_end = char_index
-        token_index_list.append((token_start, token_end))
+        token_index_list.append(Span(token_start, token_end))
         # Covers the whitespaces of n length between tokens and after the text
         if len(text) > char_index:
-            print(f'index {char_index} token {token}')
             while text[char_index] == ' ':
                 char_index += 1
-                print(char_index)
-                print(len(text))
                 if len(text) <= char_index:
-                    print('done')
                     break
-            print(f'After index {char_index} token {token}')
     
     if char_index != len(text):
-        print(char_index)
-        print(len(text))
         raise ValueError(f'Did not get to the end of the text: {text}\n'
                          f'Character index {char_index}\n'
                          f'Token index list {token_index_list}')

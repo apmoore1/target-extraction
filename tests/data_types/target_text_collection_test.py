@@ -4,7 +4,8 @@ import tempfile
 
 import pytest
 
-from target_extraction.data_types import TargetTextCollection, TargetText, Span
+from target_extraction.data_types import TargetTextCollection, TargetText
+from target_extraction.data_types_util import Span
 from target_extraction.tokenizers import spacy_tokenizer
 from target_extraction.pos_taggers import spacy_tagger
 

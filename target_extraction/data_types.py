@@ -6,17 +6,7 @@ from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
-
-class Span(NamedTuple):
-    '''
-    Span is a named tuple. It has two fields:
-
-    1. start -- An integer that specifies the start of a target word within a 
-       text.
-    2. end -- An integer that specifies the end of a target word within a text.
-    '''
-    start: int
-    end: int
+from target_extraction.data_types_util import Span
 
 class TargetText(MutableMapping):
     '''
@@ -159,7 +149,7 @@ class TargetText(MutableMapping):
 
     def __init__(self, text: str, text_id: str,
                  targets: Optional[List[str]] = None, 
-                 spans: Optional[List['Span']] = None, 
+                 spans: Optional[List[Span]] = None, 
                  sentiments: Optional[List[int]] = None, 
                  categories: Optional[List[str]] = None):
         # Ensure that the arguments that should be lists are lists.
