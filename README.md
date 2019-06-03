@@ -19,3 +19,7 @@ Papers that used those datasets numbers:
 3. https://www.aaai.org/Conferences/AAAI/2017/PreliminaryPapers/15-Wang-W-14441.pdf
 4. https://www.aclweb.org/anthology/D17-1310
 5. https://www.ijcai.org/proceedings/2018/0583.pdf
+
+
+From what I gather of SemEval 2014 data you can have categories and no targets but I have not seen Vice Versa. I have also not seen but I assume you can have a sentence that has neither categories nor targets. There are the following 4 sentiments, positive, negative, neutral, and conflict.
+I think we want the following flags not_conflict and sentiment_to_nums
