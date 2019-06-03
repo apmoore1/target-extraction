@@ -332,6 +332,15 @@ class TestTargetTextCollection:
         correct_sequence = ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O']
         assert test_collection['another_id']['sequence_labels'] == correct_sequence
 
+    def test_exact_match_score(self):
+        # Simple case where it should get perfect score
+        test_collection = TargetTextCollection([self._target_text_example()])
+        test_collection.tokenize(spacy_tokenizer())
+        test_collection.sequence_labels()
+        measures = test_collection.exact_match_score('sequence_labels')
+        for measure in measures:
+            assert measure == 1.0
+
 
 
 

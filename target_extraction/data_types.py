@@ -581,46 +581,6 @@ class TargetText(MutableMapping):
             sequence_spans.append(Span(start_span_index, end_span_index))
         return sequence_spans
 
-    def exact_match_score(self, 
-                          predicted_sequence_key: str = 'predicted_sequence_labels'
-                          ) -> None:
-        '''
-        Here it is very much given a token stream find the tokens that 
-        have B and I matching and then extract out the span indexs related to 
-        those and see if that they match up or not.
-        
-        :param predicted_sequence_key: Key of the predicted sequence labels 
-                                       within this TargetText instance.
-        :raises KeyError: If there are no `sequence_labels` or `spans` or 
-                          predicted sequence label key within this TargetText.
-        '''
-        keys_to_check = ['spans', 'sequence_labels', 
-                         f'{predicted_sequence_key}']
-        for key in keys_to_check:
-            self._key_error(key)
-
-        true_target_spans = self['spans']
-        true_spans_count = len(true_target_spans)
-
-        # number of tokens, sequence labels, and token text indexs are all of 
-        # the same length by design
-        tokens = self['tokenized_text']
-        token_text_indexs = token_index_alignment(self['text'], tokens)
-        predicted_labels = self[predicted_sequence_key]
-        
-        # Having some thoughts here whether or not we should have a seperate 
-        # function that just gets the extracted predicted target spans.
-        # Bad side affect of this would be the fact that perhaps we should 
-        # have some sort of method for correct sentiment and target etc.
-        for token, text_index, predicted_label in zip(tokens, token_text_indexs, 
-                                                      predicted_labels):
-            pass
-            
-         
-
-
-
-
     @staticmethod
     def from_json(json_text: str) -> 'TargetText':
         '''
@@ -672,6 +632,11 @@ class TargetTextCollection(MutableMapping):
        method across all of the TargetText instances within the collection.
     7. force_targets -- This applies the TargetText.force_targets method 
        across all of the TargetText instances within the collection.
+    8. exact_match_score -- Recall, Precision, and F1 score in a Tuple. 
+       All of these measures are based on exact span matching rather than the 
+       matching of the sequence label tags, this is due to the annotation spans 
+       not always matching tokenization therefore this removes the tokenization 
+       error that can come from the sequence label measures.
     
     Static Functions:
 
@@ -871,6 +836,65 @@ class TargetTextCollection(MutableMapping):
         for target_text_instance in self.values():
             target_text_instance.sequence_labels()
 
+    def exact_match_score(self, 
+                          predicted_sequence_key: str = 'predicted_sequence_labels'
+                          ) -> Tuple[float, float, float]:
+        '''        
+        Just for clarification we use the sequence label tags to find the 
+        predicted spans. However even if you have a perfect sequence label 
+        score does not mean you will have a perfect extact span score 
+        as the tokenizer used for the sequence labelling might not align 
+        perfectly with the annotated spans.
+
+        :param predicted_sequence_key: Key of the predicted sequence labels 
+                                       within this TargetText instance.
+        :returns: Recall, Precision, and F1 score in a Tuple. All of these 
+                  measures are based on exact span matching rather than the 
+                  matching of the sequence label tags, this is due to the 
+                  annotation spans not always matching tokenization therefore 
+                  this removes the tokenization error that can come from the 
+                  sequence label measures.
+        :raises KeyError: If there are no `sequence_labels` or `spans` or 
+                          predicted sequence label key within this TargetText.
+        '''
+        # tp = True Positive count
+        tp = 0.0
+        num_pred_true = 0.0
+        num_actually_true = 0.0
+
+        for target_text_index, target_text_instance in enumerate(self.values()):
+            if target_text_index == 0:
+                keys_to_check = ['spans', 'sequence_labels', 
+                                f'{predicted_sequence_key}']
+                for key in keys_to_check:
+                    target_text_instance._key_error(key)
+            predicted_spans = target_text_instance.get_sequence_spans(predicted_sequence_key)
+            # Add to the number of predicted true and actually true
+            predicted_spans: List[Span]
+            num_pred_true += len(predicted_spans)
+
+            true_spans: List[Span] = target_text_instance['spans']
+            num_actually_true += len(true_spans)
+            
+            # Find the True Positives
+            if len(predicted_spans) != len(set(predicted_spans)):
+                raise ValueError(f'Predicted spans {predicted_spans} contain'
+                                 f' multiple of the same predicted span. '
+                                 f'TargetText: {target_text_instance}')
+            if len(true_spans) != len(set(true_spans)):
+                raise ValueError(f'True spans {true_spans} contain'
+                                 f' multiple of the same true span. '
+                                 f'TargetText: {target_text_instance}')
+            true_spans = set(true_spans)
+            for predicted_span in predicted_spans:
+                if predicted_span in true_spans:
+                    tp += 1
+        
+        recall = tp / num_actually_true
+        precision = tp / num_pred_true
+        f1 = (2 * precision * recall) / (precision + recall)
+
+        return recall, precision, f1
 
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
