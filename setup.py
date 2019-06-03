@@ -13,18 +13,15 @@ setup(name='target_extraction',
       url='https://github.com/apmoore1/target-extraction',
       author='Andrew Moore',
       author_email='andrew.p.moore94@gmail.com',
-      license='MIT',
+      license='Apache License 2.0',
       install_requires=[
-          'pytest>4.1.0',
-          'pylint'
+          'spacy==2.1.4',
+          'torch == 1.0.0',
+          'stanfordnlp'
       ],
       python_requires='>=3.6.1',
       packages=find_packages(),
       classifiers=[
           'Development Status :: 3 - Alpha',
-          'License :: OSI Approved :: MIT License',
-          'Natural Language :: English',
-          'Programming Language :: Python :: 3.6',
-          'Topic :: Text Processing',
-          'Topic :: Text Processing :: Linguistic',
+          'Programming Language :: Python :: 3.6'
       ])
