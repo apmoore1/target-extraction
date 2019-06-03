@@ -627,6 +627,157 @@ class TestTargetText:
         test.sequence_labels()
         assert test['sequence_labels'] == ['O', 'O', 'B', 'O', 'O', 'O', 'O',
                                            'B', 'I', 'O', 'O', 'O']
+        
+        # Case where two targets are next to each other.
+        text = 'The laptop case price was great and bad'
+        spans = [Span(4, 15), Span(16, 21)]
+        targets = ['laptop case', 'price']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'B', 'I', 'B', 'O', 'O', 'O',
+                                           'O']
+
+        # Case where the targets are at the start and end and contain no `O`
+        # Handle cases at the extreme of the sentence (beginning and end)
+        text = 'Laptop priced'
+        spans = [Span(0, 6), Span(7, 13)]
+        targets = ['Laptop', 'priced']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['B', 'B']
+        
+        # Handle the case where the targets are next to each other where one 
+        # ends with an I tag and the other starts with a B tag.
+        text = 'Laptop cover priced'
+        spans = [Span(0, 12), Span(13, 19)]
+        targets = ['Laptop cover', 'priced']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['B', 'I', 'B']
+
+    def test_key_error(self):
+        # Simple example that should pass
+        example = TargetText(text='some text', text_id='2')
+        example._key_error('text')
+        # Simple example that should raise a KeyError
+        with pytest.raises(KeyError):
+            example._key_error('tokenized_text')
+        # Proof that it should now not raise a KeyError
+        example.tokenize(str.split)
+        example._key_error('tokenized_text')
+
+    def test_get_sequence_spans(self):
+        # Simple example where the text and the tokens are perfectly aligned.
+        # Also it is an example that includes single target and multi word 
+        # target
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        spans = [Span(4, 15), Span(30, 35)]
+        targets = ['laptop case', 'cover']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == spans
+
+        # Test that it will raise a KeyError if a key that does not exist is 
+        # provided
+        with pytest.raises(KeyError):
+            test.get_sequence_spans('predicted_sequence_labels')
+        
+        # Case where two targets are next to each other.
+        text = 'The laptop case price was great and bad'
+        spans = [Span(4, 15), Span(16, 21)]
+        targets = ['laptop case', 'price']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == spans
+
+        # Case where the text and the tokens do not perfectly align with 
+        # each other
+        text = 'The laptop;priced was high and the laptop cover-ed was based'
+        text_id = '2'
+        spans = [Span(11, 17), Span(35, 47)]
+        targets = ['priced', 'laptop cover']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == [Span(35, 41)]
+        # Using a tokenizer that can perfectly seperate the targets out
+        test.tokenize(stanford())
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == spans
+
+        # Handle cases at the extreme of the sentence (beginning and end)
+        text = 'Laptop was ;priced'
+        spans = [Span(0, 6), Span(12, 18)]
+        targets = ['Laptop', 'priced']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == [Span(0, 6)]
+        # Perfect tokenizer
+        test.tokenize(stanford())
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == spans
+
+        # Handle multi word targets greater than 2
+        text = 'The Laptop cover price was very good'
+        spans = [Span(4, 22)]
+        targets = ['Laptop cover price']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == spans
+
+        # Ensure that it raises an error if the sequence tags are not BIO
+        test['sequence_labels'] = ['O', 'B', 'E', 'I', 'O', 'O', 'O']
+        with pytest.raises(ValueError):
+            test.get_sequence_spans('sequence_labels')
+
+        # Handle the case where the targets are next to each other and both 
+        # start with B tags.
+        text = 'Laptop priced'
+        spans = [Span(0, 6), Span(7, 13)]
+        targets = ['Laptop', 'priced']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == spans
+
+        # Handle the case where the targets are next to each other where one 
+        # ends with an I tag and the other starts with a B tag.
+        text = 'Laptop cover priced'
+        spans = [Span(0, 12), Span(13, 19)]
+        targets = ['Laptop cover', 'priced']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert sequence_spans == spans
+        
+        
 
                     
                 
