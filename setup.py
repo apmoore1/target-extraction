@@ -16,8 +16,8 @@ setup(name='target_extraction',
       license='Apache License 2.0',
       install_requires=[
           'spacy==2.1.4',
-          'torch == 1.0.0',
-          'stanfordnlp'
+          'torch==1.0.0',
+          'stanfordnlp==0.2.0'
       ],
       python_requires='>=3.6.1',
       packages=find_packages(),
