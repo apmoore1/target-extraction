@@ -17,68 +17,75 @@ class TestTargetText:
                                                List[int], List[List[str]],
                                                List[List[str]]]]:
         '''
-        The furst argument `text` in each of the TargetText returned are 
+        The first argument `text` in each of the TargetText returned are 
         all the same hence why in the second item in the returned tuple the 
         text argument is not a list.
 
         :returns: A tuple the first item is a list of TargetText and the 
-                  second is a tuple of length 6 containing all of the 
+                  second is a tuple of length 7 containing all of the 
                   arguments that were used to create the TargetTexts.
         '''
         text = 'The laptop case was great and cover was rubbish'
         text_ids = ['0', 'another_id', '2']
         spans = [[Span(4, 15)], [Span(30, 35)], [Span(4, 15), Span(30, 35)]]
-        sentiments = [[0], [1], [0, 1]]
+        target_sentiments = [[0], ['positive'], [0, 1]]
         targets = [['laptop case'], ['cover'], ['laptop case', 'cover']]
         categories = [['LAPTOP#CASE'], ['LAPTOP'], ['LAPTOP#CASE', 'LAPTOP']]
+        category_sentiments = [['pos'],[1],[0, 1]]
 
         examples = []
         for i in range(3):
             example = TargetText(text, text_ids[i], targets=targets[i],
-                                 spans=spans[i], sentiments=sentiments[i],
-                                 categories=categories[i])
+                                 spans=spans[i], 
+                                 target_sentiments=target_sentiments[i],
+                                 categories=categories[i],
+                                 category_sentiments=category_sentiments[i])
             examples.append(example)
-        return examples, (text, text_ids, spans, sentiments, targets, categories)
+        return examples, (text, text_ids, spans, target_sentiments, 
+                          targets, categories, category_sentiments)
 
     def _exception_examples(self) -> Iterable[Dict[str, Any]]:
         '''
         :returns: The opposite of _passable_examples this returns a list of
                   key word arguments to give to the constructor of 
-                  TargetText the SHOULD raise a ValueError by the 
+                  TargetText that SHOULD raise a ValueError by the 
                   check_list_sizes function.
         '''
         texts = ['The laptop case was great and cover was rubbish'] * 3
         text_ids = ['0', 'another_id', '2']
         possible_spans = [[Span(4, 15)], [Span(30, 35)],
                           [Span(4, 15), Span(30, 35)]]
-        possibe_sentiments = [[0], [1], [0, 1]]
+        possibe_target_sentiments = [[0], [1], [0, 1]]
         possible_targets = [['laptop case'], ['cover'],
                             ['laptop case', 'cover']]
         possible_categories = [['LAPTOP#CASE'], ['LAPTOP'],
                                ['LAPTOP#CASE', 'LAPTOP']]
+        possible_category_sentiments = [[0], [1], [0, 1]]
         # Mismatch in list lengths.
-        # Target and Spans length mismatch
-        targets_spans = [[possible_targets[0], possible_spans[2]],
-                         [possible_targets[2], possible_spans[0]]]
-        for target, span in targets_spans:
+        # Target, target sentiments, and Spans length mismatch
+        targets_spans = [[possible_targets[0], possible_spans[2], possibe_target_sentiments[0]],
+                         [possible_targets[2], possible_spans[0], possibe_target_sentiments[2]],
+                         [possible_targets[2], possible_spans[2], possibe_target_sentiments[0]]]
+        for target, span, target_sentiment in targets_spans:
             yield {'text_id': text_ids[0], 'text': texts[0],
-                   'targets': target, 'spans': span}
-        # Sentiment, Categories and spans mismatch
-        sentiments_categories_spans = [[possibe_sentiments[0], possible_categories[0], possible_spans[2]],
-                                       [possibe_sentiments[0],
-                                           possible_categories[2], possible_spans[0]],
-                                       [possibe_sentiments[2], possible_categories[0], possible_spans[0]]]
-        for sentiment, category, span in sentiments_categories_spans:
+                   'targets': target, 'spans': span, 
+                   'target_sentiments': target_sentiment}
+        # Category and Category sentiments mismatch
+        category_category_sentiments = [[possible_categories[0], possible_category_sentiments[2]],
+                                        [possible_categories[2], possible_category_sentiments[0]]]
+        for categories, category_sentiment in category_category_sentiments:
             yield {'text_id': text_ids[0], 'text': texts[0],
-                   'categories': category, 'spans': span,
-                   'sentiments': sentiment}
+                   'category_sentiments': category_sentiment,
+                   'categories': categories}
 
         # Shouldn't work as the target does not have a reference span
         values = zip(text_ids, texts, possible_targets,
-                     possibe_sentiments, possible_categories)
-        for _id, text, target, sentiment, category in values:
+                     possibe_target_sentiments, possible_categories,
+                     possible_category_sentiments)
+        for _id, text, target, target_sentiment, category, category_sentiment in values:
             yield {'text_id': _id, 'text': text, 'targets': target,
-                   'sentiments': sentiment, 'categories': category}
+                   'target_sentiments': target_sentiment, 'categories': category,
+                   'category_sentiments': category_sentiment}
         # Shouldn't work as the spans and targets do not align, the impossible
         # Spans are either closer to the target or in-corporate a zero element.
         impossible_spans = [[Span(0, 11)], [Span(31, 35)]]
@@ -136,23 +143,23 @@ class TestTargetText:
         all_passable_cases.append((multiple_categories_err,
                                    multiple_categories))
 
-        one_sentiment = {**min_case, 'sentiments': [0]}
+        one_sentiment = {**min_case, 'target_sentiments': [0]}
         one_sentiment_err = err_start + 'one sentiment' + normal_end_err
         all_passable_cases.append((one_sentiment_err, one_sentiment))
 
-        multiple_sentiments = {**min_case, 'sentiments': [0, 2]}
+        multiple_sentiments = {**min_case, 'target_sentiments': [0, 2]}
         multiple_sentiments_err = err_start + 'multiple sentiments' + \
             normal_end_err
         all_passable_cases.append((multiple_sentiments_err,
                                    multiple_sentiments))
 
-        one_sentiment_target = {**one_target, 'sentiments': [0]}
+        one_sentiment_target = {**one_target, 'target_sentiments': [0]}
         one_sentiment_target_err = err_start + 'one target and span' + \
             same_length_end_err
         all_passable_cases.append((one_sentiment_target_err,
                                    one_sentiment_target))
 
-        multiple_sentiment_targets = {**multiple_targets, 'sentiments': [0, 2]}
+        multiple_sentiment_targets = {**multiple_targets, 'target_sentiments': [0, 2]}
         multiple_sentiment_target_err = err_start + \
             'multiple targets, spans, sentiments' + \
             same_length_end_err
@@ -203,6 +210,17 @@ class TestTargetText:
             'multiple target, span, category, sentiment' + \
             same_length_end_err
         all_passable_cases.append((multiple_all_err, multiple_all))
+
+        # Should be able to handle category sentiments
+        multiple_all = {**multiple_all, 'category_sentiments': [0, 'pos']}
+        all_passable_cases.append(('category sentiments multiple', multiple_all))
+
+        # should be able to handle a different number of categories and 
+        # category sentiments compared to the number of targets
+        multiple_diff = {**one_all}
+        multiple_diff['categories'] = ['LAPTOP', 'CAMERA', 'SCREEN']
+        multiple_diff['category_sentiments'] = [0,0,'neg']
+        all_passable_cases.append(('category sentiments diff', multiple_diff))
         return all_passable_cases
 
     def test_list_only(self):
@@ -214,10 +232,12 @@ class TestTargetText:
         text = 'The laptop case was great and cover was rubbish'
         text_id = '0'
         span = [Span(4, 15)]
-        sentiment = [0]
+        target_sentiment = [0]
         target = ['laptop case']
         category = ['LAPTOP#CASE']
-        all_list_arguments = [span, sentiment, target, category]
+        category_sentiment = ['pos']
+        all_list_arguments = [span, target_sentiment, target, category,
+                              category_sentiment]
         num_repeats = len(all_list_arguments)
         for index, list_arguments in enumerate(repeat(all_list_arguments, num_repeats)):
             copy_list_arguments = copy.deepcopy(list_arguments)
@@ -225,9 +245,10 @@ class TestTargetText:
 
             full_arguments = {'text': text, 'text_id': text_id,
                               'spans': copy_list_arguments[0],
-                              'sentiments': copy_list_arguments[1],
+                              'target_sentiments': copy_list_arguments[1],
                               'targets': copy_list_arguments[2],
-                              'categories': copy_list_arguments[3]}
+                              'categories': copy_list_arguments[3],
+                              'category_sentiments': copy_list_arguments[4]}
             with pytest.raises(TypeError):
                 TargetText(**full_arguments)
 
@@ -407,8 +428,8 @@ class TestTargetText:
         Ensure that the get item works.
         '''
         examples, example_arguments = self._regular_examples()
-        argument_names = ['text', 'text_id', 'spans', 'sentiments',
-                          'targets', 'categories']
+        argument_names = ['text', 'text_id', 'spans', 'target_sentiments',
+                          'targets', 'categories', 'category_sentiments']
         for example_index, example in enumerate(examples):
             for argument_index, arguments in enumerate(example_arguments):
                 if argument_index == 0:
@@ -421,15 +442,15 @@ class TestTargetText:
     def test_length(self):
         examples, _ = self._regular_examples()
         example = examples[0]
+        assert len(example) == 7
+        del example['target_sentiments']
         assert len(example) == 6
-        del example['sentiments']
-        assert len(example) == 5
     
     def test_to_json(self):
         true_json_text = ('{"text": "The laptop case was great and cover was rubbish", '
                           '"text_id": "2", "targets": ["laptop case", "cover"], '
-                          '"spans": [[4, 15], [30, 35]], "sentiments": [0, 1], '
-                          '"categories": ["LAPTOP#CASE", "LAPTOP"]}')
+                          '"spans": [[4, 15], [30, 35]], "target_sentiments": [0, 1], '
+                          '"categories": ["LAPTOP#CASE", "LAPTOP"], "category_sentiments": [0, 1]}')
         examples, _ = self._regular_examples()
         example = examples[-1]
         assert example.to_json() == true_json_text
@@ -437,8 +458,8 @@ class TestTargetText:
     def test_from_json(self):
         json_text = ('{"text": "The laptop case was great and cover was rubbish", '
                      '"text_id": "2", "targets": ["laptop case", "cover"], '
-                     '"spans": [[4, 15], [30, 35]], "sentiments": [0, 1], '
-                     '"categories": ["LAPTOP#CASE", "LAPTOP"]}')
+                     '"spans": [[4, 15], [30, 35]], "target_sentiments": [0, 1], '
+                     '"categories": ["LAPTOP#CASE", "LAPTOP"], "category_sentiments": [0, 1]}')
         example_from_json = TargetText.from_json(json_text)
         example_spans: List[Span] = example_from_json['spans']
         for span in example_spans:
@@ -776,8 +797,3 @@ class TestTargetText:
         test.sequence_labels()
         sequence_spans = test.get_sequence_spans('sequence_labels')
         assert sequence_spans == spans
-        
-        
-
-                    
-                

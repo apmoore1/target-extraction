@@ -34,14 +34,15 @@ class TestTargetTextCollection:
         text = 'The laptop case was great and cover was rubbish'
         text_ids = ['0', 'another_id', '2']
         spans = [[Span(4, 15)], [Span(30, 35)], [Span(4, 15), Span(30, 35)]]
-        sentiments = [[0], [1], [0, 1]]
+        target_sentiments = [[0], [1], [0, 1]]
         targets = [['laptop case'], ['cover'], ['laptop case', 'cover']]
         categories = [['LAPTOP#CASE'], ['LAPTOP'], ['LAPTOP#CASE', 'LAPTOP']]
 
         target_text_examples = []
         for i in range(3):
             example = TargetText(text, text_ids[i], targets=targets[i],
-                                 spans=spans[i], sentiments=sentiments[i],
+                                 spans=spans[i], 
+                                 target_sentiments=target_sentiments[i],
                                  categories=categories[i])
             target_text_examples.append(example)
         return target_text_examples
@@ -103,7 +104,8 @@ class TestTargetTextCollection:
         last_target_text = self._target_text_example()
         assert example_2['2'] == last_target_text
 
-        assert example_2['0'] == TargetText('can be any text as long as id is correct', '0')
+        assert example_2['0'] == TargetText('can be any text as long as id is correct', 
+                                            '0')
         
         with pytest.raises(KeyError):
             example_2['any key']
@@ -140,9 +142,9 @@ class TestTargetTextCollection:
         example_collection = TargetTextCollection()
         example_collection['2'] = example_instance
 
-        example_instance['sentiments'] = [0]
-        assert example_instance['sentiments'] is not None
-        assert example_collection['2']['sentiments'] is None
+        example_instance['target_sentiments'] = [0]
+        assert example_instance['target_sentiments'] is not None
+        assert example_collection['2']['target_sentiments'] is None
 
     def test_add(self):
         new_collection = TargetTextCollection()
@@ -174,8 +176,8 @@ class TestTargetTextCollection:
         true_json_version = ('{"text": "The laptop case was great and cover '
                              'was rubbish", "text_id": "2", "targets": ["laptop '
                              'case", "cover"], "spans": [[4, 15], [30, 35]], '
-                             '"sentiments": [0, 1], "categories": '
-                             '["LAPTOP#CASE", "LAPTOP"]}')
+                             '"target_sentiments": [0, 1], "categories": '
+                             '["LAPTOP#CASE", "LAPTOP"], "category_sentiments": null}')
         assert new_collection.to_json() == true_json_version
 
         # Multiple target text in the collection
@@ -183,12 +185,13 @@ class TestTargetTextCollection:
         true_json_version = ('{"text": "The laptop case was great and cover '
                              'was rubbish", "text_id": "0", "targets": '
                              '["laptop case"], "spans": [[4, 15]], '
-                             '"sentiments": [0], "categories": '
-                             '["LAPTOP#CASE"]}\n{"text": "The laptop case was '
+                             '"target_sentiments": [0], "categories": '
+                             '["LAPTOP#CASE"], "category_sentiments": null}'
+                             '\n{"text": "The laptop case was '
                              'great and cover was rubbish", "text_id": '
                              '"another_id", "targets": ["cover"], "spans": '
-                             '[[30, 35]], "sentiments": [1], "categories": '
-                             '["LAPTOP"]}')
+                             '[[30, 35]], "target_sentiments": [1], "categories": '
+                             '["LAPTOP"], "category_sentiments": null}')
         assert new_collection.to_json() == true_json_version
 
     @pytest.mark.parametrize("name", ('', 'test_name'))
@@ -228,7 +231,8 @@ class TestTargetTextCollection:
         one_target_collection = TargetTextCollection.load_json(one_target_json_fp)
         assert len(one_target_collection) == 1
         assert one_target_collection['0']['text'] == 'The laptop case was great and cover was rubbish'
-        assert one_target_collection['0']['sentiments'] == [0]
+        assert one_target_collection['0']['target_sentiments'] == [0]
+        assert one_target_collection['0']['category_sentiments'] == ['pos']
         assert one_target_collection['0']['categories'] == ['LAPTOP#CASE']
         assert one_target_collection['0']['spans'] == [Span(4, 15)]
         assert one_target_collection['0']['targets'] == ['laptop case']

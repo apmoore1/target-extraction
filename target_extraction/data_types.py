@@ -15,6 +15,7 @@ import copy
 import json
 from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
+from typing import Union
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
 from target_extraction.data_types_util import Span
@@ -30,17 +31,24 @@ class TargetText(MutableMapping):
 
     1. text - The text associated to all of the other items
     2. text_id -- The unique ID associated to this object 
-    3. targets -- List of all target words that occur in the text. Can be None.
+    3. targets -- List of all target words that occur in the text.
     4. spans -- List of Span NamedTuples where each one specifies the start and 
        end of the respective targets within the text.
-    5. sentiments -- List of integers sepcifying the sentiment of the 
-       respective targets within the text.
-    6. categories -- List of categories that represent the targets. NOTE: 
+    5. target_sentiments -- List sepcifying the sentiment of the respective 
+       targets within the text.
+    6. categories -- List of categories that exist in the data which may or 
+       may not link to the targets (this is dataset speicific). NOTE: 
        depending on the dataset and how it is parsed the category can exist 
-       but the target does not as the category is a latent variable, in these 
-       cases the target will be `NULL` and if there are sentiment values the 
-       sentiment will be with respect to both the target and the category 
-       value.
+       but the target does not as the category is a latent variable, in 
+       these cases the category and category sentiments will be the same size 
+       which would be a different size to the target and target sentiments 
+       size. E.g. can happen where the dataset has targets and categories 
+       but they do not map to each other in a one to one manner e.g 
+       SemEval 2014 restuarant dataset, there are some samples that contain 
+       categories but no targets. Another word for category can be aspect.
+    7. category_sentiments -- List of the sentiments associated to the 
+       categories. If the categories and targets map to each other then 
+       this will be empty and you will only use the target_sentiments.
 
     Methods:
     
@@ -78,66 +86,61 @@ class TargetText(MutableMapping):
                      list.
         :param item_name: Name of the item. This is used within the raised 
                           error message, if an error is raised.
-        :raises: TypeError
+        :raises TypeError: If any of the items are not of type List.
         '''
-        type_err = f'{item_name} should be a list not {type(item)}'
+        type_err = f'{item_name} should be a list not {type(item)} {item}'
         if not isinstance(item, list):
             raise TypeError(type_err)
 
     def check_list_sizes(self) -> None:
         '''
-        This will check that all of the core lists:
+        This performs a check on all of the lists that can be given at 
+        object construction time to ensure that the following conditions are 
+        met:
         
-        1. targets
-        2. spans
-        3. sentiments
-        4. categories
+        1. The target, spans and target_sentiments lists are all of the same 
+           size if set.
+        2. The categories and the category_sentiments lists are all of the 
+           same size if set. 
 
-        Are all of the same length if they are not None. These arguments are 
-        found through the self._storage.
-        
-        Furthermore it checks that if targets are set then spans are also set 
-        as well as checking that the spans correspond to the target in the 
-        text e.g. if the target is `barry davies` in `today barry davies 
-        went` then the spans should be [[6,18]] and if the spans, target or 
-        text is any different it will raise a ValueError.
+        Further more it checks the following:
 
-        :returns: Nothing, just raises ValueError if the arguments given in 
-                  either the __init__ or through __setitem__ do not conform 
-                  to the documentation stated above.
-        :raises: ValueError
+        1. If targets or spans are set then both have to exist.
+        2. If targets and spans are set that the spans text match the 
+           associated target words e.g. if the target is `barry davies` in 
+           `today barry davies went` then the spans should be [[6,18]]
+    
+        :raises ValueError: If any of the above conditions are not True.
         '''
 
+        def length_mis_match(lists_to_check: List[Any], 
+                             text_id_msg: str) -> None:
+            length_mismatch_msg = 'The following lists do not match '\
+                                  f'{lists_to_check}'
+            list_lengths = [len(_list) for _list in lists_to_check 
+                            if _list is not None]
+            current_list_size = -1
+            for list_length in list_lengths:
+                if current_list_size == -1:
+                    current_list_size = list_length
+                else:
+                    if current_list_size != list_length:
+                        raise ValueError(text_id_msg + length_mismatch_msg)
+
         targets = self._storage['targets']
+        target_sentiments = self._storage['target_sentiments']
         spans = self._storage['spans']
         categories = self._storage['categories']
-        sentiments = self._storage['sentiments']
+        category_sentiments = self._storage['category_sentiments']
 
         text_id = self._storage['text_id']
         text_id_msg = f'Text id that this error refers to {text_id}\n'
 
-        # Checking the length mismatches
-        lists_to_check = [targets, spans, categories, sentiments]
-        list_lengths = [len(_list) for _list in lists_to_check 
-                        if _list is not None]
+        # Checking the length mismatches for the two different lists
+        length_mis_match([targets, target_sentiments, spans], text_id_msg)
+        length_mis_match([categories, category_sentiments], text_id_msg)
+        
 
-        current_list_size = -1
-        raise_error = False
-        for list_length in list_lengths:
-            if current_list_size == -1:
-                current_list_size = list_length
-            else:
-                if current_list_size != list_length:
-                    raise_error = True
-                    break
-        if raise_error:
-            length_mismatch_msg = 'The targets, spans, categories, and  '\
-                                  'sentiments lists given if given are of '\
-                                  'different sizes excluding those that are '\
-                                  f'None; targets: {targets}, spans: '\
-                                  f'{spans}, categories: {categories}'\
-                                  f', and sentiments: {sentiments}'
-            raise ValueError(text_id_msg + length_mismatch_msg)
         # Checking that if targets are set than so are spans
         if targets is not None and spans is None:
             spans_none_msg = f'If the targets are a list: {targets} then spans'\
@@ -155,18 +158,18 @@ class TargetText(MutableMapping):
                                       f'text: {text_target} does not match '\
                                       f'the target in the targets list: {target}'
                     raise ValueError(text_id_msg + target_span_msg)
-        
-        
 
     def __init__(self, text: str, text_id: str,
                  targets: Optional[List[str]] = None, 
                  spans: Optional[List[Span]] = None, 
-                 sentiments: Optional[List[int]] = None, 
-                 categories: Optional[List[str]] = None):
+                 target_sentiments: Optional[List[Union[int, str]]] = None, 
+                 categories: Optional[List[str]] = None,
+                 category_sentiments: Optional[List[Union[int, str]]] = None):
         # Ensure that the arguments that should be lists are lists.
-        self._list_argument_names = ['targets', 'spans', 'sentiments', 
-                                     'categories']
-        self._list_arguments = [targets, spans, sentiments, categories]
+        self._list_argument_names = ['targets', 'spans', 'target_sentiments', 
+                                     'categories', 'category_sentiments']
+        self._list_arguments = [targets, spans, target_sentiments, categories,
+                                category_sentiments]
         names_arguments = zip(self._list_argument_names, self._list_arguments)
         for argument_name, list_argument in names_arguments:
             if list_argument is None:
@@ -174,8 +177,9 @@ class TargetText(MutableMapping):
             self._check_is_list(list_argument, argument_name)
 
         temp_dict = dict(text=text, text_id=text_id, targets=targets,
-                         spans=spans, sentiments=sentiments, 
-                         categories=categories)
+                         spans=spans, target_sentiments=target_sentiments, 
+                         categories=categories, 
+                         category_sentiments=category_sentiments)
         self._protected_keys = set(['text', 'text_id', 'targets', 'spans'])
         self._storage = temp_dict
         self.check_list_sizes()
@@ -197,8 +201,9 @@ class TargetText(MutableMapping):
         2. text_id
         3. targets
         4. spans
-        5. sentiments
+        5. target_sentiments
         6. categories
+        7. category_sentiments
 
         :returns: The keys in self._storage
         '''
