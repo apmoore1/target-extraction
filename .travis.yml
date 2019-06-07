@@ -11,6 +11,10 @@ install:
 
 script:
   - travis_wait python -m pytest --cov=./target_extraction
+  - cd docs
+  - sphinx-apidoc -o source/ ../target_extraction
+  - make html
+  - cd -
 
 after_success:
   - codecov
