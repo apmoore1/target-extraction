@@ -16,5 +16,5 @@ class Span(NamedTuple):
        text.
     2. end -- An integer that specifies the end of a target word within a text.
     '''
-    start: int
-    end: int
+    start: int = 0
+    end: int = 0
