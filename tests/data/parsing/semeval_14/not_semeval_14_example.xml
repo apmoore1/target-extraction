@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<lines>
+    <sentence id="3121">
+        <text>The staff were ok</text>
+        <aspectTerms>
+            <aspectTerm term="staff" polarity="neutral" from="4" to="9"/>
+        </aspectTerms>
+        <aspectCategories>
+            <aspectCategory category="service" polarity="neutral"/>
+        </aspectCategories>
+    </sentence>
+    <sentence id="2777">
+        <text>The day was ok but the food was great</text>
+        <aspectTerms>
+            <aspectTerm term="food" polarity="positive" from="23" to="27"/>
+        </aspectTerms>
+        <aspectCategories>
+            <aspectCategory category="food" polarity="positive"/>
+            <aspectCategory category="anecdotes/miscellaneous" polarity="negative"/>
+        </aspectCategories>
+    </sentence>
+    <sentence id="2534">
+        <text>I had a horrible waiter today</text>
+        <aspectCategories>
+            <aspectCategory category="service" polarity="negative"/>
+        </aspectCategories>
+    </sentence>
+    <sentence id="2634">
+        <text>Nothing really happened today</text>
+    </sentence>
+    <sentence id="1793">
+        <text>The drinks were neither good or bad bu the check in was awful</text>
+        <aspectTerms>
+            <aspectTerm term="drinks" polarity="conflict" from="4" to="10"/>
+            <aspectTerm term="check" polarity="negative" from="43" to="48"/>
+        </aspectTerms>
+        <aspectCategories>
+            <aspectCategory category="service" polarity="conflict"/>
+        </aspectCategories>
+    </sentence>
+</lines>
