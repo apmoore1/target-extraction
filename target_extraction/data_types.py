@@ -15,7 +15,7 @@ import copy
 import json
 from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
-from typing import Union
+from typing import Union, Set
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
 from target_extraction.data_types_util import Span
@@ -644,6 +644,8 @@ class TargetTextCollection(MutableMapping):
        error that can come from the sequence label measures.
     9. samples_with_targets -- Returns all of the samples that have target 
                                spans as a TargetTextCollection. 
+    10. target_set -- Returns set of all of the unique target strings found 
+                      with this TargetTextCollection
     
     Static Functions:
 
@@ -922,6 +924,21 @@ class TargetTextCollection(MutableMapping):
             if target_text['spans'] and target_text['targets']:
                 sub_collection.add(target_text)
         return sub_collection
+
+    def target_set(self) -> Set[str]:
+        '''
+        :returns: Set of all of the unique target strings found with this 
+                  TargetTextCollection
+        '''
+        set_of_targets = set()
+        for target_text in self.values():
+            if target_text['spans']:
+                text = target_text['text']
+                for span in target_text['spans']:
+                    target = text[span.start: span.end]
+                    set_of_targets.add(target)
+        return set_of_targets
+
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
         '''

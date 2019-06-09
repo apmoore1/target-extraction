@@ -481,6 +481,42 @@ class TestTargetTextCollection:
         assert len(sub_collection) == 2
         assert sub_collection != test_collection
 
+    def test_target_set(self):
+        # Start with an empty collection
+        test_collection = TargetTextCollection()
+        nothing = test_collection.target_set()
+        assert len(nothing) == 0
+        assert not nothing
+
+        # Collection that contains TargetText instances but with no targets
+        test_collection.add(TargetText(text='some text', text_id='1'))
+        assert len(test_collection) == 1
+        nothing = test_collection.target_set()
+        assert len(nothing) == 0
+        assert not nothing
+
+        # Collection now contains at least one target
+        test_collection.add(TargetText(text='another item today', text_id='2',
+                                       spans=[Span(0, 12)], 
+                                       targets=['another item']))
+        assert len(test_collection) == 2
+        one = test_collection.target_set()
+        assert len(one) == 1
+        assert one == set(['another item'])
+
+        # Collection now contains 3 targets but 2 are the same
+        test_collection.add(TargetText(text='another item today', text_id='3',
+                                       spans=[Span(0, 12)], 
+                                       targets=['another item']))
+        test_collection.add(TargetText(text='item today', text_id='4',
+                                       spans=[Span(0, 4)], 
+                                       targets=['item']))
+        assert len(test_collection) == 4
+        two = test_collection.target_set()
+        assert len(two) == 2
+        assert two == set(['another item', 'item'])
+
+
 
 
 
