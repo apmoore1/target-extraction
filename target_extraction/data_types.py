@@ -642,6 +642,8 @@ class TargetTextCollection(MutableMapping):
        matching of the sequence label tags, this is due to the annotation spans 
        not always matching tokenization therefore this removes the tokenization 
        error that can come from the sequence label measures.
+    9. samples_with_targets -- Returns all of the samples that have target 
+                               spans as a TargetTextCollection. 
     
     Static Functions:
 
@@ -905,6 +907,21 @@ class TargetTextCollection(MutableMapping):
 
         return recall, precision, f1
 
+    def samples_with_targets(self) -> 'TargetTextCollection':
+        '''
+        :returns: All of the samples that have targets as a 
+                  TargetTextCollection for this TargetTextCollection 
+        :raises KeyError: If either `spans` or `targets` does not exist in 
+                          one or more of the TargetText instances within this 
+                          collection. These key's are protected keys thus they
+                          should always exist but this is just a warning if 
+                          you have got around the protected keys.
+        '''
+        sub_collection = TargetTextCollection()
+        for target_text in self.values():
+            if target_text['spans'] and target_text['targets']:
+                sub_collection.add(target_text)
+        return sub_collection
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
         '''
