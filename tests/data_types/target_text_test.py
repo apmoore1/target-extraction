@@ -616,7 +616,7 @@ class TestTargetText:
         test_target_text = TargetText(text='', text_id='1')
         test_target_text['tokenized_text'] = []
         with pytest.raises(ValueError):
-            target_text_example.pos_text(pos_tagger)
+            test_target_text.pos_text(pos_tagger)
 
     def test_sequence_labels(self):
         # Test that it will raise a KeyError if it has not been tokenized
