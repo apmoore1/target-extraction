@@ -61,6 +61,25 @@ def _semeval_extract_data(sentence_tree: Element, conflict: bool
                         continue
                     categories.append(category.attrib['category'])
                     category_sentiments.append(category.attrib['polarity'])
+            elif data.tag == 'Opinions':
+                for opinion in data:
+                    category_target_sentiment = opinion.attrib['polarity']
+                    if conflict and category_target_sentiment == 'conflict':
+                        continue
+                    # Handle the case where some of the SemEval 16 files do 
+                    # not contain targets and are only category sentiment files
+                    if 'target' in opinion.attrib:
+                        # Handle the case where there is a category but no 
+                        # target
+                        target_text = opinion.attrib['target']
+                        if target_text == 'NULL':
+                            target_text = None
+                        targets.append(target_text)
+                        span_from = int(opinion.attrib['from'])
+                        span_to = int(opinion.attrib['to'])
+                        spans.append(Span(span_from, span_to))
+                    categories.append(opinion.attrib['category'])
+                    target_sentiments.append(category_target_sentiment)
         target_text_kwargs = {'targets': targets, 'spans': spans, 'text_id': text_id,
                               'target_sentiments': target_sentiments,
                               'categories': categories, 'text': text, 
@@ -129,5 +148,15 @@ def semeval_2016(data_fp: Path, conflict: bool) -> TargetTextCollection:
     reviews = tree.getroot()
     if reviews.tag != 'Reviews':
         raise SyntaxError('The root of all semeval xml files should '
-                          f'be Reviews and not {sentences.tag}')
-    return _semeval_extract_data(sentences, conflict)
+                          f'be Reviews and not {reviews.tag}')
+    all_target_texts: List[TargetText] = []
+    for review in reviews:
+        if len(review) != 1:
+            raise SyntaxError('The number of `sentences` tags under the '
+                                '`review` tag should be just 1 and not '
+                                f'{len(review)}')
+        sentences = review[0]
+        review_target_texts = list(_semeval_extract_data(sentences, 
+                                                         conflict).values())
+        all_target_texts.extend(review_target_texts)
+    return TargetTextCollection(all_target_texts)

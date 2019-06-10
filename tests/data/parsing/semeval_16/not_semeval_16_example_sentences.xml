@@ -8,11 +8,13 @@
                     <Opinion target="staff" category="service" polarity="neutral" from="4" to="9"/>
                 </Opinions>
             </sentence>
+        </sentences>
+        <sentences>
             <sentence id="1004293:1">
                 <text>The day was ok but the food was great</text>
                 <Opinions>
                     <Opinion target="NULL" category="anecdotes/miscellaneous" polarity="positive" from="0" to="0"/>
-                    <Opinion target="food" category="food" polarity="negative" from="23" to="27"/>
+                    <Opinion target="NULL" category="food" polarity="negative" from="23" to="27"/>
                 </Opinions>
             </sentence>
         </sentences>
@@ -33,18 +35,8 @@
             <sentence id="1016296:2">
                 <text>The drinks were neither good or bad bu the check in was awful</text>
                 <Opinions>
-                    <Opinion target="drinks" category="drinks" polarity="conflict" from="4" to="10"/>
-                    <Opinion target="check" category="service" polarity="positive" from="43" to="48"/>
-                </Opinions>
-            </sentence>
-        </sentences>
-    </Review>
-    <Review rid='1016297'>
-        <sentences>
-            <sentence id='1016297:0'>
-                <text>The drinks good</text>
-                <Opinions>
-                    <Opinion category="drinks" polarity="positive"/>
+                    <Opinion target="drinks" category="service" polarity="conflict" from="4" to="10"/>
+                    <Opinion target="check" category="drinks" polarity="positive" from="43" to="48"/>
                 </Opinions>
             </sentence>
         </sentences>

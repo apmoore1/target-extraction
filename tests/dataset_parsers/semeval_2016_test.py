@@ -31,6 +31,12 @@ class TestSemeval2016:
                     'targets': ['drinks', 'check'], 'spans': [Span(4, 10), Span(43, 48)],
                     'target_sentiments': ['conflict', 'positive'],
                     'categories': ['drinks', 'service']}
+        # This answer test if it can pass the SemEval 16 files that only 
+        # contain categories and no targets
+        answer_5 = {'text_id': '1016297:0', 'text': "The drinks good",
+                    'targets': None, 'spans': None,
+                    'target_sentiments': ['positive'],
+                    'categories': ['drinks']}
         if conflict:
             answer_4['target_sentiments'] = ['positive']
             answer_4['spans'] = [Span(43, 48)]
@@ -43,8 +49,9 @@ class TestSemeval2016:
             answer_2['spans'] = [Span(17, 23)]
             answer_2['categories'] = ['service']
             answer_2['category_sentiments'] = None
-        return {'3121': answer_0, '2777': answer_1, '2534': answer_2,
-                '2634': answer_3, '1793': answer_4}
+        return {'1004293:0': answer_0, '1004293:1': answer_1, 
+                '1016296:0': answer_2, '1016296:1': answer_3,
+                '1016296:2': answer_4, '1016297:0': answer_5}
         
 
     @pytest.mark.parametrize("conflict", (True, False))
@@ -52,9 +59,10 @@ class TestSemeval2016:
         data_fp = Path(self.DATA_PATH_DIR, 'semeval_16_example.xml')
         target_text_collection = semeval_2016(data_fp, conflict)
 
-        assert len(target_text_collection) == 5
+        assert len(target_text_collection) == 6
 
-        _ids = ['3121', '2777', '2534', '2634', '1793']
+        _ids = ['1004293:0', '1004293:1', '1016296:0', '1016296:1', '1016296:2',
+                '1016297:0']
         assert list(target_text_collection.keys()) == _ids
         true_answers = self._target_answer(conflict=conflict)
         for answer_key, answer in true_answers.items():
@@ -73,12 +81,23 @@ class TestSemeval2016:
             semeval_2016(unreadable_fp, conflict)
 
     @pytest.mark.parametrize("conflict", (True, False))
-    def test_not_semeval_file(self, conflict: bool):
+    def test_not_semeval_file_reviews(self, conflict: bool):
         # Test that it will raise a SyntaxError as the file does not follow 
-        # SemEval format.
+        # SemEval format with respect to the starting tag not being `Reviews`
 
         unreadable_fp = Path(self.DATA_PATH_DIR, 
                              'not_semeval_16_example.xml')
+        with pytest.raises(SyntaxError):
+            semeval_2016(unreadable_fp, conflict)
+
+    @pytest.mark.parametrize("conflict", (True, False))
+    def test_not_semeval_file_sentences(self, conflict: bool):
+        # Test that it will raise a SyntaxError as the file does not follow
+        # SemEval format with respect to wihtin the `Review` tag having 
+        # multiple `sentences`
+
+        unreadable_fp = Path(self.DATA_PATH_DIR,
+                             'not_semeval_16_example_sentences.xml')
         with pytest.raises(SyntaxError):
             semeval_2016(unreadable_fp, conflict)
 
