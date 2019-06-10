@@ -31,7 +31,13 @@ class TargetText(MutableMapping):
 
     1. text - The text associated to all of the other items
     2. text_id -- The unique ID associated to this object 
-    3. targets -- List of all target words that occur in the text.
+    3. targets -- List of all target words that occur in the text. A special 
+                  placeholder of None (python None value) can exist where the 
+                  target does not exist but a related Category does this would 
+                  mean though that the related span is Span(0, 0), this type of 
+                  special placeholder is in place for the SemEval 2016 Restaurant 
+                  dataset where they link the categories to the targets but 
+                  not all categories have related targets thus None.
     4. spans -- List of Span NamedTuples where each one specifies the start and 
        end of the respective targets within the text.
     5. target_sentiments -- List sepcifying the sentiment of the respective 
@@ -147,17 +153,25 @@ class TargetText(MutableMapping):
                              f' should also be a list and not None: {spans}'
             raise ValueError(text_id_msg + spans_none_msg)
         # Checking that the words Spans reference in the text match the 
-        # respective target words
+        # respective target words. Edge case is the case of None targets which 
+        # should have a Span value of (0, 0)
         if targets is not None:
             text = self._storage['text'] 
             for target, span in zip(targets, spans):
-                start, end = span.start, span.end
-                text_target = text[start:end]
-                if text_target != target:
+                if target is None:
+                    target_span_msg = 'As the target value is None the span '\
+                                      'it refers to should be of value '\
+                                      f'Span(0, 0) and not {span}'
+                    if span != Span(0, 0):
+                        raise ValueError(text_id_msg + target_span_msg)
+                else:
+                    start, end = span.start, span.end
+                    text_target = text[start:end]
                     target_span_msg = 'The target the spans reference in the '\
                                       f'text: {text_target} does not match '\
                                       f'the target in the targets list: {target}'
-                    raise ValueError(text_id_msg + target_span_msg)
+                    if text_target != target:
+                        raise ValueError(text_id_msg + target_span_msg)
 
     def __init__(self, text: str, text_id: str,
                  targets: Optional[List[str]] = None, 

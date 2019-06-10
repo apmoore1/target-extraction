@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Reviews>
+    <Review rid="1004293">
+        <sentences>
+            <sentence id="1004293:0">
+                <text>The staff were ok</text>
+                <Opinions>
+                    <Opinion target="staff" category="service" polarity="neutral" from="4" to="9"/>
+                </Opinions>
+            </sentence>
+            <sentence id="1004293:1">
+                <text>The day was ok but the food was great</text>
+                <Opinions>
+                    <Opinion target="NULL" category="anecdotes/miscellaneous" polarity="positive" from="0" to="0"/>
+                    <Opinion target="NULL" category="food" polarity="negative" from="23" to="27"/>
+                </Opinions>
+            </sentence>
+        </sentences>
+    </Review>
+    <Review rid="1016296">
+        <sentences>
+            <sentence id="1016296:0">
+                <text>I had a horrible waiter today food</text>
+                <Opinions>
+                    <Opinion target="waiter" category="service" polarity="negative" from="17" to="23"/>
+                    <Opinion target="food" category="food" polarity="conflict" from="30" to="34"/>
+                </Opinions>
+            </sentence>
+            <sentence id="1016296:1">
+                <text>Nothing really happened today</text>
+                <Opinions/>
+            </sentence>
+            <sentence id="1016296:2">
+                <text>The drinks were neither good or bad bu the check in was awful</text>
+                <Opinions>
+                    <Opinion target="drinks" category="service" polarity="conflict" from="4" to="10"/>
+                    <Opinion target="check" category="drinks" polarity="positive" from="43" to="48"/>
+                </Opinions>
+            </sentence>
+        </sentences>
+    </Review>
+</Reviews>

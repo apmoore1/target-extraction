@@ -95,7 +95,22 @@ class TestTargetText:
                                  [impossible_spans[0], possible_targets[0]],
                                  [impossible_spans[1], possible_targets[0]],
                                  [possible_spans[1], possible_targets[0]]]
-        values = zip(text_ids, texts, span_target_mismatchs)
+        new_texts = ['The laptop case was great and cover was rubbish'] * len(span_target_mismatchs)
+        new_text_ids = [str(i) for i in range(len(span_target_mismatchs))]
+        values = zip(new_text_ids, new_texts, span_target_mismatchs)
+        for _id, text, span_target in values:
+            span, target = span_target
+            yield {'text_id': _id, 'text': text, 'spans': span,
+                   'targets': target}
+        
+        # Shouldn't work when the target is None and the Span is equal to 
+        # something, also should not work when the span is (0, 0) and the 
+        # target is not None
+        span_target_none = [[[Span(0,0)], possible_targets[1]],  
+                            [possible_spans[0], [None]]]
+        new_texts = ['The laptop case was great and cover was rubbish'] * len(span_target_none)
+        new_text_ids = [str(i) for i in range(len(span_target_none))]
+        values = zip(new_text_ids, new_texts, span_target_none)
         for _id, text, span_target in values:
             span, target = span_target
             yield {'text_id': _id, 'text': text, 'spans': span,
@@ -221,6 +236,19 @@ class TestTargetText:
         multiple_diff['categories'] = ['LAPTOP', 'CAMERA', 'SCREEN']
         multiple_diff['category_sentiments'] = [0,0,'neg']
         all_passable_cases.append(('category sentiments diff', multiple_diff))
+
+        # Should be able to handle the case where the categories and targets 
+        # are somewhat linked and therefore each category has to have a target 
+        # even if the target is None value with no reference in the text.
+        multiple_all = {**multiple_sentiment_categories,
+                        'targets': ['laptop case', 'cover'],
+                        'spans': [Span(4, 15), Span(30, 35)]}
+        multiple_all['categories'] = ['LAPTOP', 'CAMERA', 'SCREEN']
+        multiple_all['category_sentiments'] = [0,0,'neg']
+        multiple_all['target_sentiments'] = [0,0,'neg']
+        multiple_all['targets'] = ['laptop case', 'cover', None]
+        multiple_all['spans'] = [Span(4, 15), Span(30, 35), Span(0,0)]
+        all_passable_cases.append(('Target that is Null', multiple_all))
         return all_passable_cases
 
     def test_list_only(self):
@@ -454,20 +482,38 @@ class TestTargetText:
         examples, _ = self._regular_examples()
         example = examples[-1]
         assert example.to_json() == true_json_text
+        # Test it when a target is of Value None
+        true_json_text = ('{"text": "The laptop case was great and cover was rubbish", '
+                          '"text_id": "2", "targets": ["laptop case", "cover", null], '
+                          '"spans": [[4, 15], [30, 35], [0, 0]], "target_sentiments": [0, 1, 0], '
+                          '"categories": ["LAPTOP#CASE", "LAPTOP"], "category_sentiments": [0, 1]}')
+        text = "The laptop case was great and cover was rubbish"
+        true_target_text = TargetText(text=text, text_id='2', 
+                                      targets=["laptop case", "cover", None], 
+                                      target_sentiments=[0,1,0],
+                                      spans=[Span(4, 15), Span(30, 35), Span(0, 0)],
+                                      categories=["LAPTOP#CASE", "LAPTOP"],
+                                      category_sentiments=[0, 1])
+        assert true_target_text.to_json() == true_json_text
 
     def test_from_json(self):
         json_text = ('{"text": "The laptop case was great and cover was rubbish", '
-                     '"text_id": "2", "targets": ["laptop case", "cover"], '
-                     '"spans": [[4, 15], [30, 35]], "target_sentiments": [0, 1], '
+                     '"text_id": "2", "targets": ["laptop case", "cover", null], '
+                     '"spans": [[4, 15], [30, 35], [0,0]], "target_sentiments": [0, 1, 0], '
                      '"categories": ["LAPTOP#CASE", "LAPTOP"], "category_sentiments": [0, 1]}')
         example_from_json = TargetText.from_json(json_text)
         example_spans: List[Span] = example_from_json['spans']
         for span in example_spans:
             assert isinstance(span, Span), f'{span} should be of type Span'
         
-        examples, _ = self._regular_examples()
-        example = examples[-1]
-        for key, value in example.items():
+        text = "The laptop case was great and cover was rubbish"
+        true_target_text = TargetText(text=text, text_id='2', 
+                                      targets=["laptop case", "cover", None], 
+                                      target_sentiments=[0,1,0],
+                                      spans=[Span(4, 15), Span(30, 35), Span(0, 0)],
+                                      categories=["LAPTOP#CASE", "LAPTOP"],
+                                      category_sentiments=[0, 1])
+        for key, value in true_target_text.items():
             assert value == example_from_json[key]
 
     @pytest.mark.parametrize("tokenizer", (str.split, spacy_tokenizer()))

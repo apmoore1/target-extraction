@@ -98,3 +98,36 @@ def semeval_2014(data_fp: Path, conflict: bool) -> TargetTextCollection:
         raise SyntaxError('The root of all semeval xml files should '
                           f'be sentences and not {sentences.tag}')
     return _semeval_extract_data(sentences, conflict)
+
+def semeval_2016(data_fp: Path, conflict: bool) -> TargetTextCollection:
+    '''
+    This is only for subtask 1 files where the review is broken down into 
+    sentences. Furthermore if the data contains targets and not just categories 
+    the targets and category sentiments are linked and are all stored in the 
+    `targets_sentiments` further as some of the datasets only contain category 
+    information to make it the same across domains the sentiment values here 
+    will always be in the targets_sentiments field.
+
+    The sentiment labels are the following: 1. negative, 2. neutral, 
+    3. positive, and 4. conflict. conflict will not appear if the argument 
+    `conflict` is False.
+
+    :param data_fp: Path to the SemEval 2016 formatted file.
+    :param conflict: Whether or not to include targets and categories that 
+                     have the `conflict` sentiment value. True is to include 
+                     conflict targets and categories.
+    :returns: The SemEval 2016 data formatted into a 
+              `target_extraction.data_types.TargetTextCollection` object.
+    :raises SyntaxError: If the File passed is detected as not a SemEval 
+                         formatted file. 
+    :raises `xml.etree.ElementTree.ParseError`: If the File passed is 
+                                                not formatted correctly e.g. 
+                                                mismatched tags
+    '''
+
+    tree = ET.parse(data_fp)
+    reviews = tree.getroot()
+    if reviews.tag != 'Reviews':
+        raise SyntaxError('The root of all semeval xml files should '
+                          f'be Reviews and not {sentences.tag}')
+    return _semeval_extract_data(sentences, conflict)
