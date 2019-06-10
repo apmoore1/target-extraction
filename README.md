@@ -8,7 +8,7 @@ The training data can be found [here](http://metashare.ilsp.gr:8080/repository/b
 
 # Tutorials
 Below we have created a number of notebooks to show how the package works and to explore some of the datasets that are commonly used.
-## Loads and explore datasets
+## Load and explore datasets
 In the following notebook we show how to load in the following two datasets that are commonly used in the literature and explore them with respect to the task of target extraction.
 
 1. [SemEval 2014 task 4](http://alt.qcri.org/semeval2014/task4/) -- Laptop domain.

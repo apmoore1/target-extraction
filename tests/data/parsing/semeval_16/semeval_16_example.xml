@@ -49,4 +49,14 @@
             </sentence>
         </sentences>
     </Review>
+    <Review>
+        <sentences>
+            <sentence id='1490757:0'>
+                <text>This restaurant was recommended by a local</text>
+                <Opinions>
+                    <Opinion target="NULL" category="RESTAURANT#GENERAL" polarity="positive" from="5" to="15"/>
+                </Opinions>
+            </sentence>
+        </sentences>
+    </Review>
 </Reviews>

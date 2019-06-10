@@ -74,6 +74,10 @@ def _semeval_extract_data(sentence_tree: Element, conflict: bool
                         target_text = opinion.attrib['target']
                         if target_text == 'NULL':
                             target_text = None
+                            # Special case for poor annotation in SemEval 2016
+                            # task 5 subtask 1 Restaurant dataset
+                            if text_id == '1490757:0':
+                                target_text = 'restaurant'
                         targets.append(target_text)
                         span_from = int(opinion.attrib['from'])
                         span_to = int(opinion.attrib['to'])
