@@ -404,6 +404,9 @@ class TestTargetText:
         assert item_1 != item_2
         assert item_1 != item_3
 
+        # Check that it will return False if the two objects are different
+        assert item_1 != {'text_id': 'item_1', 'text': 'some text'}
+
     def test_del(self):
         '''
         Ensure that any key can be deleted as long as it is not a protected 
