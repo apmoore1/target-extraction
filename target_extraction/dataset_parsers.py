@@ -72,15 +72,39 @@ def _semeval_extract_data(sentence_tree: Element, conflict: bool
                         # Handle the case where there is a category but no 
                         # target
                         target_text = opinion.attrib['target']
+                        span_from = int(opinion.attrib['from'])
+                        span_to = int(opinion.attrib['to'])
+                        # Special cases for poor annotation in SemEval 2016
+                        # task 5 subtask 1 Restaurant dataset
+                        if text_id == 'DBG#2:15' and target_text == 'NULL':
+                            span_from = 0
+                            span_to = 0
+                        if text_id == "en_Patsy'sPizzeria_478231878:2"\
+                           and target_text == 'NULL':
+                            span_to = 0
+                        if text_id == "en_MercedesRestaurant_478010602:1" \
+                           and target_text == 'NULL':
+                            span_to = 0
+                        if text_id == "en_MiopostoCaffe_479702043:9" \
+                           and target_text == 'NULL':
+                           span_to = 0
+                        if text_id == "en_MercedesRestaurant_478010600:1" \
+                           and target_text == 'NULL':
+                           span_from = 0
+                           span_to = 0
                         if target_text == 'NULL':
                             target_text = None
-                            # Special case for poor annotation in SemEval 2016
+                            # Special cases for poor annotation in SemEval 2016
                             # task 5 subtask 1 Restaurant dataset
                             if text_id == '1490757:0':
                                 target_text = 'restaurant'
+                            if text_id == 'TR#1:0' and span_from == 27:
+                                target_text = 'spot'
+                            if text_id == 'TFS#5:26':
+                                target_text = "environment"
+                            if text_id == 'en_SchoonerOrLater_477965850:10':
+                                target_text = 'Schooner or Later'
                         targets.append(target_text)
-                        span_from = int(opinion.attrib['from'])
-                        span_to = int(opinion.attrib['to'])
                         spans.append(Span(span_from, span_to))
                     categories.append(opinion.attrib['category'])
                     target_sentiments.append(category_target_sentiment)

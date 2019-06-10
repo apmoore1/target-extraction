@@ -49,12 +49,32 @@
             </sentence>
         </sentences>
     </Review>
-    <Review>
+    <Review rid='1490757'>
         <sentences>
             <sentence id='1490757:0'>
                 <text>This restaurant was recommended by a local</text>
                 <Opinions>
                     <Opinion target="NULL" category="RESTAURANT#GENERAL" polarity="positive" from="5" to="15"/>
+                </Opinions>
+            </sentence>
+        </sentences>
+    </Review>
+    <Review rid='TR#1'>
+        <sentences>
+            <sentence id='TR#1:0'>
+                <text>This is one of my favorite spot,</text>
+                <Opinions>
+                    <Opinion target="NULL" category="RESTAURANT#MISCELLANEOUS" polarity="positive" from="27" to="31"/>
+                </Opinions>
+            </sentence>
+        </sentences>
+    </Review>
+    <Review rid='TFS#5'>
+        <sentences>
+            <sentence id='TFS#5:26'>
+                <text>The environment is very upscale</text>
+                <Opinions>
+                    <Opinion target="NULL" category="RESTAURANT#MISCELLANEOUS" polarity="neutral" from="4" to="15"/>
                 </Opinions>
             </sentence>
         </sentences>

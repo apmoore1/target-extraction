@@ -37,13 +37,23 @@ class TestSemeval2016:
                     'targets': None, 'spans': None,
                     'target_sentiments': ['positive'],
                     'categories': ['drinks']}
-        # This answer is so that it covers the outlier case in the semeval 
-        # 2016 dataset 
+        # The next few answers is so that it covers the outlier cases in the  
+        # semeval 2016 task 5 subtask 1 Restaurant dataset 
         answer_6 = {'text_id': '1490757:0', 'text': "This restaurant was recommended by a local",
                     'targets': ['restaurant'], 'spans': [Span(5, 15)],
                     'target_sentiments': ['positive'],
                     'category_sentiments': None,
                     'categories': ['RESTAURANT#GENERAL']}
+        answer_7 = {'text_id': 'TR#1:0', 'text': "This is one of my favorite spot,",
+                    'targets': ['spot'], 'spans': [Span(27, 31)],
+                    'target_sentiments': ['positive'],
+                    'category_sentiments': None,
+                    'categories': ['RESTAURANT#MISCELLANEOUS']}
+        answer_8 = {'text_id': 'TFS#5:26', 'text': "The environment is very upscale",
+                    'targets': ['environment'], 'spans': [Span(4, 15)],
+                    'target_sentiments': ['neutral'],
+                    'category_sentiments': None,
+                    'categories': ['RESTAURANT#MISCELLANEOUS']}
         if conflict:
             answer_4['target_sentiments'] = ['positive']
             answer_4['spans'] = [Span(43, 48)]
@@ -59,7 +69,8 @@ class TestSemeval2016:
         return {'1004293:0': answer_0, '1004293:1': answer_1, 
                 '1016296:0': answer_2, '1016296:1': answer_3,
                 '1016296:2': answer_4, '1016297:0': answer_5,
-                '1490757:0': answer_6}
+                '1490757:0': answer_6, 'TR#1:0': answer_7,
+                'TFS#5:26': answer_8}
         
 
     @pytest.mark.parametrize("conflict", (True, False))
@@ -67,10 +78,10 @@ class TestSemeval2016:
         data_fp = Path(self.DATA_PATH_DIR, 'semeval_16_example.xml')
         target_text_collection = semeval_2016(data_fp, conflict)
 
-        assert len(target_text_collection) == 7
+        assert len(target_text_collection) == 9
 
         _ids = ['1004293:0', '1004293:1', '1016296:0', '1016296:1', '1016296:2',
-                '1016297:0', '1490757:0']
+                '1016297:0', '1490757:0', 'TR#1:0', 'TFS#5:26']
         assert list(target_text_collection.keys()) == _ids
         true_answers = self._target_answer(conflict=conflict)
         for answer_key, answer in true_answers.items():
