@@ -49,7 +49,7 @@ class TestTargetText:
         :returns: The opposite of _passable_examples this returns a list of
                   key word arguments to give to the constructor of 
                   TargetText that SHOULD raise a ValueError by the 
-                  check_list_sizes function.
+                  sanitize function.
         '''
         texts = ['The laptop case was great and cover was rubbish'] * 3
         text_ids = ['0', 'another_id', '2']
@@ -280,7 +280,7 @@ class TestTargetText:
             with pytest.raises(TypeError):
                 TargetText(**full_arguments)
 
-    def test_check_list_sizes(self):
+    def test_sanitize(self):
         for passable_err_msg, passable_arguments in self._passable_examples():
             try:
                 TargetText(**passable_arguments)
@@ -428,7 +428,7 @@ class TestTargetText:
     def test_set(self, test_is_list: bool, test_list_length: bool):
         '''
         Ensure that any key can be changed as long as it is not a protected 
-        key and that it follows the check_list_sizes sanity checks.
+        key and that it follows the sanitize checks.
         '''
         examples, _ = self._regular_examples()
         protected_keys = examples[0]._protected_keys
@@ -852,3 +852,61 @@ class TestTargetText:
         test.sequence_labels()
         sequence_spans = test.get_sequence_spans('sequence_labels')
         assert sequence_spans == spans
+
+    def test_one_sample_per_span(self):
+        # Case where nothing should change.
+        examples, _ = self._regular_examples()
+        for example in examples:
+            one_span_per_sample = example.one_sample_per_span()
+            for key, value in example.items():
+                if key in ['target_sentiments', 'categories', 
+                           'category_sentiments']:
+                    assert one_span_per_sample[key] == None
+                else:
+                    #print(example)
+                    #print(one_span_per_sample)
+                    assert value == one_span_per_sample[key]
+        # Case where we have one span twice
+        example = examples[0]
+        example._storage['spans'] = [Span(4,15), Span(4,15)]
+        example._storage['targets'] = ['laptop case', 'laptop case']
+        example._storage['target_sentiments'] = [0,1]
+        example._storage['categories'] = ['laptop', 'case']
+        example._storage['category_sentiments'] = [1, 0]
+        assert example['spans'] == [Span(4,15), Span(4,15)]
+        example_one_span = example.one_sample_per_span()
+
+        correct_answers = {'spans': [Span(4,15)], 'targets': ['laptop case'],
+                           'target_sentiments': None, 'categories': None,
+                           'category_sentiments': None}
+        for key, value in correct_answers.items():
+            assert value == example_one_span[key]
+        
+        # Case where we have multiple different spans and not all need 
+        # removing. We also check that the original TargetText has not been 
+        # changed
+        example = examples[0]
+        example._storage['spans'] = [Span(36, 39), Span(4,15), Span(30, 35),  
+                                     Span(4,15), Span(30, 35)]
+        example._storage['targets'] = ['was', 'laptop case', 'cover', 
+                                       'laptop case', 'cover']
+        example._storage['target_sentiments'] = [0,1,0,1,1]
+        example._storage['categories'] = ['nothing', 'laptop', 'case', 'laptop', 
+                                          'case']
+        example._storage['category_sentiments'] = [0,1,0,1,0]
+        assert example['spans'] == [Span(36, 39), Span(4,15), Span(30, 35),  
+                                    Span(4,15), Span(30, 35)]
+        example_one_span = example.one_sample_per_span()
+        # Check original has not been changed
+        assert example['spans'] == [Span(36, 39), Span(4,15), Span(30, 35),  
+                                    Span(4,15), Span(30, 35)]
+
+        correct_answers = {'spans': [Span(4, 15), Span(30, 35), Span(36, 39)], 
+                           'targets': ['laptop case', 'cover', 'was'],
+                           'target_sentiments': None, 'categories': None,
+                           'category_sentiments': None}
+        for key, value in correct_answers.items():
+            assert value == example_one_span[key]
+        
+        # Check that it does return a TargetText instance
+        assert isinstance(example_one_span, TargetText)

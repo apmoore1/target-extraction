@@ -515,6 +515,48 @@ class TestTargetTextCollection:
         two = test_collection.target_set()
         assert len(two) == 2
         assert two == set(['another item', 'item'])
+    
+    def test_one_sample_per_span(self):
+        # Case where nothing should change with respect to the number of spans 
+        # but will change the values target_sentiments to None etc
+        target_text = TargetText(text_id='0', spans=[Span(4, 15)], 
+                                 text='The laptop case was great and cover was rubbish',
+                                 target_sentiments=[0], targets=['laptop case'])
+        collection = TargetTextCollection([target_text])
+        new_collection = collection.one_sample_per_span()
+        assert new_collection == collection
+        assert new_collection['0']['spans'] == [Span(4, 15)]
+        assert new_collection['0']['target_sentiments'] == None
+        assert collection['0']['target_sentiments'] == [0]
+
+        # Should change the number of Spans.
+        assert target_text['target_sentiments'] == [0]
+        target_text._storage['spans'] = [Span(4, 15), Span(4, 15)]
+        target_text._storage['targets'] = ['laptop case', 'laptop case']
+        target_text._storage['target_sentiments'] = [0,1]
+        diff_collection = TargetTextCollection([target_text])
+        new_collection = diff_collection.one_sample_per_span()
+        assert new_collection == collection
+        assert new_collection['0']['spans'] == [Span(4, 15)]
+        assert new_collection['0']['target_sentiments'] == None
+        assert diff_collection['0']['target_sentiments'] == [0, 1]
+        assert diff_collection['0']['spans'] == [Span(4, 15), Span(4, 15)]
+
+    def test_sanitize(self):
+        # The normal case where no errors should be raised.
+        target_text = TargetText(text_id='0', spans=[Span(4, 15)], 
+                                 text='The laptop case was great and cover was rubbish',
+                                 target_sentiments=[0], targets=['laptop case'])
+        collection = TargetTextCollection([target_text])
+        collection.sanitize()
+
+        # The case where an error should be raised
+        with pytest.raises(ValueError):
+            target_text._storage['spans'] = [Span(3,15)]
+            collection = TargetTextCollection([target_text])
+            collection.sanitize()
+
+
 
 
 

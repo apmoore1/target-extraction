@@ -76,6 +76,8 @@ class TargetText(MutableMapping):
        detect targets.
     6. get_sequence_spans -- The span indexs from the sequence labels given 
        assuming that the sequence labels are in BIO format.
+    7. one_sample_per_span -- This returns a similar TargetText instance 
+       where the new instance will only contain one target per span.
     
     Static Functions:
 
@@ -98,7 +100,7 @@ class TargetText(MutableMapping):
         if not isinstance(item, list):
             raise TypeError(type_err)
 
-    def check_list_sizes(self) -> None:
+    def sanitize(self) -> None:
         '''
         This performs a check on all of the lists that can be given at 
         object construction time to ensure that the following conditions are 
@@ -196,7 +198,7 @@ class TargetText(MutableMapping):
                          category_sentiments=category_sentiments)
         self._protected_keys = set(['text', 'text_id', 'targets', 'spans'])
         self._storage = temp_dict
-        self.check_list_sizes()
+        self.sanitize()
 
     def __getitem__(self, key: str) -> Any:
         '''
@@ -286,7 +288,7 @@ class TargetText(MutableMapping):
         if key in self._list_argument_names:
             self._check_is_list(value, key)
         self._storage[key] = value
-        self.check_list_sizes()
+        self.sanitize()
 
     def to_json(self) -> str:
         '''
@@ -600,6 +602,44 @@ class TargetText(MutableMapping):
             sequence_spans.append(Span(start_span_index, end_span_index))
         return sequence_spans
 
+    def one_sample_per_span(self) -> 'TargetText':
+        '''
+        This returns a similar TargetText instance where the new instance 
+        will only contain one target per span. 
+        
+        This is for the cases where you can have a target e.g. `food` that has 
+        a different related category attached to it e.g.
+        TargetText(text=`$8 and there is much nicer, food, all of it great and 
+                  continually refilled.`, text_id=`1`, 
+                  targets=[`food`, `food`, `food`], 
+                  categories=[`style`, `quality`, `price`], 
+                  target_sentiments=[`pos`,`pos`,`pos`], 
+                  spans=[Span(27, 31),Span(27, 31),Span(27, 31)])
+        As we can see the targets and the categories are linked, this is only 
+        really the case in SemEval 2016 datasets from what I know currently. 
+        In the example case above it will transform it to the following:
+        TargetText(text=`$8 and there is much nicer, food, all of it great and 
+                   continually refilled.`, text_id=`1`, 
+                   targets=[`food`],spans=[Span(27,31)])
+        This type of pre-processing is perfect for the Target Extraction 
+        task.
+
+        :returns: This returns a similar TargetText instance where the new 
+                  instance will only contain one target per span.
+        '''
+        text = self['text']
+        text_id = self['text_id']
+        targets: List[str] = []
+        spans: List[Span] = []
+
+        current_spans = self['spans']
+        unique_spans = set(current_spans)
+        spans = sorted(unique_spans, key=lambda x: x[0])
+        for span in spans:
+            targets.append(text[span.start: span.end])
+        return TargetText(text=text, text_id=text_id, 
+                          targets=targets, spans=spans)
+
     @staticmethod
     def from_json(json_text: str) -> 'TargetText':
         '''
@@ -660,6 +700,13 @@ class TargetTextCollection(MutableMapping):
                                spans as a TargetTextCollection. 
     10. target_set -- Returns set of all of the unique target strings found 
                       with this TargetTextCollection
+    11. one_sample_per_span -- This applies the TargetText.one_sample_per_span 
+        method across all of the TargetText instances within the collection to 
+        create a new collection with those new TargetText instances within it.
+    12. sanitize -- This applies the TargetText.sanitize function to all of 
+        the TargetText instances within this collection, affectively ensures 
+        that all of the instances follow the specified rules that TargetText 
+        instances should follow.
     
     Static Functions:
 
@@ -952,6 +999,33 @@ class TargetTextCollection(MutableMapping):
                     target = text[span.start: span.end]
                     set_of_targets.add(target)
         return set_of_targets
+
+    def one_sample_per_span(self) -> 'TargetTextCollection':
+        '''
+        This applies the TargetText.one_sample_per_span method across all of the 
+        TargetText instances within the collection to create a new collection 
+        with those new TargetText instances within it.
+        
+        :returns: A new TargetTextCollection that has samples that come 
+                  from this collection but has had the 
+                  TargetText.one_sample_per_span method applied to it.
+        '''
+        
+        new_collection = TargetTextCollection()
+        for target_text in self.values():
+            new_collection.add(target_text.one_sample_per_span())
+        return new_collection
+
+    def sanitize(self) -> None:
+        '''
+        This applies the TargetText.sanitize function to all of 
+        the TargetText instances within this collection, affectively ensures 
+        that all of the instances follow the specified rules that TargetText 
+        instances should follow.
+        '''
+
+        for target_text in self.values():
+            target_text.sanitize()
 
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
