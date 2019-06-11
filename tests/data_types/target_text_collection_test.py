@@ -481,17 +481,17 @@ class TestTargetTextCollection:
         assert len(sub_collection) == 2
         assert sub_collection != test_collection
 
-    def test_target_set(self):
+    def test_target_count(self):
         # Start with an empty collection
         test_collection = TargetTextCollection()
-        nothing = test_collection.target_set()
+        nothing = test_collection.target_count()
         assert len(nothing) == 0
         assert not nothing
 
         # Collection that contains TargetText instances but with no targets
         test_collection.add(TargetText(text='some text', text_id='1'))
         assert len(test_collection) == 1
-        nothing = test_collection.target_set()
+        nothing = test_collection.target_count()
         assert len(nothing) == 0
         assert not nothing
 
@@ -500,9 +500,9 @@ class TestTargetTextCollection:
                                        spans=[Span(0, 12)], 
                                        targets=['another item']))
         assert len(test_collection) == 2
-        one = test_collection.target_set()
+        one = test_collection.target_count()
         assert len(one) == 1
-        assert one == set(['another item'])
+        assert one == {'another item': 1}
 
         # Collection now contains 3 targets but 2 are the same
         test_collection.add(TargetText(text='another item today', text_id='3',
@@ -512,9 +512,9 @@ class TestTargetTextCollection:
                                        spans=[Span(0, 4)], 
                                        targets=['item']))
         assert len(test_collection) == 4
-        two = test_collection.target_set()
+        two = test_collection.target_count()
         assert len(two) == 2
-        assert two == set(['another item', 'item'])
+        assert two == {'another item': 2, 'item': 1}
     
     def test_one_sample_per_span(self):
         # Case where nothing should change with respect to the number of spans 

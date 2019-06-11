@@ -10,12 +10,12 @@ classes:
 2. `target_extraction.data_types.TargetTextCollection`
 '''
 from collections.abc import MutableMapping
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 import copy
 import json
 from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
-from typing import Union, Set
+from typing import Union, Dict
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
 from target_extraction.data_types_util import Span
@@ -701,8 +701,8 @@ class TargetTextCollection(MutableMapping):
        error that can come from the sequence label measures.
     9. samples_with_targets -- Returns all of the samples that have target 
                                spans as a TargetTextCollection. 
-    10. target_set -- Returns set of all of the unique target strings found 
-                      with this TargetTextCollection
+    10. target_count -- A dictionary of target text as key and values as the  
+        number of times the target text occurs in this TargetTextCollection
     11. one_sample_per_span -- This applies the TargetText.one_sample_per_span 
         method across all of the TargetText instances within the collection to 
         create a new collection with those new TargetText instances within it.
@@ -989,19 +989,19 @@ class TargetTextCollection(MutableMapping):
                 sub_collection.add(target_text)
         return sub_collection
 
-    def target_set(self) -> Set[str]:
+    def target_count(self) -> Dict[str, int]:
         '''
-        :returns: Set of all of the unique target strings found with this 
-                  TargetTextCollection
+        :returns: A dictionary of target text as key and values as the number 
+                  of times the target text occurs in this TargetTextCollection
         '''
-        set_of_targets = set()
+        target_count: Dict[str, int] = Counter()
         for target_text in self.values():
             if target_text['spans']:
                 text = target_text['text']
                 for span in target_text['spans']:
                     target = text[span.start: span.end]
-                    set_of_targets.add(target)
-        return set_of_targets
+                    target_count.update([target])
+        return dict(target_count)
 
     def one_sample_per_span(self) -> 'TargetTextCollection':
         '''
