@@ -516,14 +516,15 @@ class TestTargetTextCollection:
         assert len(two) == 2
         assert two == {'another item': 2, 'item': 1}
     
-    def test_one_sample_per_span(self):
+    @pytest.mark.parametrize("remove_empty", (False, True))
+    def test_one_sample_per_span(self, remove_empty: bool):
         # Case where nothing should change with respect to the number of spans 
         # but will change the values target_sentiments to None etc
         target_text = TargetText(text_id='0', spans=[Span(4, 15)], 
                                  text='The laptop case was great and cover was rubbish',
                                  target_sentiments=[0], targets=['laptop case'])
         collection = TargetTextCollection([target_text])
-        new_collection = collection.one_sample_per_span()
+        new_collection = collection.one_sample_per_span(remove_empty=remove_empty)
         assert new_collection == collection
         assert new_collection['0']['spans'] == [Span(4, 15)]
         assert new_collection['0']['target_sentiments'] == None
@@ -535,7 +536,7 @@ class TestTargetTextCollection:
         target_text._storage['targets'] = ['laptop case', 'laptop case']
         target_text._storage['target_sentiments'] = [0,1]
         diff_collection = TargetTextCollection([target_text])
-        new_collection = diff_collection.one_sample_per_span()
+        new_collection = diff_collection.one_sample_per_span(remove_empty=remove_empty)
         assert new_collection == collection
         assert new_collection['0']['spans'] == [Span(4, 15)]
         assert new_collection['0']['target_sentiments'] == None

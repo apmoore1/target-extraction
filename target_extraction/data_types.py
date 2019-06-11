@@ -602,7 +602,7 @@ class TargetText(MutableMapping):
             sequence_spans.append(Span(start_span_index, end_span_index))
         return sequence_spans
 
-    def one_sample_per_span(self) -> 'TargetText':
+    def one_sample_per_span(self, remove_empty: bool = False) -> 'TargetText':
         '''
         This returns a similar TargetText instance where the new instance 
         will only contain one target per span. 
@@ -624,6 +624,9 @@ class TargetText(MutableMapping):
         This type of pre-processing is perfect for the Target Extraction 
         task.
 
+        :param remove_empty: If the TargetText instance contains any None 
+                             targets then these will be removed along with 
+                             their respective Spans.
         :returns: This returns a similar TargetText instance where the new 
                   instance will only contain one target per span.
         '''
@@ -638,8 +641,15 @@ class TargetText(MutableMapping):
         current_spans = self['spans']
         unique_spans = set(current_spans)
         spans = sorted(unique_spans, key=lambda x: x[0])
+        temp_spans: List[Span] = []
         for span in spans:
-            targets.append(text[span.start: span.end])
+            targets_text = text[span.start: span.end]
+            if span.start == 0 and span.end == 0 and remove_empty:
+                continue
+            else:
+                temp_spans.append(span)
+                targets.append(targets_text)
+        spans = temp_spans
         return TargetText(text=text, text_id=text_id, 
                           targets=targets, spans=spans)
 
@@ -976,7 +986,7 @@ class TargetTextCollection(MutableMapping):
     def samples_with_targets(self) -> 'TargetTextCollection':
         '''
         :returns: All of the samples that have targets as a 
-                  TargetTextCollection for this TargetTextCollection 
+                  TargetTextCollection for this TargetTextCollection.
         :raises KeyError: If either `spans` or `targets` does not exist in 
                           one or more of the TargetText instances within this 
                           collection. These key's are protected keys thus they
@@ -1003,12 +1013,16 @@ class TargetTextCollection(MutableMapping):
                     target_count.update([target])
         return dict(target_count)
 
-    def one_sample_per_span(self) -> 'TargetTextCollection':
+    def one_sample_per_span(self, remove_empty: bool = False
+                            ) -> 'TargetTextCollection':
         '''
         This applies the TargetText.one_sample_per_span method across all of the 
         TargetText instances within the collection to create a new collection 
         with those new TargetText instances within it.
         
+        :param remove_empty: If the TargetText instance contains any None 
+                             targets then these will be removed along with 
+                             their respective Spans.
         :returns: A new TargetTextCollection that has samples that come 
                   from this collection but has had the 
                   TargetText.one_sample_per_span method applied to it.
@@ -1016,7 +1030,7 @@ class TargetTextCollection(MutableMapping):
         
         new_collection = TargetTextCollection()
         for target_text in self.values():
-            new_collection.add(target_text.one_sample_per_span())
+            new_collection.add(target_text.one_sample_per_span(remove_empty=remove_empty))
         return new_collection
 
     def sanitize(self) -> None:

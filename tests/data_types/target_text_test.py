@@ -853,11 +853,12 @@ class TestTargetText:
         sequence_spans = test.get_sequence_spans('sequence_labels')
         assert sequence_spans == spans
 
-    def test_one_sample_per_span(self):
+    @pytest.mark.parametrize("remove_empty", (False, True))
+    def test_one_sample_per_span(self, remove_empty: bool):
         # Case where nothing should change.
         examples, _ = self._regular_examples()
         for example in examples:
-            one_span_per_sample = example.one_sample_per_span()
+            one_span_per_sample = example.one_sample_per_span(remove_empty=remove_empty)
             for key, value in example.items():
                 if key in ['target_sentiments', 'categories', 
                            'category_sentiments']:
@@ -874,7 +875,7 @@ class TestTargetText:
         example._storage['categories'] = ['laptop', 'case']
         example._storage['category_sentiments'] = [1, 0]
         assert example['spans'] == [Span(4,15), Span(4,15)]
-        example_one_span = example.one_sample_per_span()
+        example_one_span = example.one_sample_per_span(remove_empty=remove_empty)
 
         correct_answers = {'spans': [Span(4,15)], 'targets': ['laptop case'],
                            'target_sentiments': None, 'categories': None,
@@ -887,24 +888,27 @@ class TestTargetText:
         # changed
         example = examples[0]
         example._storage['spans'] = [Span(36, 39), Span(4,15), Span(30, 35),  
-                                     Span(4,15), Span(30, 35)]
+                                     Span(4,15), Span(0, 0), Span(0, 0), Span(30, 35)]
         example._storage['targets'] = ['was', 'laptop case', 'cover', 
-                                       'laptop case', 'cover']
-        example._storage['target_sentiments'] = [0,1,0,1,1]
+                                       'laptop case', None, None, 'cover']
+        example._storage['target_sentiments'] = [0,1,0,1,1,0,0]
         example._storage['categories'] = ['nothing', 'laptop', 'case', 'laptop', 
-                                          'case']
-        example._storage['category_sentiments'] = [0,1,0,1,0]
+                                          'another', 'empty', 'case']
+        example._storage['category_sentiments'] = [0,1,0,1,0,1,1]
         assert example['spans'] == [Span(36, 39), Span(4,15), Span(30, 35),  
-                                    Span(4,15), Span(30, 35)]
-        example_one_span = example.one_sample_per_span()
+                                    Span(4,15), Span(0, 0), Span(0, 0), Span(30, 35)]
+        example_one_span = example.one_sample_per_span(remove_empty=remove_empty)
         # Check original has not been changed
         assert example['spans'] == [Span(36, 39), Span(4,15), Span(30, 35),  
-                                    Span(4,15), Span(30, 35)]
+                                    Span(4,15), Span(0, 0), Span(0, 0), Span(30, 35)]
 
-        correct_answers = {'spans': [Span(4, 15), Span(30, 35), Span(36, 39)], 
-                           'targets': ['laptop case', 'cover', 'was'],
+        correct_answers = {'spans': [Span(0, 0), Span(4, 15), Span(30, 35), Span(36, 39)], 
+                           'targets': ['', 'laptop case', 'cover', 'was'],
                            'target_sentiments': None, 'categories': None,
                            'category_sentiments': None}
+        if remove_empty:
+            correct_answers['spans'] = [Span(4, 15), Span(30, 35), Span(36, 39)]
+            correct_answers['targets'] = ['laptop case', 'cover', 'was']
         for key, value in correct_answers.items():
             assert value == example_one_span[key]
         
@@ -913,6 +917,6 @@ class TestTargetText:
 
         # Chack that it can handle the case where there are no targets or spans
         edge_example = TargetText(text='here is some text', text_id='1')
-        edge_test = edge_example.one_sample_per_span()
+        edge_test = edge_example.one_sample_per_span(remove_empty=remove_empty)
         assert edge_test['text'] == 'here is some text'
         assert edge_test['text_id'] == '1'
