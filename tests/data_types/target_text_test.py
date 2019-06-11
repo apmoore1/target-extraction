@@ -910,3 +910,9 @@ class TestTargetText:
         
         # Check that it does return a TargetText instance
         assert isinstance(example_one_span, TargetText)
+
+        # Chack that it can handle the case where there are no targets or spans
+        edge_example = TargetText(text='here is some text', text_id='1')
+        edge_test = edge_example.one_sample_per_span()
+        assert edge_test['text'] == 'here is some text'
+        assert edge_test['text_id'] == '1'

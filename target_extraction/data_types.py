@@ -632,6 +632,9 @@ class TargetText(MutableMapping):
         targets: List[str] = []
         spans: List[Span] = []
 
+        if self['spans'] is None:
+            return TargetText(text=text, text_id=text_id)
+
         current_spans = self['spans']
         unique_spans = set(current_spans)
         spans = sorted(unique_spans, key=lambda x: x[0])
