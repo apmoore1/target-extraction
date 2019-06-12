@@ -518,6 +518,14 @@ class TestTargetText:
                                       category_sentiments=[0, 1])
         for key, value in true_target_text.items():
             assert value == example_from_json[key]
+        # Where all but the core values are None
+        json_text = ('{"text": "anything", "text_id": "1", "targets": null, '
+                     '"spans": null, "target_sentiments": null, '
+                     '"categories": null, "category_sentiments": null}')
+        example_from_json = TargetText.from_json(json_text)
+        correct_answer = TargetText(text='anything', text_id='1')
+        for key, value in correct_answer.items():
+            assert value == example_from_json[key]
 
     @pytest.mark.parametrize("tokenizer", (str.split, spacy_tokenizer()))
     @pytest.mark.parametrize("type_checks", (True, False))
@@ -539,7 +547,7 @@ class TestTargetText:
         test_target_text.tokenize(tokenizer, perform_type_checks=type_checks)
         tokenized_answer = ['The', 'laptop', 'case', 'was', 'great', 'and',
                             'cover', 'was', 'rubbish']
-        test_target_text['tokenized_text'] = tokenized_answer
+        assert test_target_text['tokenized_text'] == tokenized_answer
 
         # Test the case where the tokenizer function given does not return a
         # List
@@ -548,9 +556,7 @@ class TestTargetText:
             with pytest.raises(TypeError):
                 test_target_text.tokenize(str.strip, perform_type_checks=type_checks)
         else:
-            # Raises an error through _is_character_preserving
-            with pytest.raises(ValueError):
-                test_target_text.tokenize(str.strip, perform_type_checks=type_checks)
+            test_target_text.tokenize(str.strip, perform_type_checks=type_checks)
         # Test the case where the tokenizer function given returns a list but
         # not a list of strings
         test_target_text = TargetText(text=text, text_id=text_id)

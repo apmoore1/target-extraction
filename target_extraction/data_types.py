@@ -667,10 +667,13 @@ class TargetText(MutableMapping):
         json_target_text = json.loads(json_text)
         for key, value in json_target_text.items():
             if key == 'spans':
-                all_spans = []
-                for span in value:
-                    all_spans.append(Span(*span))
-                json_target_text[key] = all_spans
+                if value == None:
+                    json_target_text[key] = None
+                else:
+                    all_spans = []
+                    for span in value:
+                        all_spans.append(Span(*span))
+                    json_target_text[key] = all_spans
         return TargetText(**json_target_text)
 
 
