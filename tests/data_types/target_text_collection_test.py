@@ -551,7 +551,6 @@ class TestTargetTextCollection:
         for sample_id in list(test_collection.keys()):
             del test_collection[sample_id]
             test_collection.add(TargetText(text='nothing', text_id=sample_id))
-        print(test_collection)
         assert len(test_collection) == 3
         sub_collection = test_collection.samples_with_targets()
         assert len(sub_collection) == 0
