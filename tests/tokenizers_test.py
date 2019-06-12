@@ -16,6 +16,8 @@ class TestTokenizers:
         return '   another    day is today   '
     def _comma_sentence(self) -> str:
         return 'today Is a great, day I think'
+    def _difficult_tokenizer_sentence(self) -> str:
+        return "But guess what?  (you have to buy an external dvd drive."
 
     def not_char_preserving_tokenizer(self, text: str) -> List[str]:
         tokens = text.split()
@@ -39,6 +41,11 @@ class TestTokenizers:
         if not pass_or_not:
             tokens = self.not_char_preserving_tokenizer(sentence)
         assert is_character_preserving(sentence, tokens) == pass_or_not
+
+        if pass_or_not:
+            sentence = self._difficult_tokenizer_sentence()
+            tokens = tokenizer(sentence)
+            assert is_character_preserving(sentence, tokens) == True
 
     def test_whitespace(self):
         whitespace_tokenizer = whitespace()

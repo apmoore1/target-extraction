@@ -4,6 +4,7 @@ which can be defined by the following typing: Callable[[str], List[str]].
 All of the functions take exactly no positional arguments but can take 
 keyword arguments.
 '''
+import copy
 from typing import List, Callable, Optional, Tuple
 from pathlib import Path
 import pkgutil
@@ -25,7 +26,11 @@ def is_character_preserving(original_text: str, text_tokens: List[str]
                 together is equal to the original text with all it's 
                 characters joined together.
     '''
-    tokens_text = ''.join(text_tokens)
+    text_tokens_copy = copy.deepcopy(text_tokens)
+    # Required as some of the tokenization tokens contain whitespace at the 
+    # end of them I think this due to Stanford method being a Neural Network
+    text_tokens_copy = [token.strip(' ') for token in text_tokens_copy]
+    tokens_text = ''.join(text_tokens_copy)
     original_text = ''.join(original_text.split())
     if tokens_text == original_text:
         return True
