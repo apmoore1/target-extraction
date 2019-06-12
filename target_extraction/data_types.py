@@ -498,14 +498,17 @@ class TargetText(MutableMapping):
         if 'tokenized_text' not in self:
             raise KeyError(f'Expect the current TargetText {self} to have '
                            'been tokenized using the self.tokenize method.')
-        if self['spans'] is None or self['targets'] is None:
-            raise KeyError(f'Expect to have `spans` and `targets` to not be '
-                            'None')
+        self.sanitize()
         tokens = self['tokenized_text']
+        sequence_labels = ['O' for _ in range(len(tokens))]
+        # This is the case where there are no targets thus all sequence labels 
+        # are `O`
+        if self['spans'] is None or self['targets'] is None:
+            self['sequence_labels'] = sequence_labels
+            return
+        
         target_spans: List[Span] = self['spans']
         tokens_index = token_index_alignment(text, tokens)
-
-        sequence_labels = ['O' for _ in range(len(tokens))]
 
         for target_span in target_spans:
             target_span_range = list(range(*target_span))
@@ -959,7 +962,7 @@ class TargetTextCollection(MutableMapping):
                   annotation spans not always matching tokenization therefore 
                   this removes the tokenization error that can come from the 
                   sequence label measures.
-        :raises KeyError: If there are no `sequence_labels` or `spans` or 
+        :raises KeyError: If there are no `sequence_labels` or 
                           predicted sequence label key within this TargetText.
         :raises ValueError: If the predicted or true spans contain multiple 
                             spans that have the same span e.g. 
@@ -982,6 +985,8 @@ class TargetTextCollection(MutableMapping):
             num_pred_true += len(predicted_spans)
 
             true_spans: List[Span] = target_text_instance['spans']
+            if true_spans is None:
+                true_spans = []
             num_actually_true += len(true_spans)
             
             # Find the True Positives

@@ -663,12 +663,11 @@ class TestTargetText:
                           targets=targets)
         with pytest.raises(KeyError):
             test.sequence_labels()
-        # Test that it will raise a KeyError if it has been tokenized but no 
-        # targets or spans
+        # Test the case where there are no spans or targets
         test = TargetText(text=text, text_id=text_id)
         test.tokenize(str.split)
-        with pytest.raises(KeyError):
-            test.sequence_labels()
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
         # Test the basic case where we have only one target of one word
         text = 'The laptop'
         spans = [Span(4, 10)]
@@ -771,6 +770,12 @@ class TestTargetText:
         test.tokenize(str.split)
         test.sequence_labels()
         assert test['sequence_labels'] == ['B', 'I', 'B']
+
+        # Handle the case where there are no sequence labels
+        test = TargetText(text=text, text_id='1')
+        test.tokenize(str.split)
+        test.sequence_labels()
+        assert test['sequence_labels'] == ['O', 'O', 'O']
 
     def test_key_error(self):
         # Simple example that should pass
@@ -887,6 +892,13 @@ class TestTargetText:
         test.sequence_labels()
         sequence_spans = test.get_sequence_spans('sequence_labels')
         assert sequence_spans == spans
+
+        # Test the case where there are no sequence spans
+        test = TargetText(text=text, text_id='1')
+        test.tokenize(str.split)
+        test.sequence_labels()
+        sequence_spans = test.get_sequence_spans('sequence_labels')
+        assert [] == sequence_spans
 
     @pytest.mark.parametrize("remove_empty", (False, True))
     def test_one_sample_per_span(self, remove_empty: bool):

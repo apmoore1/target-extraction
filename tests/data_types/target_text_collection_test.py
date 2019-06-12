@@ -443,6 +443,25 @@ class TestTargetTextCollection:
         assert precision == 1.0
         assert f1 == 1.0
 
+        # Handle the case where one of the samples has no spans
+        test_example = TargetText(text="I've had a bad day", text_id='50')
+        other_examples = self._target_text_measure_examples()
+        other_examples.append(test_example)
+        test_collection = TargetTextCollection(other_examples)
+        test_collection.tokenize(str.split)
+        test_collection.sequence_labels()
+        measures = test_collection.exact_match_score('sequence_labels')
+        for measure in measures:
+            assert measure == 1.0
+        # Handle the case where on the samples has no spans but has predicted 
+        # there is a span there
+        test_collection['50']['sequence_labels'] = ['B', 'I', 'O', 'O', 'O']
+        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        assert recall == 1.0
+        assert precision == 3/4
+        assert round(f1, 3) == 0.857
+
+
     def test_samples_with_targets(self):
         # Test the case where all of the TargetTextCollection contain targets
         test_collection = TargetTextCollection(self._target_text_examples())
