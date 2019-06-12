@@ -94,8 +94,7 @@ def stanford(lang: str = 'en', treebank: Optional[str] = None,
                      it was trained from. If not given the default treebank 
                      will be used. To see which is the default treebank 
                      and the treebanks available for each language go to:
-                     https://stanfordnlp.github.io/stanfordnlp/installation_
-                     download.html#human-languages-supported-by-stanfordnlp
+                     https://stanfordnlp.github.io/stanfordnlp/models.html#human-languages-supported-by-stanfordnlp
     :param download: If to re-download the model. 
     :returns: A callable that takes a String and returns the tokens for that 
               String.
