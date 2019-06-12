@@ -663,18 +663,30 @@ class TargetText(MutableMapping):
         :param json_text: JSON representation of TargetText 
                           (can be from TargetText.to_json)
         :returns: A TargetText object
+        :raises KeyError: If within the JSON representation there is no 
+                          `text` or `text_id` key.
         '''
         json_target_text = json.loads(json_text)
+        if not ('text' in json_target_text or 'text_id' in json_target_text):
+            raise KeyError('The JSON text given does not contain a `text`'
+                           f' or `text_id` field: {json_target_text}')
+        target_text = TargetText(text=json_target_text['text'], 
+                                 text_id=json_target_text['text_id'])
         for key, value in json_target_text.items():
+            if key == 'text' or key == 'text_id':
+                continue
             if key == 'spans':
                 if value == None:
-                    json_target_text[key] = None
+                    target_text._storage[key] = None
                 else:
                     all_spans = []
                     for span in value:
                         all_spans.append(Span(*span))
-                    json_target_text[key] = all_spans
-        return TargetText(**json_target_text)
+                    target_text._storage[key] = all_spans
+            else:
+                target_text._storage[key] = value
+        target_text.sanitize()
+        return target_text
 
 
 class TargetTextCollection(MutableMapping):

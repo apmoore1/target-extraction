@@ -526,6 +526,35 @@ class TestTargetText:
         correct_answer = TargetText(text='anything', text_id='1')
         for key, value in correct_answer.items():
             assert value == example_from_json[key]
+        
+        # Loading when it contains a field that is not in the TargetText
+        # constructor.
+        json_text = ('{"text": "anything", "text_id": "1", "targets": null, '
+                     '"spans": null, "target_sentiments": null, '
+                     '"categories": null, "category_sentiments": null,'
+                     '"tokenized_text": ["anything"]}')
+        example_from_json = TargetText.from_json(json_text)
+        correct_answer = TargetText(text='anything', text_id='1')
+        correct_answer["tokenized_text"] = ["anything"]
+        for key, value in correct_answer.items():
+            assert value == example_from_json[key]
+        # Ensure that a KeyError is raised if `text` or `text_id` is not 
+        # in the json text
+        bad_json_text_0 = ('{"text": "anything"}')
+        bad_json_text_1 = ('{"text_id": "1"}')
+        bad_json_text_2 = ('{}')
+        good_json_text = ('{"text": "anything", "text_id": "1"}')
+        with pytest.raises(KeyError):
+            TargetText.from_json(bad_json_text_0)
+            TargetText.from_json(bad_json_text_1)
+            TargetText.from_json(bad_json_text_2)
+        TargetText.from_json(good_json_text)
+        # Should raise a ValueError through sanitize
+        bad_json_text_3 = ('{"text": "anything", "spans": [[0,3]], '
+                           '"targets": ["an"], "text_id": "1"}')
+        with pytest.raises(ValueError):
+            TargetText.from_json(bad_json_text_3)
+        
 
     @pytest.mark.parametrize("tokenizer", (str.split, spacy_tokenizer()))
     @pytest.mark.parametrize("type_checks", (True, False))
