@@ -660,6 +660,13 @@ class TargetText(MutableMapping):
         serlizable and are required for TargetText therefore this handles 
         that special case.
 
+        This function is also required as we have had to avoid using the 
+        __set__ function and add objects via the _storage dictionary 
+        underneath so that we could add values to this object that are not 
+        within the constructor like `tokenized_text`. To ensure that it is 
+        compatable with the TargetText concept we call `TargetText.sanitize`
+        method at the end.
+
         :param json_text: JSON representation of TargetText 
                           (can be from TargetText.to_json)
         :returns: A TargetText object
