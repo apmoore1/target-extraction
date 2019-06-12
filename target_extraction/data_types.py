@@ -946,7 +946,8 @@ class TargetTextCollection(MutableMapping):
 
     def exact_match_score(self, 
                           predicted_sequence_key: str = 'predicted_sequence_labels'
-                          ) -> Tuple[float, float, float]:
+                          ) -> Tuple[float, float, float, 
+                                     Dict[str, List[Tuple[str, Span]]]]:
         '''        
         Just for clarification we use the sequence label tags to find the 
         predicted spans. However even if you have a perfect sequence label 
@@ -954,16 +955,24 @@ class TargetTextCollection(MutableMapping):
         as the tokenizer used for the sequence labelling might not align 
         perfectly with the annotated spans.
 
+        The False Positive mistakes, False Negative mistakes, and correct
+        True Positive Dictionary keys are those names with the values neing a 
+        List of Tuples where the Tuple is made up of the TargetText instance ID 
+        and the Span that was incorrect (FP) or not tagged (FN) or correct (TP).
+        Example of this is as follows:
+        {`FP`: [('1', Span(0, 4))], 'FN': [], 'TP': []}
+
         :param predicted_sequence_key: Key of the predicted sequence labels 
                                        within this TargetText instance.
-        :returns: Recall, Precision, and F1 score in a Tuple. All of these 
-                  measures are based on exact span matching rather than the 
-                  matching of the sequence label tags, this is due to the 
-                  annotation spans not always matching tokenization therefore 
-                  this removes the tokenization error that can come from the 
-                  sequence label measures.
-        :raises KeyError: If there are no `sequence_labels` or 
-                          predicted sequence label key within this TargetText.
+        :returns: Recall, Precision, and F1 score, False Positive mistakes, 
+                  False Negative mistakes, and correct True Positives in a 
+                  Dict. All of these measures are based on exact span matching 
+                  rather than the matching of the sequence label tags, 
+                  this is due to the annotation spans not always matching 
+                  tokenization therefore this removes the tokenization 
+                  error that can come from the sequence label measures.
+        :raises KeyError: If there are no predicted sequence label key 
+                          within this TargetText.
         :raises ValueError: If the predicted or true spans contain multiple 
                             spans that have the same span e.g. 
                             [Span(4, 15), Span(4, 15)]
@@ -972,10 +981,13 @@ class TargetTextCollection(MutableMapping):
         tp = 0.0
         num_pred_true = 0.0
         num_actually_true = 0.0
+        fp_mistakes: List[Tuple[str, Span]] = []
+        fn_mistakes: List[Tuple[str, Span]] = []
+        correct_tp: List[Tuple[str, Span]] = []
 
         for target_text_index, target_text_instance in enumerate(self.values()):
             if target_text_index == 0:
-                keys_to_check = ['spans', 'sequence_labels', 
+                keys_to_check = ['spans', 
                                 f'{predicted_sequence_key}']
                 for key in keys_to_check:
                     target_text_instance._key_error(key)
@@ -998,17 +1010,27 @@ class TargetTextCollection(MutableMapping):
                 raise ValueError(f'True spans {true_spans} contain'
                                  f' multiple of the same true span. '
                                  f'TargetText: {target_text_instance}')
+            
+            text_id = target_text_instance['text_id']
             true_spans = set(true_spans)
             for predicted_span in predicted_spans:
                 if predicted_span in true_spans:
                     tp += 1
+                    correct_tp.append((text_id, predicted_span))
+                else:
+                    fp_mistakes.append((text_id, predicted_span))
+            for true_span in true_spans:
+                if true_span not in predicted_spans:
+                    fn_mistakes.append((text_id, true_span))
+        
+        error_analysis_dict = {'FP': fp_mistakes, 'FN': fn_mistakes, 
+                               'TP': correct_tp}
         if tp == 0.0:
-            return 0.0, 0.0, 0.0
+            return 0.0, 0.0, 0.0, error_analysis_dict
         recall = tp / num_actually_true
         precision = tp / num_pred_true
         f1 = (2 * precision * recall) / (precision + recall)
-
-        return recall, precision, f1
+        return recall, precision, f1, error_analysis_dict 
 
     def samples_with_targets(self) -> 'TargetTextCollection':
         '''

@@ -364,8 +364,13 @@ class TestTargetTextCollection:
         test_collection.tokenize(spacy_tokenizer())
         test_collection.sequence_labels()
         measures = test_collection.exact_match_score('sequence_labels')
-        for measure in measures:
-            assert measure == 1.0
+        for index, measure in enumerate(measures):
+            if index == 3:
+                assert measure['FP'] == []
+                assert measure['FN'] == []
+                assert measure['TP'] == [('2', Span(4, 15)), ('2', Span(30, 35))]
+            else:
+                assert measure == 1.0
 
         # Something that has perfect precision but misses one therefore does 
         # not have perfect recall nor f1
@@ -377,10 +382,13 @@ class TestTargetTextCollection:
         # text = 'The laptop price was awful'
         sequence_labels_1 = ['O', 'B', 'I', 'O', 'O']
         test_collection['1']['sequence_labels'] = sequence_labels_1
-        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        recall, precision, f1, error_analysis = test_collection.exact_match_score('sequence_labels')
         assert precision == 1.0
         assert recall == 2.0/3.0
         assert f1 == 0.8
+        assert error_analysis['FP'] == []
+        assert error_analysis['FN'] == [('0', Span(4, 15))]
+        assert error_analysis['TP'] == [('0', Span(30, 35)), ('1', Span(4, 16))]
 
         # Something that has perfect recall but not precision as it over 
         # predicts 
@@ -388,11 +396,15 @@ class TestTargetTextCollection:
         test_collection['0']['sequence_labels'] = sequence_labels_0
         sequence_labels_1 = ['O', 'B', 'I', 'O', 'O']
         test_collection['1']['sequence_labels'] = sequence_labels_1
-        recall, precision, f1 = test_collection.exact_match_score(
+        recall, precision, f1, error_analysis = test_collection.exact_match_score(
             'sequence_labels')
         assert precision == 3/4
         assert recall == 1.0
         assert round(f1, 3) == 0.857
+        assert error_analysis['FP'] == [('0', Span(16, 19))]
+        assert error_analysis['FN'] == []
+        assert error_analysis['TP'] == [('0', Span(4, 15)), ('0', Span(30, 35)), 
+                                        ('1', Span(4, 16))]
 
         # Does not predict anything for a whole sentence therefore will have 
         # perfect precision but bad recall (mainly testing the if not 
@@ -401,21 +413,30 @@ class TestTargetTextCollection:
         test_collection['0']['sequence_labels'] = sequence_labels_0
         sequence_labels_1 = ['O', 'B', 'I', 'O', 'O']
         test_collection['1']['sequence_labels'] = sequence_labels_1
-        recall, precision, f1 = test_collection.exact_match_score(
+        recall, precision, f1, error_analysis = test_collection.exact_match_score(
             'sequence_labels')
         assert precision == 1.0
         assert recall == 1/3
         assert f1 == 0.5
+        assert error_analysis['FP'] == []
+        fn_error =  sorted(error_analysis['FN'], key=lambda x: x[1].start)
+        assert fn_error == [('0', Span(4, 15)), ('0', Span(30, 35))]
+        assert error_analysis['TP'] == [('1', Span(4, 16))]
 
         # Handle the edge case of not getting anything
         sequence_labels_0 = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
         test_collection['0']['sequence_labels'] = sequence_labels_0
         sequence_labels_1 = ['O', 'O', 'O', 'O', 'O']
         test_collection['1']['sequence_labels'] = sequence_labels_1
-        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        recall, precision, f1, error_analysis = test_collection.exact_match_score('sequence_labels')
         assert precision == 0.0
         assert recall == 0.0
         assert f1 == 0.0
+        assert error_analysis['FP'] == []
+        fn_error =  sorted(error_analysis['FN'], key=lambda x: x[1].start)
+        assert fn_error == [('0', Span(4, 15)), ('1', Span(4, 16)),
+                            ('0', Span(30, 35))]
+        assert error_analysis['TP'] == []
 
         # The case where the tokens and the text do not align
         not_align_example = self._target_text_not_align_example()
@@ -428,20 +449,30 @@ class TestTargetTextCollection:
         test_collection['0']['sequence_labels'] = sequence_labels_0
         sequence_labels_1 = ['O', 'B', 'I', 'O', 'O']
         test_collection['1']['sequence_labels'] = sequence_labels_1
-        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        recall, precision, f1, error_analysis = test_collection.exact_match_score('sequence_labels')
         assert recall == 3/4
         assert precision == 3/4
         assert f1 == 0.75
+        assert error_analysis['FP'] == [('inf', Span(4, 16))]
+        assert error_analysis['FN'] == [('inf', Span(4, 15))]
+        tp_error =  sorted(error_analysis['TP'], key=lambda x: x[1].start)
+        assert tp_error == [('0', Span(4, 15)), ('1', Span(4, 16)),
+                            ('0', Span(30, 35))]
 
         # This time it can get a perfect score as the token alignment will be 
         # perfect
         test_collection.tokenize(spacy_tokenizer())
         sequence_labels_align = ['O', 'B', 'I', 'O', 'O', 'O']
         test_collection['inf']['sequence_labels'] = sequence_labels_align
-        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        recall, precision, f1, error_analysis = test_collection.exact_match_score('sequence_labels')
         assert recall == 1.0
         assert precision == 1.0
         assert f1 == 1.0
+        assert error_analysis['FP'] == []
+        assert error_analysis['FN'] == []
+        tp_error =  sorted(error_analysis['TP'], key=lambda x: x[1].end)
+        assert tp_error == [('0', Span(4, 15)), ('inf', Span(4, 15)),('1', Span(4, 16)),
+                            ('0', Span(30, 35))]
 
         # Handle the case where one of the samples has no spans
         test_example = TargetText(text="I've had a bad day", text_id='50')
@@ -451,15 +482,62 @@ class TestTargetTextCollection:
         test_collection.tokenize(str.split)
         test_collection.sequence_labels()
         measures = test_collection.exact_match_score('sequence_labels')
-        for measure in measures:
-            assert measure == 1.0
+        for index, measure in enumerate(measures):
+            if index == 3:
+                assert measure['FP'] == []
+                assert measure['FN'] == []
+                tp_error =  sorted(measure['TP'], key=lambda x: x[1].end)
+                assert tp_error == [('0', Span(4, 15)), ('1', Span(4, 16)),
+                                    ('0', Span(30, 35))]
+            else:
+                assert measure == 1.0
         # Handle the case where on the samples has no spans but has predicted 
         # there is a span there
         test_collection['50']['sequence_labels'] = ['B', 'I', 'O', 'O', 'O']
-        recall, precision, f1 = test_collection.exact_match_score('sequence_labels')
+        recall, precision, f1, error_analysis = test_collection.exact_match_score('sequence_labels')
         assert recall == 1.0
         assert precision == 3/4
         assert round(f1, 3) == 0.857
+        assert error_analysis['FP'] == [('50', Span(start=0, end=8))]
+        assert error_analysis['FN'] == []
+        tp_error =  sorted(error_analysis['TP'], key=lambda x: x[1].end)
+        assert tp_error == [('0', Span(4, 15)), ('1', Span(4, 16)),
+                            ('0', Span(30, 35))]
+        # See if it can handle a collection that only contains no spans
+        test_example = TargetText(text="I've had a bad day", text_id='50')
+        test_collection = TargetTextCollection([test_example])
+        test_collection.tokenize(str.split)
+        test_collection.sequence_labels()
+        measures = test_collection.exact_match_score('sequence_labels')
+        for index, measure in enumerate(measures):
+            if index == 3:
+                assert measure['FP'] == []
+                assert measure['FN'] == []
+                assert measure['TP'] == []
+            else:
+                assert measure == 0.0
+        # Handle the case the collection contains one spans but a mistake
+        test_collection['50']['sequence_labels'] = ['B', 'I', 'O', 'O', 'O']
+        measures = test_collection.exact_match_score('sequence_labels')
+        for index, measure in enumerate(measures):
+            if index == 3:
+                assert measure['FP'] == [('50', Span(0, 8))]
+                assert measure['FN'] == []
+                assert measure['TP'] == []
+            else:
+                assert measure == 0.0
+        # Should raise a KeyError if one of the TargetText instances does 
+        # not have a Span key
+        del test_collection['50']._storage['spans']
+        with pytest.raises(KeyError):
+            test_collection.exact_match_score('sequence_labels')
+        # should raise a KeyError if one of the TargetText instances does 
+        # not have a predicted sequence key
+        test_collection = TargetTextCollection([self._target_text_example()])
+        test_collection.tokenize(spacy_tokenizer())
+        test_collection.sequence_labels()
+        with pytest.raises(KeyError):
+            measures = test_collection.exact_match_score('nothing')
 
 
     def test_samples_with_targets(self):
