@@ -48,7 +48,7 @@ def _semeval_extract_data(sentence_tree: Element, conflict: bool
                     target_sentiment = target.attrib['polarity']
                     if conflict and target_sentiment == 'conflict':
                         continue
-                    targets.append(target.attrib['term'])
+                    targets.append(target.attrib['term'].replace(u'\xa0', u' '))
                     target_sentiments.append(target_sentiment)
                     span_from = int(target.attrib['from'])
                     span_to = int(target.attrib['to'])
@@ -72,7 +72,7 @@ def _semeval_extract_data(sentence_tree: Element, conflict: bool
                     if 'target' in opinion.attrib:
                         # Handle the case where there is a category but no 
                         # target
-                        target_text = opinion.attrib['target']
+                        target_text = opinion.attrib['target'].replace(u'\xa0', u' ')
                         span_from = int(opinion.attrib['from'])
                         span_to = int(opinion.attrib['to'])
                         # Special cases for poor annotation in SemEval 2016
