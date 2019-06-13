@@ -40,6 +40,7 @@ def _semeval_extract_data(sentence_tree: Element, conflict: bool
         for data in sentence:
             if data.tag == 'text':
                 text = data.text
+                text = text.replace(u'\xa0', u' ')
             elif data.tag == 'aspectTerms':
                 for target in data:
                     # If it is a conflict sentiment and conflict argument True 
