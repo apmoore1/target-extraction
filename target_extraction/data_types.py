@@ -677,7 +677,7 @@ class TargetText(MutableMapping):
                           `text` or `text_id` key.
         '''
         json_target_text = json.loads(json_text)
-        if not ('text' in json_target_text or 'text_id' in json_target_text):
+        if not 'text' in json_target_text or not 'text_id' in json_target_text:
             raise KeyError('The JSON text given does not contain a `text`'
                            f' or `text_id` field: {json_target_text}')
         target_text = TargetText(text=json_target_text['text'], 
@@ -822,10 +822,8 @@ class TargetTextCollection(MutableMapping):
         target_text_instances = []
         for line in json_text.split('\n'):
             target_text_instances.append(TargetText.from_json(line))
-        if target_text_instances:
-            return TargetTextCollection(target_text_instances, 
-                                        **target_text_collection_kwargs)
-        return TargetTextCollection(**target_text_collection_kwargs)
+        return TargetTextCollection(target_text_instances, 
+                                    **target_text_collection_kwargs)
 
     @staticmethod
     def load_json(json_fp: Path, **target_text_collection_kwargs
@@ -1001,11 +999,12 @@ class TargetTextCollection(MutableMapping):
                 true_spans = []
             num_actually_true += len(true_spans)
             
-            # Find the True Positives
+            # This should be impossible to get to
             if len(predicted_spans) != len(set(predicted_spans)):
                 raise ValueError(f'Predicted spans {predicted_spans} contain'
                                  f' multiple of the same predicted span. '
                                  f'TargetText: {target_text_instance}')
+            # This is possible
             if len(true_spans) != len(set(true_spans)):
                 raise ValueError(f'True spans {true_spans} contain'
                                  f' multiple of the same true span. '

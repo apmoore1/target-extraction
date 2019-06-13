@@ -97,6 +97,21 @@ class TestTargetTextCollection:
         example_1['2'] = TargetText('another test', '2')
         assert example_2 == example_1
 
+        # Testing instance, if not TargetTextCollection should return False
+        text = 'today was good'
+        text_id = '1'
+        dict_version = [{'text_id': text_id, 'text': text}]
+        collection_version = TargetTextCollection([TargetText(**dict_version[0])])
+        assert dict_version != collection_version
+
+        # Should return False as they have different text_id's but have the 
+        # content
+        alt_collection_version = TargetTextCollection([TargetText(text_id='2',
+                                                                  text=text)])
+        assert collection_version != alt_collection_version
+        assert len(collection_version) == len(alt_collection_version)
+
+
     def test_get_item(self):
         examples = self._regular_examples()
         example_2 = examples[2]
@@ -194,7 +209,7 @@ class TestTargetTextCollection:
                              '["LAPTOP"], "category_sentiments": null}')
         assert new_collection.to_json() == true_json_version
 
-    @pytest.mark.parametrize("name", ('', 'test_name'))
+    @pytest.mark.parametrize("name", (' ', 'test_name'))
     def test_from_json(self, name):
         # no text given
         test_collection = TargetTextCollection.from_json('', name=name)
@@ -538,6 +553,15 @@ class TestTargetTextCollection:
         test_collection.sequence_labels()
         with pytest.raises(KeyError):
             measures = test_collection.exact_match_score('nothing')
+        
+        # Should raise a ValueError if there are multiple same true spans
+        a = TargetText(text='hello how are you I am good', text_id='1',
+                       targets=['hello','hello'], spans=[Span(0,5), Span(0,5)]) 
+        test_collection = TargetTextCollection([a])
+        test_collection.tokenize(str.split)
+        test_collection['1']['sequence_labels'] = ['B', 'O', 'O', 'O', 'O', 'O', 'O']
+        with pytest.raises(ValueError):
+            test_collection.exact_match_score('sequence_labels')
 
 
     def test_samples_with_targets(self):

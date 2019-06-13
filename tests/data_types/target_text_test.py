@@ -546,7 +546,9 @@ class TestTargetText:
         good_json_text = ('{"text": "anything", "text_id": "1"}')
         with pytest.raises(KeyError):
             TargetText.from_json(bad_json_text_0)
+        with pytest.raises(KeyError):
             TargetText.from_json(bad_json_text_1)
+        with pytest.raises(KeyError):
             TargetText.from_json(bad_json_text_2)
         TargetText.from_json(good_json_text)
         # Should raise a ValueError through sanitize
