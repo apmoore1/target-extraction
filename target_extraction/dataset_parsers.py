@@ -46,7 +46,7 @@ def _semeval_extract_data(sentence_tree: Element, conflict: bool
                     # If it is a conflict sentiment and conflict argument True 
                     # skip this target
                     target_sentiment = target.attrib['polarity']
-                    if conflict and target_sentiment == 'conflict':
+                    if not conflict and target_sentiment == 'conflict':
                         continue
                     targets.append(target.attrib['term'].replace(u'\xa0', u' '))
                     target_sentiments.append(target_sentiment)
@@ -58,14 +58,14 @@ def _semeval_extract_data(sentence_tree: Element, conflict: bool
                     # If it is a conflict sentiment and conflict argument True 
                     # skip this category
                     category_sentiment = category.attrib['polarity']
-                    if conflict and category_sentiment == 'conflict':
+                    if not conflict and category_sentiment == 'conflict':
                         continue
                     categories.append(category.attrib['category'])
                     category_sentiments.append(category.attrib['polarity'])
             elif data.tag == 'Opinions':
                 for opinion in data:
                     category_target_sentiment = opinion.attrib['polarity']
-                    if conflict and category_target_sentiment == 'conflict':
+                    if not conflict and category_target_sentiment == 'conflict':
                         continue
                     # Handle the case where some of the SemEval 16 files do 
                     # not contain targets and are only category sentiment files

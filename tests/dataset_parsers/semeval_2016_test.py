@@ -54,7 +54,7 @@ class TestSemeval2016:
                     'target_sentiments': ['neutral'],
                     'category_sentiments': None,
                     'categories': ['RESTAURANT#MISCELLANEOUS']}
-        if conflict:
+        if not conflict:
             answer_4['target_sentiments'] = ['positive']
             answer_4['spans'] = [Span(43, 48)]
             answer_4['targets'] = ['check']

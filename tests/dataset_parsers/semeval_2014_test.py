@@ -32,7 +32,7 @@ class TestSemeval2014:
                     'target_sentiments': ['conflict', 'negative'], 
                     'category_sentiments': ['conflict'],
                     'categories': ['service']}
-        if conflict:
+        if not conflict:
             answer_4['target_sentiments'] = ['negative']
             answer_4['spans'] = [Span(43, 48)]
             answer_4['targets'] = ['check']
