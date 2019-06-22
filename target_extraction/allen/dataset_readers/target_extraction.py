@@ -91,7 +91,7 @@ class TargetExtractionDatasetReader(DatasetReader):
         instance_fields["metadata"] = MetadataField({"words": [x.text for x in tokens]})
 
         if sequence_labels is not None:
-            instance_fields['labels'] = SequenceLabelField(sequence_labels, sequence, "labels")
+            instance_fields['tags'] = SequenceLabelField(sequence_labels, sequence, "labels")
 
         if pos_tags is not None:
             instance_fields['pos_tags'] = SequenceLabelField(pos_tags, sequence, "pos_tags")

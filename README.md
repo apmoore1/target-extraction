@@ -31,3 +31,25 @@ Papers that used those datasets numbers:
 
 From what I gather of SemEval 2014 data you can have categories and no targets but I have not seen Vice Versa. I have also not seen but I assume you can have a sentence that has neither categories nor targets. There are the following 4 sentiments, positive, negative, neutral, and conflict.
 I think we want the following flags not_conflict and sentiment_to_nums
+
+# Create JSON datasets
+SemEval 2014 Laptop
+``` bash
+python create_splits.py ../original_target_datasets/semeval_2014/SemEval\'14-ABSA-TrainData_v2\ \&\ AnnotationGuidelines/Laptop_Train_v2.xml ../original_target_datasets/semeval_2014/ABSA_Gold_TestData/Laptops_Test_Gold.xml semeval_2014 ../original_target_datasets/semeval_2014/laptop_json/train.json ../original_target_datasets/semeval_2014/laptop_json/val.json ../original_target_datasets/semeval_2014/laptop_json/test.json
+```
+
+SemEval 2014 Restaurant
+``` bash
+python create_splits.py ../original_target_datasets/semeval_2014/SemEval\'14-ABSA-TrainData_v2\ \&\ AnnotationGuidelines/Restaurants_Train_v2.xml ../original_target_datasets/semeval_2014/ABSA_Gold_TestData/Restaurants_Test_Gold.xml semeval_2014 ../original_target_datasets/semeval_2014/restaurant_json/train.json ../original_target_datasets/semeval_2014/restaurant_json/val.json ../original_target_datasets/semeval_2014/restaurant_json/test.json
+```
+SemEval 2016 Restaurant
+``` bash
+python create_splits.py ../original_target_datasets/semeval_2016/ABSA16_Restaurants_Train_SB1_v2.xml ../original_target_datasets/semeval_2016/EN_REST_SB1_TEST.xml.gold semeval_2016 ../original_target_datasets/semeval_2016/restaurant_json/train.json ../original_target_datasets/semeval_2016/restaurant_json/val.json ../original_target_datasets/semeval_2016/restaurant_json/test.json
+```
+# Run allennlp
+``` bash
+allennlp train config_char.json -s /tmp/something --include-package target_extraction
+```
+
+## Results
+They can be found within the following [folder](./results).

@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 
 from target_extraction.data_types import TargetTextCollection
 from target_extraction.dataset_parsers import semeval_2014, semeval_2016
+from target_extraction import tokenizers
 
 def parse_path(path_string: str) -> Path:
     path_string = Path(path_string).resolve()
@@ -41,6 +42,9 @@ if __name__ == '__main__':
                                                           conflict=args.conflict)
     test_dataset: TargetTextCollection = dataset_parser(args.test_dataset_fp, 
                                                         conflict=args.conflict)
+    if args.dataset_name == 'semeval_2016':
+        train_dataset = train_dataset.one_sample_per_span(remove_empty=True)
+        test_dataset = test_dataset.one_sample_per_span(remove_empty=True)
     print(f'Length of train and test: {len(train_dataset)}, {len(test_dataset)}')
     # Validation set size the same as test size.
     val_size = len(test_dataset)
@@ -56,7 +60,13 @@ if __name__ == '__main__':
     
     print(f'Length of train, val and test: {len(train_dataset)}, '
           f'{len(val_dataset)} {len(test_dataset)}')
-    
+    datasets = [train_dataset, val_dataset, test_dataset]
+    tokenizer = tokenizers.spacy_tokenizer()
+    for index, dataset in enumerate(datasets):
+        print(index)
+        dataset: TargetTextCollection
+        dataset.tokenize(tokenizer)
+        dataset.sequence_labels()
     print(f'Saving the JSON training dataset to {args.save_train_fp}')
     train_dataset.to_json_file(args.save_train_fp)
     print(f'Saving the JSON training dataset to {args.save_val_fp}')
