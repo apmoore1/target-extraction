@@ -20,7 +20,7 @@ class TargetExtractionDatasetReader(DatasetReader):
     following type:
 
     {`tokenized_text`: [`This`, `Camera`, `lens`, `is`, `great`], 
-     `sequence_labels`: [`O`, `B`, `I`, `O`, `O`],
+     `tags`: [`O`, `B`, `I`, `O`, `O`],
      `pos_tags`: [`DET`, `NOUN`, `NOUN`, `AUX`, `ADJ`]}
 
     Where the `pos_tags` are optional. This type of JSON can be created 
@@ -68,19 +68,19 @@ class TargetExtractionDatasetReader(DatasetReader):
                         raise ConfigurationError(pos_err)
                     example_instance['pos_tags'] = example['pos_tags']
 
-                example_instance['sequence_labels'] = sequence_labels
+                example_instance['tags'] = sequence_labels
                 example_instance['tokens'] = tokens
                 yield self.text_to_instance(**example_instance)
     
     def text_to_instance(self, tokens: List[Token], 
-                         sequence_labels: Optional[List[str]] = None,
+                         tags: Optional[List[str]] = None,
                          pos_tags: Optional[List[str]] = None) -> Instance:
         '''
         The tokens are expected to be pre-tokenised.
 
         :param tokens: Tokenised text that either has target extraction labels 
                        or is to be tagged.
-        :param sequence_labels: The target extraction BIO labels.
+        :param tags: The target extraction BIO labels.
         :param pos_tags: POS tags to be used either as features or for joint 
                          learning.
         :returns: An Instance object with all of the above enocded for a
@@ -90,8 +90,8 @@ class TargetExtractionDatasetReader(DatasetReader):
         instance_fields: Dict[str, Field] = {'tokens': sequence}
         instance_fields["metadata"] = MetadataField({"words": [x.text for x in tokens]})
 
-        if sequence_labels is not None:
-            instance_fields['tags'] = SequenceLabelField(sequence_labels, sequence, "labels")
+        if tags is not None:
+            instance_fields['tags'] = SequenceLabelField(tags, sequence, "labels")
 
         if pos_tags is not None:
             instance_fields['pos_tags'] = SequenceLabelField(pos_tags, sequence, "pos_tags")

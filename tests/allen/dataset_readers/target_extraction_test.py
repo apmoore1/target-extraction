@@ -19,15 +19,15 @@ class TestTargetExtractionDatasetReader():
                                 "cover", "was", "rubbish"],
                      "pos_tags": ["DET", "NOUN", "NOUN", "AUX", "ADJ", "CCONJ", 
                                   "NOUN", "AUX", "ADJ"],
-                     "labels": ["O", "B", "I", "O", "O", "O", "O", "O", "O"]}
+                     "tags": ["O", "B", "I", "O", "O", "O", "O", "O", "O"]}
         instance2 = {"tokens": ["Another", "day", "at", "the", "office"],
                      "pos_tags": ["DET", "NOUN", "ADP", "DET", "NOUN"],
-                     "labels": ["O", "O", "O", "O", "O"]}
+                     "tags": ["O", "O", "O", "O", "O"]}
         instance3 = {"tokens": ["The", "laptop", "case", "was", "great", "and", 
                                 "cover", "was", "rubbish"],
                      "pos_tags": ["DET", "NOUN", "NOUN", "AUX", "ADJ", "CCONJ", 
                                   "NOUN", "AUX", "ADJ"],
-                     "labels": ["O", "B", "I", "O", "O", "O", "B", "O", "O"]}
+                     "tags": ["O", "B", "I", "O", "O", "O", "B", "O", "O"]}
 
         # POS tagged data 
         pos_tagged_fp = Path(data_dir, 'pos_sequence.json')
@@ -40,7 +40,8 @@ class TestTargetExtractionDatasetReader():
             assert fields['pos_tags'].labels == instance1["pos_tags"]
         else:
             assert 'pos_tags' not in fields
-        assert fields['labels'].labels == instance1["labels"]
+        assert fields['tags'].labels == instance1["tags"]
+        assert fields['metadata']['words'] == instance1["tokens"]
         
         fields = instances[1].fields
         assert [t.text for t in fields["tokens"]] == instance2["tokens"]
@@ -48,7 +49,8 @@ class TestTargetExtractionDatasetReader():
             assert fields['pos_tags'].labels == instance2["pos_tags"]
         else:
             assert 'pos_tags' not in fields
-        assert fields['labels'].labels == instance2["labels"]
+        assert fields['tags'].labels == instance2["tags"]
+        assert fields['metadata']['words'] == instance2["tokens"]
 
         fields = instances[2].fields
         assert [t.text for t in fields["tokens"]] == instance3["tokens"]
@@ -56,7 +58,8 @@ class TestTargetExtractionDatasetReader():
             assert fields['pos_tags'].labels == instance3["pos_tags"]
         else:
             assert 'pos_tags' not in fields
-        assert fields['labels'].labels == instance3["labels"]
+        assert fields['tags'].labels == instance3["tags"]
+        assert fields['metadata']['words'] == instance3["tokens"]
 
         # Non-POS tagged version
         non_pos_tagged_fp = Path(data_dir, 'non_pos_sequence.json')
@@ -68,17 +71,20 @@ class TestTargetExtractionDatasetReader():
             fields = instances[0].fields
             assert [t.text for t in fields["tokens"]] == instance1["tokens"]
             assert 'pos_tags' not in fields
-            assert fields['labels'].labels == instance1["labels"]
+            assert fields['tags'].labels == instance1["tags"]
+            assert fields['metadata']['words'] == instance1["tokens"]
             
             fields = instances[1].fields
             assert [t.text for t in fields["tokens"]] == instance2["tokens"]
             assert 'pos_tags' not in fields
-            assert fields['labels'].labels == instance2["labels"]
+            assert fields['tags'].labels == instance2["tags"]
+            assert fields['metadata']['words'] == instance2["tokens"]
 
             fields = instances[2].fields
             assert [t.text for t in fields["tokens"]] == instance3["tokens"]
             assert 'pos_tags' not in fields
-            assert fields['labels'].labels == instance3["labels"]
+            assert fields['tags'].labels == instance3["tags"]
+            assert fields['metadata']['words'] == instance3["tokens"]
         else:
             with pytest.raises(ConfigurationError):
                 ensure_list(reader.read(str(non_pos_tagged_fp)))

@@ -1,0 +1,45 @@
+{
+    "dataset_reader": {
+      "type": "target_extraction",
+      "token_indexers": {
+        "tokens": {
+          "type": "single_id",
+          "lowercase_tokens": true
+        }
+      }
+    },
+    "train_data_path": "../original_target_datasets/semeval_2014/restaurant_json/train.json",
+    "validation_data_path": "../original_target_datasets/semeval_2014/restaurant_json/val.json",
+    "test_data_path": "../original_target_datasets/semeval_2014/restaurant_json/test.json",
+    "evaluate_on_test": true,
+    "model": {
+      "type": "target_tagger",
+      "label_encoding": "BIO",
+      "crf": false,
+      "constrain_crf_decoding": true,
+      "calculate_span_f1": true,
+      "dropout": 0.5,
+      "include_start_end_transitions": false,
+      "text_field_embedder": {
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 300,
+          "trainable": false
+        }
+      }
+    },
+    "iterator": {
+      "type": "basic",
+      "batch_size": 64
+    },
+    "trainer": {
+      "optimizer": {
+        "type": "adam"
+      },
+      "validation_metric": "+f1-measure-overall",
+      "num_epochs": 150,
+      "grad_norm": 5.0,
+      "patience": 10,
+      "cuda_device": -1
+    }
+  }
