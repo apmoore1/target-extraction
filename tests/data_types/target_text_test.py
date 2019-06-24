@@ -609,51 +609,74 @@ class TestTargetText:
     @pytest.mark.parametrize("type_checks", (True, False))
     def test_pos_text(self, type_checks: bool):
         # Test the normal case
-        text = 'The laptop case was great and cover was rubbish'
+        text = "The laptop's case was great and cover was rubbish"
         text_id = '2'
-        tokenizer = spacy_tokenizer()
         pos_tagger = spacy_tagger()
         test_target_text = TargetText(text=text, text_id=text_id)
-        test_target_text.tokenize(tokenizer)
         test_target_text.pos_text(pos_tagger, perform_type_checks=type_checks)
 
-        pos_answer = ['DET', 'NOUN', 'NOUN', 'VERB', 'ADJ', 'CCONJ', 'NOUN',
-                      'VERB', 'ADJ']
-        test_target_text['pos_tags'] = pos_answer
-
-        # Test the case where the tagger function given does not return a
-        # List
+        pos_answer = ['DET', 'NOUN', 'PART', 'NOUN', 'VERB', 'ADJ', 'CCONJ', 
+                      'NOUN', 'VERB', 'ADJ']
+        tok_answer = ['The', 'laptop', "'s", 'case', 'was', 'great', 'and', 
+                      'cover', 'was', 'rubbish']
+        assert test_target_text['pos_tags'] == pos_answer
+        assert test_target_text['tokenized_text'] == tok_answer 
+        # Test the case where the return is not a tuple
         if type_checks:
             with pytest.raises(TypeError):
                 test_target_text.pos_text(str.strip, perform_type_checks=type_checks)
-        else:
+        def false_tuple_tagger(text):
+            return (1, 2, 3)
+        # Test the case where the return is not a Tuple of length two
+        if type_checks:
             with pytest.raises(ValueError):
-                test_target_text.pos_text(str.strip, perform_type_checks=type_checks)
-        
+                test_target_text.pos_text(false_tuple_tagger, perform_type_checks=type_checks)
+        def tuple_but_not_lists(text):
+            return (1, 2)
+        # Test the case that the tagger returns a tuple of length 2 but 
+        # the tuple contains no lists
+        if type_checks:
+            with pytest.raises(TypeError):
+                test_target_text.pos_text(tuple_but_not_lists, perform_type_checks=type_checks)
+        # Test the case where the first value in the tuple is a list but the 
+        # second is not
+        def tuple_but_not_all_lists(text):
+            return ([1], 2)
+        if type_checks:
+            with pytest.raises(TypeError):
+                test_target_text.pos_text(tuple_but_not_all_lists, perform_type_checks=type_checks)
         # Test the case where the tagger function given returns a list but
         # not a list of strings
-        def token_len(text): return [len(token) for token in text.split()]
+        def list_not_strings(text):
+            return ([1, 2], [3, 4])
         if type_checks:
             with pytest.raises(TypeError):
-                test_target_text.pos_text(token_len, perform_type_checks=type_checks)
-        else:
-            test_target_text.pos_text(token_len, perform_type_checks=type_checks)
-        del test_target_text['tokenized_text']
-        # Test the case where the TargetText has not be tokenized
+                test_target_text.pos_text(list_not_strings, perform_type_checks=type_checks)
+        # Test the case where the first list are strings but the second is not
+        def list_but_one_strings(text):
+            return (['1', '2'], [3, 4])
+        if type_checks:
+            with pytest.raises(TypeError):
+                test_target_text.pos_text(list_but_one_strings, perform_type_checks=type_checks)
+        # Test the case where the pos tags produced are zero length
+        def tokens_but_no_pos(text):
+            return (['1', '2'], [])
         with pytest.raises(ValueError):
-            test_target_text.pos_text(pos_tagger)
-        # Test the case where the tokenization is different to the POS tagger
-        text = 'Hello how are you? I am good thank you'
-        target_text_example = TargetText(text=text, text_id='1')
-        target_text_example.tokenize(str.split)
+            test_target_text.pos_text(tokens_but_no_pos, perform_type_checks=type_checks)
+        # Test the case where there are not the same number of pos as tokens
+        def not_same_length(text):
+            return (['1', '2'], ['2'])
         with pytest.raises(ValueError):
-            target_text_example.pos_text(pos_tagger)
-        
-        # Test that it will raise a ValueError if the tokenized text is empty
-        test_target_text = TargetText(text='', text_id='1')
-        test_target_text['tokenized_text'] = []
-        with pytest.raises(ValueError):
-            test_target_text.pos_text(pos_tagger)
+            test_target_text.pos_text(not_same_length, perform_type_checks=type_checks)
+        # Test that the tokens produced by the POS tagger overwrite any new 
+        # tokens
+        test_target_text.pos_text(pos_tagger, perform_type_checks=type_checks)
+        test_target_text.tokenize(str.split)
+        split_tokens = ['The', "laptop's", 'case', 'was', 'great', 'and', 
+                         'cover', 'was', 'rubbish']
+        assert test_target_text['tokenized_text'] == split_tokens
+        test_target_text.pos_text(pos_tagger, perform_type_checks=type_checks)
+        assert test_target_text['tokenized_text'] == tok_answer
 
     def test_sequence_labels(self):
         # Test that it will raise a KeyError if it has not been tokenized

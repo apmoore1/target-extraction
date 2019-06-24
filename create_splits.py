@@ -61,12 +61,9 @@ if __name__ == '__main__':
     print(f'Length of train, val and test: {len(train_dataset)}, '
           f'{len(val_dataset)} {len(test_dataset)}')
     datasets = [train_dataset, val_dataset, test_dataset]
-    tokenizer = tokenizers.stanford()
-    pos_tagger = pos_taggers.stanford()
-    for index, dataset in enumerate(datasets):
-        print(index)
+    pos_tagger = pos_taggers.spacy_tagger()
+    for dataset in datasets:
         dataset: TargetTextCollection
-        dataset.tokenize(tokenizer)
         dataset.pos_text(pos_tagger)
         dataset.sequence_labels()
     print(f'Saving the JSON training dataset to {args.save_train_fp}')

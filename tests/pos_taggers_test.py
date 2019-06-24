@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import pytest
 
@@ -6,10 +6,15 @@ from target_extraction.pos_taggers import stanford, spacy_tagger
 
 class TestPOSTaggers:
 
-    def _en_emoji_sentence(self) -> str:
-        return "  Hello how are  you, with other's :)"
-    def _de_emoji_sentence(self) -> str:
-        return "  Hallo wie geht  es dir bei anderen :)"
+    def _en_emoji_sentence(self) -> Tuple[List[str], str]:
+        return (['Hello', 'how', 'are', 'you', ',', 'with', 'other', "'s", ':)'],
+                "  Hello how are  you, with other's :)")
+    def _de_emoji_sentence(self) -> Tuple[List[str], str]:
+        return (['Hallo', 'wie', 'geht', 'es', 'dir', 'bei', 'anderen', ':', ')'],
+                "  Hallo wie geht  es dir bei anderen :)")
+    def _de_spacy_emoji_sentence(self) -> Tuple[List[str], str]:
+        return(['Hallo', 'wie', 'geht', 'es', 'dir', 'bei', 'anderen', ':)'],
+               "  Hallo wie geht  es dir bei anderen :)")
     def _no_sentence(self) -> str:
         return ""
 
@@ -68,36 +73,44 @@ class TestPOSTaggers:
         elif lang == 'en':
             # Tests a sentence on two treebanks and across UPOS and XPOS tags
             pos_tagger = stanford(fine=fine, lang=lang, treebank=treebank)
-            emoji_pos = pos_tagger(self._en_emoji_sentence())
+            emoji_tok_ans, text = self._en_emoji_sentence()
+            emoji_toks, emoji_pos = pos_tagger(text)
             emoji_ans = self._stanford_en_ans(fine=fine, treebank=treebank)
             assert emoji_ans == emoji_pos
+            assert emoji_tok_ans == emoji_toks
             # Ensures that it can handle no text input
-            no_tags = pos_tagger(self._no_sentence())
+            no_toks, no_tags = pos_tagger(self._no_sentence())
             assert [] == no_tags
+            assert [] == no_toks
         elif lang == 'de':
             # Tests a sentence on default treebank and across UPOS and XPOS tags
             pos_tagger = stanford(fine=fine, lang=lang, treebank=treebank)
-            emoji_pos = pos_tagger(self._de_emoji_sentence())
+            emoji_tok_ans, text = self._de_emoji_sentence()
+            emoji_toks, emoji_pos = pos_tagger(text)
             emoji_ans = self._stanford_de_ans(fine=fine, treebank=treebank)
             assert emoji_ans == emoji_pos
+            assert emoji_tok_ans == emoji_toks
             # Ensures that it can handle no text input
-            no_tags = pos_tagger(self._no_sentence())
+            no_toks, no_tags = pos_tagger(self._no_sentence())
             assert [] == no_tags
+            assert [] == no_toks
     
     @pytest.mark.parametrize("fine", (True, False))
     @pytest.mark.parametrize("lang", ('en', 'de'))
     def test_spacy(self, fine: bool, lang: str):
         if lang == 'en':
             model_name = 'en_core_web_sm'
-            emoji_sentence = self._en_emoji_sentence()
+            emoji_tok_ans, emoji_sentence = self._en_emoji_sentence()
         elif lang == 'de':
             model_name = 'de_core_news_sm'
-            emoji_sentence = self._de_emoji_sentence()
+            emoji_tok_ans, emoji_sentence = self._de_spacy_emoji_sentence()
         # Tests a sentence across UPOS and XPOS tags
         pos_tagger = spacy_tagger(fine=fine, spacy_model_name=model_name)
-        emoji_pos = pos_tagger(emoji_sentence)
+        emoji_toks, emoji_pos = pos_tagger(emoji_sentence)
         emoji_ans = self._spacy_ans(fine=fine, lang=lang)
         assert emoji_ans == emoji_pos
+        assert emoji_tok_ans == emoji_toks
         # Ensures that it can handle no text input
-        no_tags = pos_tagger(self._no_sentence())
+        no_toks, no_tags = pos_tagger(self._no_sentence())
         assert [] == no_tags
+        assert [] == no_toks

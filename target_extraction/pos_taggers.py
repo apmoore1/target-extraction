@@ -1,11 +1,13 @@
 '''
 This modules contains a set of functions that return pos tagger functions 
-which can be defined by the following typing: Callable[[str], List[str]]. 
+which can be defined by the following typing: 
+Callable[[str], Tuple[List[str], List[str]]]. 
 All of the functions take exactly no positional arguments but can take 
 keyword arguments.
 
 All of the functions take in a String and perform tokenisation and POS tagging 
-at the same time but only return the POS tags as a List of Strings.
+at the same time and return both as a List of Strings where the first List 
+are the tokens and the second the POS tags.
 
 Functions:
 
@@ -16,7 +18,7 @@ Functions:
    Spacy Neural Network POS tagger. Tagger has the option to have been trained 
    on different languages.
 '''
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Tuple
 from pathlib import Path
 
 import stanfordnlp
@@ -25,7 +27,7 @@ from stanfordnlp.utils import resources
 from target_extraction.taggers_helper import stanford_downloader, spacy_downloader
 
 def spacy_tagger(fine: bool = False, spacy_model_name: str = 'en_core_web_sm'
-                 ) -> Callable[[str], List[str]]:
+                 ) -> Callable[[str], Tuple[List[str], List[str]]]:
     '''
     Spacy Neural Network POS tagger which returns both UPOS and XPOS tags.
 
@@ -43,14 +45,18 @@ def spacy_tagger(fine: bool = False, spacy_model_name: str = 'en_core_web_sm'
 
     :param fine: If True then returns XPOS else returns UPOS tags.
     :param spacy_model_name: Name of the Spacy model e.g. en_core_web_sm
-    :returns: A callable that takes a String and returns the POS tags for 
-              that String.
+    :returns: A callable that takes a String and returns the tokens and  
+              associated POS tags for that String.
     '''
     spacy_model = spacy_downloader(spacy_model_name, pos_tags=True, 
                                    parse=False, ner=False)
-    def _spacy_tagger(text: str) -> Callable[[str], List[str]]:
+    def _spacy_tagger(text: str
+                      ) -> Callable[[str],  Tuple[List[str], List[str]]]:
+        if text.strip() == '':
+            return [], []
         doc = spacy_model(text)
         pos_tokens = []
+        tokens = []
         for token in doc:
             if token.is_space:
                 continue
@@ -58,13 +64,15 @@ def spacy_tagger(fine: bool = False, spacy_model_name: str = 'en_core_web_sm'
                 pos_tokens.append(token.tag_)
             else:
                 pos_tokens.append(token.pos_)
-        return pos_tokens
+            tokens.append(token.text)
+        return tokens, pos_tokens
     return _spacy_tagger
     
 
 def stanford(fine: bool = False, lang: str = 'en', 
              treebank: Optional[str] = None, 
-             download: bool = False) -> Callable[[str], List[str]]:
+             download: bool = False
+             ) -> Callable[[str], Tuple[List[str], List[str]]]:
     '''
     Stanford Neural Network (NN) tagger that uses a highway BiLSTM that has as 
     input: 1. Word2Vec and FastText embeddings, 2. Trainable Word Vector, and 
@@ -98,14 +106,15 @@ def stanford(fine: bool = False, lang: str = 'en',
                      https://stanfordnlp.github.io/stanfordnlp/installation_
                      download.html#human-languages-supported-by-stanfordnlp
     :param download: If to re-download the model. 
-    :returns: A callable that takes a String and returns the POS tags for 
-              that String.
+    :returns: A callable that takes a String and returns the tokens and  
+              associated POS tags for that String.
     '''
     full_treebank_name = stanford_downloader(lang, treebank, download)
     nlp = stanfordnlp.Pipeline(lang=lang, processors='tokenize,mwt,pos', 
                                treebank=full_treebank_name)
 
-    def _stanford_doc_to_text(text: str) -> Callable[[str], List[str]]:
+    def _stanford_doc_to_text(text: str
+                              ) -> Callable[[str],  Tuple[List[str], List[str]]]:
         '''
         This returns all of the pos tags in each sentence however in the 
         documentation you do have the option to use the tokens instead but 
@@ -115,15 +124,17 @@ def stanford(fine: bool = False, lang: str = 'en',
         /pipeline.html#accessing-word-information
         '''
         if text.strip() == '':
-            return []
+            return [], []
         doc = nlp(text)
         sentences = doc.sentences
         pos_tokens = []
+        tokens = []
         for sentence in sentences:
             for word in sentence.words:
                 if fine:
                     pos_tokens.append(word.xpos)
                 else:
                     pos_tokens.append(word.upos)
-        return pos_tokens
+                tokens.append(word.text)
+        return tokens, pos_tokens
     return _stanford_doc_to_text

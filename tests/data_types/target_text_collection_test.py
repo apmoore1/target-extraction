@@ -297,7 +297,6 @@ class TestTargetTextCollection:
     def test_pos_text(self):
         # Test the normal case with one TargetText Instance in the collection
         test_collection = TargetTextCollection([self._target_text_example()])
-        test_collection.tokenize(spacy_tokenizer())
         test_collection.pos_text(spacy_tagger())
         pos_answer = ['DET', 'NOUN', 'NOUN', 'VERB', 'ADJ', 'CCONJ', 'NOUN', 
                       'VERB', 'ADJ']
@@ -306,30 +305,13 @@ class TestTargetTextCollection:
         # Test the normal case with multiple TargetText Instance in the 
         # collection
         test_collection = TargetTextCollection(self._target_text_examples())
-        test_collection.tokenize(spacy_tokenizer())
         test_collection.pos_text(spacy_tagger())
         assert test_collection['2']['pos_tags'] == pos_answer
 
-        # Test the case where the tagger function given does not return a 
-        # List
+        # Ensure that at least one error is raised but all of these tests are 
+        # covered in the TargetText tests.
         with pytest.raises(TypeError):
             test_collection.pos_text(str.strip)
-        # Test the case where the tagger function given returns a list but 
-        # not a list of strings
-        token_len = lambda text: [len(token) for token in text.split()]
-        with pytest.raises(TypeError):
-            test_collection.pos_text(token_len)
-        # Test the case where the TargetTextCollection has not be tokenized
-        test_collection = TargetTextCollection([self._target_text_example()])
-        with pytest.raises(ValueError):
-            test_collection.pos_text(spacy_tagger())
-        # Test the case where the tokenization is different to the POS tagger
-        text = 'Hello how are you? I am good thank you'
-        target_text_example = TargetText(text=text, text_id='1')
-        test_collection = TargetTextCollection([target_text_example])
-        test_collection.tokenize(str.split)
-        with pytest.raises(ValueError):
-            test_collection.pos_text(spacy_tagger())
 
     def test_force_targets(self):
         text = 'The laptop casewas great and cover was rubbish'
