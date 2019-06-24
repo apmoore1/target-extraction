@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 
 from target_extraction.data_types import TargetTextCollection
 from target_extraction.dataset_parsers import semeval_2014, semeval_2016
-from target_extraction import tokenizers
+from target_extraction import tokenizers, pos_taggers
 
 def parse_path(path_string: str) -> Path:
     path_string = Path(path_string).resolve()
@@ -61,11 +61,13 @@ if __name__ == '__main__':
     print(f'Length of train, val and test: {len(train_dataset)}, '
           f'{len(val_dataset)} {len(test_dataset)}')
     datasets = [train_dataset, val_dataset, test_dataset]
-    tokenizer = tokenizers.spacy_tokenizer()
+    tokenizer = tokenizers.stanford()
+    pos_tagger = pos_taggers.stanford()
     for index, dataset in enumerate(datasets):
         print(index)
         dataset: TargetTextCollection
         dataset.tokenize(tokenizer)
+        dataset.pos_text(pos_tagger)
         dataset.sequence_labels()
     print(f'Saving the JSON training dataset to {args.save_train_fp}')
     train_dataset.to_json_file(args.save_train_fp)

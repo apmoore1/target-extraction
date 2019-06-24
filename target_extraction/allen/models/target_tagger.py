@@ -7,6 +7,7 @@ from allennlp.modules import ConditionalRandomField, FeedForward
 from allennlp.modules.conditional_random_field import allowed_transitions
 from allennlp.modules.input_variational_dropout import InputVariationalDropout
 from allennlp.models.model import Model
+from allennlp.modules.token_embedders import Embedding
 from allennlp.nn import InitializerApplicator, RegularizerApplicator
 import allennlp.nn.util as util
 from allennlp.training.metrics import CategoricalAccuracy, SpanBasedF1Measure
@@ -36,7 +37,14 @@ class TargetTagger(Model):
         A Vocabulary, required in order to compute sizes for input/output projections.
     text_field_embedder : ``TextFieldEmbedder``, required
         Used to embed the tokens ``TextField`` we get as input to the model.
-    encoder : ``Seq2SeqEncoder``
+    pos_tag_embedding : ``Embedding``, optional (default=None).
+        Used to embed the ``pos_tags`` ``SequenceLabelField`` we get as input to the model.
+    pos_tag_loss: ``float``, optional (default=None)
+        Whether to predict POS tags as an auxilary loss. The float here would 
+        represent the amount to scale that loss in the overall loss function.
+        The POS tags are predicted using greedy decoding and having a task 
+        specific tag projection layer.
+    encoder : ``Seq2SeqEncoder``, optional (default=None)
         The encoder that we will use in between embedding tokens and predicting output tags.
     label_namespace : ``str``, optional (default=``labels``)
         This is needed to compute the SpanBasedF1Measure metric.
@@ -79,6 +87,8 @@ class TargetTagger(Model):
 
     def __init__(self, vocab: Vocabulary,
                  text_field_embedder: TextFieldEmbedder,
+                 pos_tag_embedding: Embedding = None,
+                 pos_tag_loss: Optional[float] = None, 
                  label_namespace: str = "labels",
                  encoder: Optional[Seq2SeqEncoder] = None,
                  feedforward: Optional[FeedForward] = None,
@@ -95,9 +105,14 @@ class TargetTagger(Model):
 
         self.label_namespace = label_namespace
         self.text_field_embedder = text_field_embedder
+        self.pos_tag_embedding = pos_tag_embedding
         self.num_tags = self.vocab.get_vocab_size(label_namespace)
         self.encoder = encoder
         self._verbose_metrics = verbose_metrics
+
+        embedding_output_dim = self.text_field_embedder.get_output_dim()
+        if self.pos_tag_embedding is not None:
+            embedding_output_dim += self.pos_tag_embedding.get_output_dim()
         
         if dropout is not None:
             self.dropout = torch.nn.Dropout(dropout)
@@ -111,9 +126,15 @@ class TargetTagger(Model):
         elif encoder is not None:
             output_dim = self.encoder.get_output_dim()
         else:
-            output_dim = self.text_field_embedder.get_output_dim()
+            output_dim = embedding_output_dim
         self.tag_projection_layer = TimeDistributed(Linear(output_dim,
                                                            self.num_tags))
+        self.pos_tag_loss = pos_tag_loss
+        if self.pos_tag_loss:
+            self.num_pos_tags = self.vocab.get_vocab_size("pos_tags")
+            self.pos_tag_projection_layer = TimeDistributed(Linear(output_dim,
+                                                                   self.num_pos_tags))
+
 
         # if  constrain_crf_decoding and calculate_span_f1 are not
         # provided, (i.e., they're None), set them to True
@@ -154,15 +175,19 @@ class TargetTagger(Model):
             self._f1_metric = SpanBasedF1Measure(vocab,
                                                  tag_namespace=label_namespace,
                                                  label_encoding=label_encoding)
+        # If performing POS tagging would be good to keep updated on POS 
+        # accuracy
+        if self.pos_tag_loss:
+            self.metrics['POS accuracy'] = CategoricalAccuracy()
 
         if encoder is not None:
-            check_dimensions_match(text_field_embedder.get_output_dim(), encoder.get_input_dim(),
+            check_dimensions_match(embedding_output_dim, encoder.get_input_dim(),
                                 "text field embedding dim", "encoder input dim")
         if feedforward is not None and encoder is not None:
             check_dimensions_match(encoder.get_output_dim(), feedforward.get_input_dim(),
                                    "encoder output dim", "feedforward input dim")
         elif feedforward is not None and encoder is None:
-            check_dimensions_match(text_field_embedder.get_output_dim(), feedforward.get_input_dim(),
+            check_dimensions_match(embedding_output_dim, feedforward.get_input_dim(),
                                    "text field output dim", "feedforward input dim")
         initializer(self)
 
@@ -204,10 +229,10 @@ class TargetTagger(Model):
     @overrides
     def forward(self,  # type: ignore
                 tokens: Dict[str, torch.LongTensor],
+                pos_tags: torch.LongTensor = None,
                 tags: torch.LongTensor = None,
-                metadata: List[Dict[str, Any]] = None,
-                # pylint: disable=unused-argument
-                **kwargs) -> Dict[str, torch.Tensor]:
+                metadata: List[Dict[str, Any]] = None
+                ) -> Dict[str, torch.Tensor]:
         # pylint: disable=arguments-differ
         """
         Parameters
@@ -221,6 +246,9 @@ class TargetTagger(Model):
             sequence.  The dictionary is designed to be passed directly to a ``TextFieldEmbedder``,
             which knows how to combine different word representations into a single vector per
             token in your input.
+        pos_tags : ``torch.LongTensor``, optional (default = ``None``)
+            A torch tensor representing the sequence of POS tags of shape
+            ``(batch_size, num_tokens)``
         tags : ``torch.LongTensor``, optional (default = ``None``)
             A torch tensor representing the sequence of integer gold class labels of shape
             ``(batch_size, num_tokens)``.
@@ -248,8 +276,18 @@ class TargetTagger(Model):
         loss : ``torch.FloatTensor``, optional
             A scalar loss to be optimised. Only computed if gold label ``tags`` are provided.
         """
+        
+
         embedded_text_input = self.text_field_embedder(tokens)
         mask = util.get_text_field_mask(tokens)
+
+        # Add the pos embedding
+        if self.pos_tag_embedding is not None and pos_tags is not None:
+            embedded_pos_tags = self.pos_tag_embedding(pos_tags)
+            embedded_text_input = torch.cat([embedded_text_input, embedded_pos_tags], -1)
+        elif self.pos_tag_embedding is not None:
+            raise ConfigurationError("Model uses a POS embedding, "
+                                     "but no POS tags were passed.")
 
         if self.dropout is not None:
             encoded_text = self.variational_dropout(embedded_text_input)
@@ -301,10 +339,21 @@ class TargetTagger(Model):
             else:
                 loss = util.sequence_cross_entropy_with_logits(logits, tags, mask)
                 output["loss"] = loss
-                for metric in self.metrics.values():
-                    metric(logits, tags, mask.float())
+                for metric_name, metric in self.metrics.items():
+                    if metric_name != 'POS accuracy':
+                        metric(logits, tags, mask.float())
                 if self.calculate_span_f1 is not None:
                     self._f1_metric(logits, tags, mask.float())
+            
+            # Have to predict the POS tags to get a POS loss
+            if self.pos_tag_loss and pos_tags is not None:
+                pos_logits = self.pos_tag_projection_layer(encoded_text)
+                pos_loss = util.sequence_cross_entropy_with_logits(pos_logits, pos_tags, mask)
+                output["loss"] += self.pos_tag_loss * pos_loss
+                self.metrics['POS accuracy'](pos_logits, pos_tags, mask.float())
+            elif self.pos_tag_loss:
+                raise ConfigurationError("Model uses a POS Auxilary loss, "
+                                         "but no POS tags were passed.")
 
         if metadata is not None:
             output["words"] = [x["words"] for x in metadata]

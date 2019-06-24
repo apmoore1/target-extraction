@@ -1,6 +1,7 @@
 {
     "dataset_reader": {
       "type": "target_extraction",
+      "pos_tags": true,
       "token_indexers": {
         "tokens": {
           "type": "single_id",
@@ -19,6 +20,7 @@
       "constrain_crf_decoding": true,
       "calculate_span_f1": true,
       "dropout": 0.5,
+      "pos_tag_loss": 0.5,
       "include_start_end_transitions": false,
       "text_field_embedder": {
         "tokens": {
