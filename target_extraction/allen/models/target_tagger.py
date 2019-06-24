@@ -42,8 +42,9 @@ class TargetTagger(Model):
     pos_tag_loss: ``float``, optional (default=None)
         Whether to predict POS tags as an auxilary loss. The float here would 
         represent the amount to scale that loss in the overall loss function.
-        The POS tags are predicted using greedy decoding and having a task 
-        specific tag projection layer.
+        The POS tags are predicted using a CRF if the main task uses a CRF else 
+        like the main task it will use greedy decoding based on softmax. NOTE 
+        we assume always that the label encoding for POS tags are of BIO format.
     encoder : ``Seq2SeqEncoder``, optional (default=None)
         The encoder that we will use in between embedding tokens and predicting output tags.
     label_namespace : ``str``, optional (default=``labels``)
@@ -102,7 +103,13 @@ class TargetTagger(Model):
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
         super().__init__(vocab, regularizer)
-
+        if pos_tag_loss is not None or pos_tag_embedding is not None:
+            pos_tag_err = (f"Model uses POS tags but the Vocabulary {vocab} "
+                           "does not contain `pos_tags` namespace")
+            if 'pos_tags' not in vocab._token_to_index:
+                raise ConfigurationError(pos_tag_err)
+            elif not len(vocab._token_to_index['pos_tags']):
+                raise ConfigurationError(pos_tag_err)
         self.label_namespace = label_namespace
         self.text_field_embedder = text_field_embedder
         self.pos_tag_embedding = pos_tag_embedding
@@ -134,6 +141,10 @@ class TargetTagger(Model):
             self.num_pos_tags = self.vocab.get_vocab_size("pos_tags")
             self.pos_tag_projection_layer = TimeDistributed(Linear(output_dim,
                                                                    self.num_pos_tags))
+            self.pos_crf = None
+            if crf:
+                self.pos_crf = ConditionalRandomField(self.num_pos_tags, None,
+                                                      False)
 
 
         # if  constrain_crf_decoding and calculate_span_f1 are not
@@ -178,11 +189,11 @@ class TargetTagger(Model):
         # If performing POS tagging would be good to keep updated on POS 
         # accuracy
         if self.pos_tag_loss:
-            self.metrics['POS accuracy'] = CategoricalAccuracy()
+            self.metrics['POS_accuracy'] = CategoricalAccuracy()
 
         if encoder is not None:
             check_dimensions_match(embedding_output_dim, encoder.get_input_dim(),
-                                "text field embedding dim", "encoder input dim")
+                                   "text field embedding dim", "encoder input dim")
         if feedforward is not None and encoder is not None:
             check_dimensions_match(encoder.get_output_dim(), feedforward.get_input_dim(),
                                    "encoder output dim", "feedforward input dim")
@@ -327,30 +338,43 @@ class TargetTagger(Model):
 
                 # Represent viterbi tags as "class probabilities" that we can
                 # feed into the metrics
-                viterbi_class_probabilities = logits * 0.
+                metric_class_probabilities = logits * 0.
                 for i, instance_tags in enumerate(predicted_tags):
                     for j, tag_id in enumerate(instance_tags):
-                        viterbi_class_probabilities[i, j, tag_id] = 1
-
-                for metric in self.metrics.values():
-                    metric(viterbi_class_probabilities, tags, mask.float())
-                if self.calculate_span_f1 is not None:
-                    self._f1_metric(viterbi_class_probabilities, tags, mask.float())
+                        metric_class_probabilities[i, j, tag_id] = 1
             else:
                 loss = util.sequence_cross_entropy_with_logits(logits, tags, mask)
                 output["loss"] = loss
-                for metric_name, metric in self.metrics.items():
-                    if metric_name != 'POS accuracy':
-                        metric(logits, tags, mask.float())
-                if self.calculate_span_f1 is not None:
-                    self._f1_metric(logits, tags, mask.float())
+                metric_class_probabilities = logits
+
+            for metric_name, metric in self.metrics.items():
+                if metric_name != 'POS_accuracy':
+                    metric(metric_class_probabilities, tags, mask.float())
+            if self.calculate_span_f1 is not None:
+                self._f1_metric(metric_class_probabilities, tags, mask.float())
             
             # Have to predict the POS tags to get a POS loss
             if self.pos_tag_loss and pos_tags is not None:
                 pos_logits = self.pos_tag_projection_layer(encoded_text)
-                pos_loss = util.sequence_cross_entropy_with_logits(pos_logits, pos_tags, mask)
-                output["loss"] += self.pos_tag_loss * pos_loss
-                self.metrics['POS accuracy'](pos_logits, pos_tags, mask.float())
+                # Uses the same decoding as the main task either CRF or greedy
+                if self.pos_crf:
+                    pos_log_likelihood = self.pos_crf(pos_logits, pos_tags, mask)
+                    output["loss"] += -(self.pos_tag_loss * pos_log_likelihood)
+                    # Represent viterbi tags as "class probabilities" that we can
+                    # feed into the metrics
+                    pos_best_paths = self.pos_crf.viterbi_tags(pos_logits, mask)
+                    pos_predicted_tags = [x for x, y in pos_best_paths]
+                    pos_metric_class_probabilities = pos_logits * 0.
+                    for i, pos_instance_tags in enumerate(pos_predicted_tags):
+                        for j, pos_tag_id in enumerate(pos_instance_tags):
+                            pos_metric_class_probabilities[i, j, pos_tag_id] = 1
+                else:
+                    pos_loss = util.sequence_cross_entropy_with_logits(pos_logits, pos_tags, mask)
+                    output["loss"] += self.pos_tag_loss * pos_loss
+                    pos_metric_class_probabilities = pos_logits
+                
+                self.metrics['POS_accuracy'](pos_metric_class_probabilities, 
+                                             pos_tags, mask.float())
             elif self.pos_tag_loss:
                 raise ConfigurationError("Model uses a POS Auxilary loss, "
                                          "but no POS tags were passed.")
