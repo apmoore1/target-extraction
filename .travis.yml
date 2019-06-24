@@ -11,7 +11,7 @@ install:
   - travis_wait pip install --progress-bar off -r requirements.txt
 
 script:
-  - travis_wait python -m pytest --cov=./target_extraction
+  - travis_wait 30 python -m pytest --cov=./target_extraction
   - cd docs
   - sphinx-apidoc -o source/ ../target_extraction
   - make html
