@@ -1,0 +1,1 @@
+{"text": "better day at the office", "text_id": "198", "targets": ["office"], "spans": [[18,24]], "target_sentiments": null, "categories": null, "category_sentiments": null, "tokenized_text": ["better", "day", "at", "the", "office"], "sequence_labels": ["O", "O", "O", "O", "B"]}
