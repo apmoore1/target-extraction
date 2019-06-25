@@ -1,2 +1,3 @@
 from target_extraction.allen import dataset_readers
 from target_extraction.allen import models
+from target_extraction.allen import predictors

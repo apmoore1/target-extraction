@@ -1,0 +1,1 @@
+from target_extraction.allen.predictors.target_tagger import TargetTaggerPredictor
