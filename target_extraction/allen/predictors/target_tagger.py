@@ -13,17 +13,10 @@ class TargetTaggerPredictor(Predictor):
     :class:`target_extraction.allen.models.target_tagger.TargetTagger` model.
     This predictor is very much based on the 
     :class:`from allennlp.predictors.sentence.SentenceTaggerPredictor`
-    The main differences:
-    1. The predictor also exposes the confidence scores that the model has 
-       per tag based on the logits.
-    2. The option to use either the tokenizer that is in the constructor of the 
+    The main difference:
+    1. The option to use either the tokenizer that is in the constructor of the 
        class or to provide the tokens within the JSON that is to be processed 
        thus allowing the flexiability of using your own custom tokenizer.
-
-    The confidence scores when using the CRF version of the tagger we show the 
-    confidence score for the tag that was selected which might not be the 
-    most confident label but it was chosen based on the global maximum score 
-    for the sentence.
     """
 
     def __init__(self, model: Model, dataset_reader: DatasetReader, 
