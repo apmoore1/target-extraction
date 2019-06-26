@@ -1,4 +1,5 @@
-from typing import Optional, List, Any, Generator, Dict
+import collections
+from typing import Optional, List, Any, Iterable, Dict, Union
 import json
 import tempfile
 from pathlib import Path
@@ -11,9 +12,11 @@ from allennlp.data.dataset_readers import DatasetReader
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models import Model
 from allennlp.models.archival import load_archive
+from allennlp.predictors import Predictor
 #from bella.data_types import TargetCollection
 import numpy as np
 
+import target_extraction
 from target_extraction.data_types import TargetTextCollection
 #from bella_allen_nlp.predictors.target_predictor import TargetPredictor
 
@@ -28,12 +31,15 @@ class AllenNLPModel():
     ``allennlp train`` etc.
     '''
 
-    def __init__(self, name: str, model_param_fp: Path, 
+    def __init__(self, name: str, model_param_fp: Path, predictor_name: str, 
                  save_dir: Optional[Path] = None) -> None:
         '''
         :param name: Name of the model e.g. ELMO-Target-Extraction
         :param model_params_fp: File path to the model parameters that will 
                                 define the AllenNLP model and how to train it.
+        :param predictor_name: Name of the predictor to be used with the 
+                               AllenNLP model e.g. for a target_tagger model 
+                               the predictor should prbably be `target-tagger`
         :param save_dir: Directory to save the model to. This has to be set
                          up front as the fit function saves the model each 
                          epoch.
@@ -44,6 +50,7 @@ class AllenNLPModel():
         self.save_dir = save_dir
         self._fitted = False
         self._param_fp = model_param_fp.resolve()
+        self._predictor_name = predictor_name
         #self.labels = None
 
     def fit(self, train_data: TargetTextCollection, 
@@ -94,41 +101,107 @@ class AllenNLPModel():
             #self.labels = self._get_labels()
         self.fitted = True
 
-    #def _predict_iter(self, data: TargetCollection
-    #                  ) -> Generator[Dict[str, Any], None, None]:
-    #    '''
-    #    Iterates over the predictions and yields one prediction at a time.
-    #    This is a useful wrapper as it performs the data pre-processing and 
-    #    assertion checks.
-    #    :param data: Data to predict on
-    #    :yields: A dictionary containing `class_probabilities` and `label`.
-    #    '''
-    #    no_model_error = 'There is no model to make predictions, either fit '\
-    #                     'or load a model.'
-    #    assert self.model, no_model_error
-    #    self.model.eval()
+    def _predict_iter(self, data: Union[Iterable[Dict[str, Any]], 
+                                        List[Dict[str, Any]]]
+                      ) -> Iterable[Dict[str, Any]]:
+        '''
+        Iterates over the predictions and yields one prediction at a time.
+        This is a useful wrapper as it performs the data pre-processing and 
+        assertion checks.
 
-    #    all_model_params = Params.from_file(self._param_fp)
+        The predictions are predicted in batchs so that the model does not 
+        load in lots of data at once and thus have memory issues.
 
-    #    reader_params = all_model_params.get("dataset_reader")
-    #    dataset_reader = DatasetReader.from_params(reader_params)
-    #    predictor = TargetPredictor(self.model, dataset_reader)
+        :param data: Iterable or list of dictionaries that the predictor can 
+                     take as input e.g. `target-tagger` predictor expects at 
+                     most a `text` key and value.
+        :yields: A dictionary containing all the values the model outputs e.g.
+                 For the `target_tagger` model it would return `logits`, 
+                 `class_probabilities`, `mask`, and `tags`.
+        :raises AssertionError: If the `model` attribute is None. This can be 
+                                overcome by either fitting or loading a model.
+        :raises TypeError: If the data given is not of Type List or Iterable.
+        '''
+        no_model_error = 'There is no model to make predictions, either fit '\
+                         'or load a model to resolve this.'
+        assert self.model, no_model_error
+        self.model.eval()
 
-    #    batch_size = 64
-    #    if 'iterator' in all_model_params:
-    #        iter_params = all_model_params.get("iterator")
-    #        if 'batch_size' in iter_params:
-    #            batch_size = iter_params['batch_size']
+        all_model_params = Params.from_file(self._param_fp)
+
+        reader_params = all_model_params.get("dataset_reader")
+        dataset_reader = DatasetReader.from_params(reader_params)
+        predictor = Predictor.by_name(self._predictor_name)(self.model, dataset_reader)
+
+        batch_size = 64
+        if 'iterator' in all_model_params:
+            iter_params = all_model_params.get("iterator")
+            if 'batch_size' in iter_params:
+                batch_size = iter_params['batch_size']
         
-    #    json_data = data.data_dict()
-        # Reference
-        # https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
-    #    for i in range(0, len(json_data), batch_size):
-    #        json_data_batch = json_data[i:i + batch_size]
-    #        predictions = predictor.predict_batch_json(json_data_batch)
-    #        for prediction in predictions:
-    #            yield prediction
+        # Data has to be an iterator
+        if isinstance(data, list):
+            data = iter(data)
+        elif not isinstance(data, collections.Iterable):
+            raise TypeError(f'Data given has to be of type {collections.Iterable}'
+                            f' and not {type(data)}')
+        data_exists = True
+        while data_exists:
+            data_batch = []
+            for _ in range(batch_size):
+                try:
+                    data_batch.append(next(data))
+                except StopIteration:
+                    data_exists = False
+            if data_batch:
+                predictions = predictor.predict_batch_json(data_batch)
+                for prediction in predictions:
+                    yield prediction
 
+    def predict_sequences(self, data: Union[Iterable[Dict[str, Any]], 
+                                            List[Dict[str, Any]]]
+                          ) -> Iterable[Dict[str, Any]]:
+        '''
+        Given the data it will predict the sequence labels and return the 
+        confidence socres in those labels as well.
+
+        :param data: Iterable or list of dictionaries that contains at least 
+                     `text` key and value and if you do not want the 
+                     predictor to do the tokenization then provide `tokens` 
+                     as well. Some model may also expect `pos_tags` which the 
+                     predictor will provide if the `text` key is only provided.
+        :yields: A dictionary containing all the following keys and values:
+                 1. `sequence_labels`: A list of predicted sequence labels. 
+                    This will be a List of Strings.
+                 2. `confidence`: The confidence the model had in predicting 
+                    each sequence label, this comes from the softmax score.
+                    This will be a List of floats.
+        '''
+        self.model: Model
+        label_to_index = self.model.vocab.get_token_to_index_vocabulary('labels')
+        for prediction in self._predict_iter(data):
+            output_dict = {}
+            # Length of the text
+            sequence_length = sum(prediction['mask'])
+            
+            # Sequence labels
+            sequence_labels = prediction['tags'][:sequence_length]
+            output_dict['sequence_labels'] = sequence_labels
+            
+            # Confidence scores
+            # First get the index of predicted lables
+            confidence_indexs = [label_to_index[label] for label in sequence_labels]
+            confidence_scores = prediction['class_probabilities'][:sequence_length]
+            label_confidence_scores = [] 
+            for scores, index in zip(confidence_scores, confidence_indexs):
+                print(index)
+                print(sequence_labels)
+                print(scores)
+                print(scores[index])
+                label_confidence_scores.append(scores[index])
+            output_dict['confidence'] = label_confidence_scores
+
+            yield output_dict
     #def predict(self, data: TargetCollection) -> np.ndarray:
     #    '''
     #    Given the data to predict with return a matrix of shape 
@@ -195,9 +268,12 @@ class AllenNLPModel():
         Loads the model. This does not require you to train the model if the 
         `save_dir` attribute is pointing to a folder containing a trained model.
         This is just a wrapper around the `load_archive` function.
+
         :param cuda_device: Whether the loaded model should be loaded on to the 
                             CPU (-1) or the GPU (0). Default CPU.
         :returns: The model that was saved at `self.save_dir` 
+        :raises AssertionError: If the `save_dir` argument is None
+        :raises FileNotFoundError: If the save directory does not exist.
         '''
 
         save_dir_err = 'Save directory was not set in the constructor of the class'
@@ -206,7 +282,7 @@ class AllenNLPModel():
             archive = load_archive(self.save_dir / "model.tar.gz", 
                                    cuda_device=cuda_device)
             self.model = archive.model
-            self.labels = self._get_labels()
+            #self.labels = self._get_labels()
             return self.model
         raise FileNotFoundError('There is nothing at the save dir:\n'
                                 f'{self.save_dir.resolve()}')
