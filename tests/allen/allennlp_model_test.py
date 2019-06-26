@@ -24,6 +24,7 @@ class TestAllenNLPModel():
     TARGET_EXTRACTION_SF_MODEL = Path(model_dir, 'softmax_non_pos_model')
     
     CONFIG_FILE = Path(model_dir, 'config_char.json')
+    SOFTMAX_CONFIG_FILE = Path(model_dir, 'config_char_softmax.json')
 
 
     def test_repr_(self):
@@ -90,9 +91,9 @@ class TestAllenNLPModel():
         # Test that it raises an Error when the data provided is not a list or 
         # iterable
         model.load()
-        tuple_data = tuple(data)
+        non_iter_data = 5
         with pytest.raises(TypeError):
-            for _ in model._predict_iter(tuple_data):
+            for _ in model._predict_iter(non_iter_data):
                 pass
         # Test that it works on the normal cases which are lists and iterables
         for data_type in [data, iter(data)]:
@@ -143,7 +144,7 @@ class TestAllenNLPModel():
         # sentence level predictions thus the confidence returned can be less 
         # than 1 / number labels
         model_dir = self.TARGET_EXTRACTION_SF_MODEL
-        model = AllenNLPModel('TE', self.CONFIG_FILE, 'target-tagger', model_dir)
+        model = AllenNLPModel('TE', self.SOFTMAX_CONFIG_FILE, 'target-tagger', model_dir)
         model.load()
         predictions = []
         for index, prediction in enumerate(model.predict_sequences(data)):
@@ -171,8 +172,9 @@ class TestAllenNLPModel():
         # Test the case where the save directory attribute exists but does not 
         # have a directory with a saved model
         with tempfile.TemporaryDirectory() as tempdir:
+            fake_file = Path(tempdir, 'fake file')
             model = AllenNLPModel('TE', self.CONFIG_FILE, 'target-tagger',
-                                  Path(tempdir))
+                                  fake_file)
             with pytest.raises(FileNotFoundError):
                 model.load()
         # The success case

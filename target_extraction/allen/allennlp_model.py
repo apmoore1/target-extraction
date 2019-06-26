@@ -140,9 +140,9 @@ class AllenNLPModel():
                 batch_size = iter_params['batch_size']
         
         # Data has to be an iterator
-        if isinstance(data, list):
+        if isinstance(data, list) or isinstance(data, collections.Iterable):
             data = iter(data)
-        elif not isinstance(data, collections.Iterable):
+        else:
             raise TypeError(f'Data given has to be of type {collections.Iterable}'
                             f' and not {type(data)}')
         data_exists = True
