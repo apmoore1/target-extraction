@@ -184,10 +184,6 @@ class AllenNLPModel():
             confidence_scores = prediction['class_probabilities'][:sequence_length]
             label_confidence_scores = [] 
             for scores, index in zip(confidence_scores, confidence_indexs):
-                print(index)
-                print(sequence_labels)
-                print(scores)
-                print(scores[index])
                 label_confidence_scores.append(scores[index])
             output_dict['confidence'] = label_confidence_scores
 
