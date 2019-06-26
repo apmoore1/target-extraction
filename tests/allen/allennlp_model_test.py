@@ -32,18 +32,10 @@ class TestAllenNLPModel():
         model_repr = model.__repr__()
         assert model_repr == 'ML'
 
-    def test_fitted_attr(self):
-        model = AllenNLPModel('ML', self.CONFIG_FILE, 'target-tagger')
-        assert not model.fitted
-
-        model.fitted = True
-        assert model.fitted 
-
     @pytest.mark.parametrize("test_data", (True, False))
     def test_target_extraction_fit(self, test_data: bool):
         
         model = AllenNLPModel('TE', self.CONFIG_FILE, 'target-tagger')
-        assert not model.fitted
         assert model.model is None 
         
         train_data = TargetTextCollection.load_json(self.TARGET_EXTRACTION_TRAIN_DATA)
@@ -67,7 +59,6 @@ class TestAllenNLPModel():
         # Check attributes have changed.
         assert model.model is not None
         assert isinstance(model.model, Model)
-        assert model.fitted
 
         # Check that it will save to a directory of our choosing
         with tempfile.TemporaryDirectory() as save_dir:
@@ -181,7 +172,6 @@ class TestAllenNLPModel():
         model_dir = self.TARGET_EXTRACTION_MODEL
         model = AllenNLPModel('TE', self.CONFIG_FILE, 'target-tagger', model_dir)
         assert model.model is None
-        assert not model.fitted
 
         same_model = model.load()
         assert isinstance(same_model, Model)

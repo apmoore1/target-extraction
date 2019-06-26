@@ -1,24 +1,18 @@
 import collections
 from typing import Optional, List, Any, Iterable, Dict, Union
-import json
 import tempfile
 from pathlib import Path
 import random
 
 from allennlp.common.params import Params
 from allennlp.commands.train import train_model_from_file
-from allennlp.commands.find_learning_rate import find_learning_rate_model
 from allennlp.data.dataset_readers import DatasetReader
-from allennlp.data.vocabulary import Vocabulary
 from allennlp.models import Model
 from allennlp.models.archival import load_archive
 from allennlp.predictors import Predictor
-#from bella.data_types import TargetCollection
-import numpy as np
 
 import target_extraction
 from target_extraction.data_types import TargetTextCollection
-#from bella_allen_nlp.predictors.target_predictor import TargetPredictor
 
 class AllenNLPModel():
     '''
@@ -48,10 +42,8 @@ class AllenNLPModel():
         self.name = name
         self.model = None
         self.save_dir = save_dir
-        self._fitted = False
         self._param_fp = model_param_fp.resolve()
         self._predictor_name = predictor_name
-        #self.labels = None
 
     def fit(self, train_data: TargetTextCollection, 
             val_data: TargetTextCollection,
@@ -98,8 +90,6 @@ class AllenNLPModel():
             model_params.to_file(temp_param_fp.resolve())
             trained_model = train_model_from_file(temp_param_fp, save_dir)
             self.model = trained_model
-            #self.labels = self._get_labels()
-        self.fitted = True
 
     def _predict_iter(self, data: Union[Iterable[Dict[str, Any]], 
                                         List[Dict[str, Any]]]
@@ -202,66 +192,6 @@ class AllenNLPModel():
             output_dict['confidence'] = label_confidence_scores
 
             yield output_dict
-    #def predict(self, data: TargetCollection) -> np.ndarray:
-    #    '''
-    #    Given the data to predict with return a matrix of shape 
-    #    [n_samples, n_classes] where the predict class will be one and all 
-    #    others 0.
-    #    To get the class label for these predictions use the `labels` attribute.
-    #    The index of the predicted class is associated to the index within the 
-    #    `labels` attribute.
-    #    :param data: Data to predict on.
-    #    :returns: A matrix of shape [n_samples, n_classes]
-    #    '''
-    #    predictions = self._predict_iter(data)
-
-    #    n_samples = len(data)
-    #    n_classes = len(self.labels)
-    #    predictions_matrix = np.zeros((n_samples, n_classes))
-    #    for index, prediction in enumerate(predictions):
-    #        class_probabilities = prediction['class_probabilities']
-    #        class_label = np.argmax(class_probabilities)
-    #        predictions_matrix[index][class_label] = 1
-    #    return predictions_matrix
-
-    #def predict_label(self, data: TargetCollection, 
-    #                  mapper: Optional[Dict[str, Any]] = None) -> np.ndarray:
-    #    '''
-    #    Given the data to predict with return a vector of class labels.
-    #    Optionally a mapper dictionary can be given to map the class labels 
-    #    to a different label e.g. {'positive': 1, 'neutral': 0, 'negative': -1}.
-        
-    #    :param data: Data to predict on.
-    #    :returns: A vector of shape [n_samples]
-    #    '''
-    #    predictions = self._predict_iter(data)
-
-    #    predictions_list = []
-    #    for prediction in predictions:
-    #        label = prediction['label']
-    #        if mapper:
-    #            label = mapper[label]
-    #        predictions_list.append(label)
-    #    return np.array(predictions_list)
-
-    #def probabilities(self, data: TargetCollection) -> np.ndarray:
-    #    '''
-    #    Returns the probability for each class for every sample in the data. 
-    #    The returned matrix is of shape [n_samples, n_classes]
-    #    :param data: Data to predict on
-    #    :returns: probabilities that a class is true for each class for each 
-    #              sample. 
-    #    '''
-        
-    #    predictions = self._predict_iter(data)
-
-    #    n_samples = len(data)
-    #    n_classes = len(self.labels)
-    #    probability_matrix = np.zeros((n_samples, n_classes))
-    #    for index, prediction in enumerate(predictions):
-    #        class_probabilities = prediction['class_probabilities']
-    #        probability_matrix[index] = class_probabilities
-    #    return probability_matrix
 
     def load(self, cuda_device: int = -1) -> Model:
         '''
@@ -282,63 +212,9 @@ class AllenNLPModel():
             archive = load_archive(self.save_dir / "model.tar.gz", 
                                    cuda_device=cuda_device)
             self.model = archive.model
-            #self.labels = self._get_labels()
             return self.model
         raise FileNotFoundError('There is nothing at the save dir:\n'
                                 f'{self.save_dir.resolve()}')
-
-    #def find_learning_rate(self, train_data: TargetCollection,
-    #                       results_dir: Path, 
-    #                       find_lr_kwargs: Optional[Dict[str, Any]] = None
-    #                       ) -> None:
-    #    '''
-    #    Given the training data it will plot learning rate against loss to allow 
-    #    you to find the best learning rate.
-    #    This is just a wrapper around 
-    #    allennlp.commands.find_learning_rate.find_learning_rate_model method.
-    #    :param train_data: Training data.
-    #    :param results_dir: Directory to store the results of the learning rate
-    #                        findings.
-    #    :param find_lr_kwargs: Dictionary of keyword arguments to give to the 
-    #                           allennlp.commands.find_learning_rate.find_learning_rate_model
-    #                           method.
-    #    '''
-    #    model_params = self._preprocess_and_load_param_file(self._param_fp)
-    #    with tempfile.TemporaryDirectory() as temp_dir:
-    #        train_fp = Path(temp_dir, 'train_data.json')
-    #        self._data_to_json(train_data, train_fp)
-    #        model_params['train_data_path'] = str(train_fp.resolve())
-    #        if find_lr_kwargs is None:
-    #            find_learning_rate_model(model_params, results_dir)
-    #        else:
-    #            find_learning_rate_model(model_params, results_dir, **find_lr_kwargs)
-
-    #def _get_labels(self) -> List[Any]:
-    #    '''
-    #    Will return all the possible class labels that the model attribute 
-    #    can generate.
-    #    :returns: List of possible labels the model can generate
-    #    '''
-    #    vocab = self.model.vocab
-    #    label_dict = vocab.get_index_to_token_vocabulary('labels')
-    #    return [label_dict[i] for i in range(len(label_dict))]
-        
-    #@staticmethod
-    #def _data_to_json(data: TargetTextCollection, file_path: Path) -> None:
-    #    '''
-    #    Converts the data into json format and saves it to the given file path. 
-    #    The AllenNLP models read the data from json formatted files.
-    #    :param data: data to be saved into json format.
-    #    :param file_path: file location to save the data to.
-    #    '''
-    #    target_data = data.data_dict()
-    #    TargetTextCollection.to_json_file(file)
-    #    with file_path.open('w+') as json_file:
-    #        for index, data in enumerate(target_data):
-    #            json_encoded_data = json.dumps(data)
-    #            if index != 0:
-    #                json_encoded_data = f'\n{json_encoded_data}'
-    #            json_file.write(json_encoded_data)
 
     @staticmethod
     def _preprocess_and_load_param_file(model_param_fp: Path) -> Params:
@@ -405,21 +281,3 @@ class AllenNLPModel():
         :returns: the name of the model e.g. TDLSTM or IAN
         '''
         return self.name
-
-    @property
-    def fitted(self) -> bool:
-        '''
-        If the model has been fitted (default False)
-        :return: True or False
-        '''
-
-        return self._fitted
-
-    @fitted.setter
-    def fitted(self, value: bool) -> None:
-        '''
-        Sets the fitted attribute
-        :param value: The value to assign to the fitted attribute
-        '''
-
-        self._fitted = value
