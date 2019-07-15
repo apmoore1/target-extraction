@@ -2,7 +2,9 @@ from typing import List, Callable, Tuple
 
 import pytest
 
-from target_extraction.tokenizers import whitespace, spacy_tokenizer, stanford, is_character_preserving, token_index_alignment
+from target_extraction.tokenizers import whitespace, spacy_tokenizer, stanford
+from target_extraction.tokenizers import is_character_preserving, token_index_alignment
+from target_extraction.tokenizers import ark_twokenize
 
 class TestTokenizers:
 
@@ -31,8 +33,9 @@ class TestTokenizers:
 
     # This is bad coding pracice but the str.split with False value in the 
     # actual method we replace str.split with not_char_preserving_tokenizer
-    @pytest.mark.parametrize("tokenizer_pass", ((whitespace(), True), (spacy_tokenizer(), True), 
-                                                (stanford(), True), (str.split, False)))
+    @pytest.mark.parametrize("tokenizer_pass", ((whitespace(), True), (spacy_tokenizer(), True),
+                                                (ark_twokenize(), True), (stanford(), True), 
+                                                (str.split, False)))
     def test_is_character_preserving(self, 
                                      tokenizer_pass: Tuple[Callable[[str], List[str]], bool]):
         tokenizer, pass_or_not = tokenizer_pass
@@ -65,6 +68,26 @@ class TestTokenizers:
                                 'think']
 
         more_whitespace_tokens = whitespace_tokenizer(self._serveral_whitespace())
+        assert more_whitespace_tokens == ['another', 'day', 'is', 'today']
+
+    def test_ark_twokenizer(self):
+        tokenizer = ark_twokenize()
+
+        emoji_tokens = tokenizer(self._emoji_sentence())
+        assert emoji_tokens == ['Hello', 'how', 'are', 'you', ',', 'with',
+                                "other's", ':)']
+        
+        no_sentence_tokens = tokenizer(self._no_sentence())
+        assert no_sentence_tokens == []
+
+        whitespace_tokens = tokenizer(self._whitespace_sentence())
+        assert whitespace_tokens == ['another', 'day', 'is', 'today']
+
+        comma_tokens = tokenizer(self._comma_sentence())
+        assert comma_tokens == ['today', 'Is', 'a', 'great', ',', 'day', 'I', 
+                                'think']
+
+        more_whitespace_tokens = tokenizer(self._serveral_whitespace())
         assert more_whitespace_tokens == ['another', 'day', 'is', 'today']
     
     @pytest.mark.parametrize("lang", ('en', 'de', 'nn'))
@@ -127,7 +150,7 @@ class TestTokenizers:
                                     'think']
     
     @pytest.mark.parametrize("tokenizer", (whitespace(), spacy_tokenizer(),
-                                           stanford()))
+                                           stanford(), ark_twokenize()))
     def test_token_index_alignment(self, tokenizer: Callable[[str], List[str]]):
         # Test a sentence where whitespace will be the only factor
         text = self._whitespace_sentence()
@@ -160,7 +183,11 @@ class TestTokenizers:
         text = "  I had,  isn't  great day  doesn't'"
         token_indexs = [(2, 3), (4, 7), (7, 8), (10, 12), (12, 15), (17, 22),
                         (23, 26), (28, 32), (32, 35), (35, 36)]
-        if tokenizer != whitespace():
+        if tokenizer != whitespace() and tokenizer != ark_twokenize():
+            assert token_indexs == token_index_alignment(text, tokenizer(text))
+        elif tokenizer == ark_twokenize():
+            token_indexs = [(2, 3), (4, 7), (7, 8), (10, 15), (17, 22),
+                            (23, 26), (28, 35), (35, 36)]
             assert token_indexs == token_index_alignment(text, tokenizer(text))
         else:
             token_indexs = [(2, 3), (4, 8),(10, 15), (17, 22),(23, 26), 

@@ -12,6 +12,7 @@ import pkgutil
 import spacy
 import stanfordnlp
 from stanfordnlp.utils import resources
+import twokenize
 
 from target_extraction.taggers_helper import stanford_downloader
 from target_extraction.data_types_util import Span
@@ -73,6 +74,15 @@ def whitespace() -> Callable[[str], List[str]]:
     '''
     return str.split
 
+def ark_twokenize() -> Callable[[str], List[str]]:
+    '''
+    A Twitter tokeniser from
+    `CMU Ark <https://github.com/brendano/ark-tweet-nlp>`_
+
+    :returns: A callable that takes a String and returns the tokens for 
+              that String.
+    '''
+    return twokenize.tokenizeRawTweetText
 
 def stanford(lang: str = 'en', treebank: Optional[str] = None, 
              download: bool = False) -> Callable[[str], List[str]]:
@@ -87,19 +97,16 @@ def stanford(lang: str = 'en', treebank: Optional[str] = None,
 
     For Vietnamese instead of characters they used syllables.
 
-    Languages supported: 
-    https://stanfordnlp.github.io/stanfordnlp/installation_download.html#human-
-    languages-supported-by-stanfordnlp
+    `Languages supported <https://stanfordnlp.github.io/stanfordnlp/installation_download.html#human-languages-supported-by-stanfordnlp>`_
 
-    Reference paper:
-    https://www.aclweb.org/anthology/K18-2016
+    `Reference paper <https://www.aclweb.org/anthology/K18-2016>`_
 
     :param lang: Language of the Neural Network tokeniser
     :param treebank: The neural network model to use based on the treebank 
                      it was trained from. If not given the default treebank 
                      will be used. To see which is the default treebank 
-                     and the treebanks available for each language go to:
-                     https://stanfordnlp.github.io/stanfordnlp/models.html#human-languages-supported-by-stanfordnlp
+                     and the treebanks available for each language go to this 
+                     `link <https://stanfordnlp.github.io/stanfordnlp/models.html#human-languages-supported-by-stanfordnlp>`_
     :param download: If to re-download the model. 
     :returns: A callable that takes a String and returns the tokens for that 
               String.
@@ -113,9 +120,8 @@ def stanford(lang: str = 'en', treebank: Optional[str] = None,
         This returns all of the words in each sentence however in the 
         documentation you do have the option to use the tokens instead but 
         the words are used for downstream application hence why the words 
-        were chosen over the tokens. See here for more details:
-        https://stanfordnlp.github.io/stanfordnlp
-        /pipeline.html#accessing-word-information
+        were chosen over the tokens. See here for more 
+        `details <https://stanfordnlp.github.io/stanfordnlp/pipeline.html#accessing-word-information>`_
         '''
         if text.strip() == '':
             return []
