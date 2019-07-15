@@ -763,6 +763,7 @@ class TargetTextCollection(MutableMapping):
         the TargetText instances within this collection, affectively ensures 
         that all of the instances follow the specified rules that TargetText 
         instances should follow.
+    13. number_targets -- Returns the total number of targets.
     
     Static Functions:
 
@@ -1065,19 +1066,30 @@ class TargetTextCollection(MutableMapping):
                 sub_collection.add(target_text)
         return sub_collection
 
-    def target_count(self) -> Dict[str, int]:
+    def target_count(self, lower: bool = False) -> Dict[str, int]:
         '''
+        :param lower: Whether or not to lower the target text.
         :returns: A dictionary of target text as key and values as the number 
                   of times the target text occurs in this TargetTextCollection
         '''
         target_count: Dict[str, int] = Counter()
-        for target_text in self.values():
-            if target_text['spans']:
-                text = target_text['text']
-                for span in target_text['spans']:
-                    target = text[span.start: span.end]
+        for target_dict in self.values():
+            if target_dict['targets']:
+                for target in target_dict['targets']:
+                    if lower:
+                        target = target.lower()
                     target_count.update([target])
         return dict(target_count)
+
+    def number_targets(self) -> int:
+        '''
+        :returns: The total number of targets in the collection
+        '''
+        target_count = 0
+        for target_dict in self.values():
+            if target_dict['targets']:
+                target_count += len(target_dict['targets'])
+        return target_count
 
     def one_sample_per_span(self, remove_empty: bool = False
                             ) -> 'TargetTextCollection':

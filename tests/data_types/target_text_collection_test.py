@@ -583,28 +583,33 @@ class TestTargetTextCollection:
         assert len(sub_collection) == 2
         assert sub_collection != test_collection
 
-    def test_target_count(self):
+    @pytest.mark.parametrize("lower", (False, True))
+    def test_target_count_andnumber_targets(self, lower: bool):
         # Start with an empty collection
         test_collection = TargetTextCollection()
-        nothing = test_collection.target_count()
+        nothing = test_collection.target_count(lower)
         assert len(nothing) == 0
         assert not nothing
 
         # Collection that contains TargetText instances but with no targets
         test_collection.add(TargetText(text='some text', text_id='1'))
         assert len(test_collection) == 1
-        nothing = test_collection.target_count()
+        nothing = test_collection.target_count(lower)
         assert len(nothing) == 0
         assert not nothing
+
+        assert test_collection.number_targets() == 0
 
         # Collection now contains at least one target
         test_collection.add(TargetText(text='another item today', text_id='2',
                                        spans=[Span(0, 12)], 
                                        targets=['another item']))
         assert len(test_collection) == 2
-        one = test_collection.target_count()
+        one = test_collection.target_count(lower)
         assert len(one) == 1
         assert one == {'another item': 1}
+
+        assert test_collection.number_targets() == 1
 
         # Collection now contains 3 targets but 2 are the same
         test_collection.add(TargetText(text='another item today', text_id='3',
@@ -614,10 +619,27 @@ class TestTargetTextCollection:
                                        spans=[Span(0, 4)], 
                                        targets=['item']))
         assert len(test_collection) == 4
-        two = test_collection.target_count()
+        two = test_collection.target_count(lower)
         assert len(two) == 2
         assert two == {'another item': 2, 'item': 1}
-    
+
+        assert test_collection.number_targets() == 3
+
+        # Difference between lower being False and True
+        test_collection.add(TargetText(text='Item today', text_id='5',
+                                       spans=[Span(0, 4)], 
+                                       targets=['Item']))
+        assert len(test_collection) == 5
+        three = test_collection.target_count(lower)
+        if lower:
+            assert len(three) == 2
+            assert three == {'another item': 2, 'item': 2}
+        else:
+            assert len(three) == 3
+            assert three == {'another item': 2, 'item': 1, 'Item': 1}
+
+        assert test_collection.number_targets() == 4
+
     @pytest.mark.parametrize("remove_empty", (False, True))
     def test_one_sample_per_span(self, remove_empty: bool):
         # Case where nothing should change with respect to the number of spans 
