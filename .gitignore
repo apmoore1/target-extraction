@@ -1,6 +1,6 @@
 __pycache__
 .vscode
-.coverage
+.coverage*
 docs/build
 docs/make.bat
 docs/source/modules.rst
