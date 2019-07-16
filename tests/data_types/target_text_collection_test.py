@@ -340,20 +340,50 @@ class TestTargetTextCollection:
             assert test_collection[target_key]['text'] == perfect_text
             assert test_collection[target_key]['spans'] == perfect_spans
 
-    def test_sequence_labels(self):
+    @pytest.mark.parametrize("return_errors", (False, True))
+    def test_sequence_labels(self, return_errors: bool):
         # Test the single case
         test_collection = TargetTextCollection([self._target_text_example()])
         test_collection.tokenize(spacy_tokenizer())
-        test_collection.sequence_labels()
+        returned_errors = test_collection.sequence_labels(return_errors)
+        assert not returned_errors
         correct_sequence = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
         assert test_collection['2']['sequence_labels'] == correct_sequence
 
         # Test the multiple case
         test_collection = TargetTextCollection(self._target_text_examples())
         test_collection.tokenize(spacy_tokenizer())
-        test_collection.sequence_labels()
+        returned_errors = test_collection.sequence_labels(return_errors)
+        assert not returned_errors
         correct_sequence = ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O']
         assert test_collection['another_id']['sequence_labels'] == correct_sequence
+
+        # Test the case where you can have multiple sequence labels
+        test_collection = TargetTextCollection(self._target_text_examples())
+        error_text = 'Mental health service budgets cut by 8% as referrals to '\
+                     'community mental health teams rise nearly 20%: '\
+                     'http://t.co/ezxPGrNfeG #bbcdp'
+        error_case = TargetText(**{'text': error_text, 
+                                   'text_id': '78895626198466562', 
+                                   'targets': ['health service', 'mental health', 
+                                               'budgets', 'Mental health'], 
+                                   'spans': [Span(start=7, end=21), 
+                                             Span(start=66, end=79), 
+                                             Span(start=22, end=29), 
+                                             Span(start=0, end=13)], 
+                                   'target_sentiments': ['neutral', 'neutral', 
+                                                         'neutral', 'neutral'], 
+                                   'categories': None, 'category_sentiments': None})
+        test_collection.add(error_case)
+        test_collection.tokenize(spacy_tokenizer())
+        if not return_errors:
+            with pytest.raises(ValueError):
+                test_collection.sequence_labels(return_errors)
+        else:
+            returned_errors = test_collection.sequence_labels(return_errors)
+            assert len(returned_errors) == 1
+            assert returned_errors[0]['text_id'] == '78895626198466562'
+
 
     def test_exact_match_score(self):
         # Simple case where it should get perfect score

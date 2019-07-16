@@ -947,11 +947,17 @@ class TargetTextCollection(MutableMapping):
         for target_text_instance in self.values():
             target_text_instance.force_targets()
 
-    def sequence_labels(self) -> None:
+    def sequence_labels(self, return_errors: bool = False
+                        ) -> List['TargetText']:
         '''
         This applies the TargetText.sequence_labels method across all of 
         the TargetText instances within the collection.
 
+        :param return_errors: Returns TargetText objects that have caused 
+                              the ValueError to be raised.
+        :returns: A list of TargetText objects that have caused the ValueError 
+                  to be raised if `return_errors` is True else an empty list 
+                  will be returned. 
         :raises KeyError: If the current TargetText has not been tokenized.
         :raises ValueError: If two targets overlap the same token(s) e.g 
                             `Laptop cover was great` if `Laptop` and 
@@ -960,8 +966,17 @@ class TargetTextCollection(MutableMapping):
                             associated to one target.
         '''
 
+        errored_targets = []
         for target_text_instance in self.values():
-            target_text_instance.sequence_labels()
+            if return_errors:
+                try:
+                    target_text_instance.sequence_labels()
+                except ValueError:
+                    errored_targets.append(target_text_instance)
+            else:
+                target_text_instance.sequence_labels()
+        return errored_targets
+
 
     def exact_match_score(self, 
                           predicted_sequence_key: str = 'predicted_sequence_labels'
