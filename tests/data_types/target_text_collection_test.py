@@ -680,7 +680,44 @@ class TestTargetTextCollection:
             target_text._storage['spans'] = [Span(3,15)]
             collection = TargetTextCollection([target_text])
             collection.sanitize()
+    
+    def test_combine(self):
+        targets = [TargetText(text='some text', text_id='1')]
+        # The case of one collection
+        test_collection = TargetTextCollection(targets)
 
+        combined_collection = TargetTextCollection.combine(test_collection)
+        assert len(combined_collection) == len(test_collection)
+        assert combined_collection == test_collection
+
+        targets_1 = [TargetText(text='some text', text_id='2'),
+                     TargetText(text='some text', text_id='3')]
+        # The case of two collections
+        test_collection_1 = TargetTextCollection(targets_1)
+
+        combined_collection = TargetTextCollection.combine(test_collection, test_collection_1)
+        assert len(combined_collection) == 3
+        correct_combined = TargetTextCollection(targets + targets_1)
+        assert combined_collection == correct_combined
+
+        # Test the case of where two collections have a TargetText with the 
+        # same key
+        target_same_key = [TargetText(text='another', text_id='1')]
+        test_collection_2 = TargetTextCollection(target_same_key)
+        combined_collection = TargetTextCollection.combine(test_collection, test_collection_1, 
+                                                           test_collection_2)
+        assert len(combined_collection) == 3
+        assert combined_collection['1']['text'] == 'another'
+        correct_combined = TargetTextCollection(targets_1 + target_same_key)
+        assert combined_collection == correct_combined
+
+        # Test the case of combining two empty TargetTextCollections
+        empty_collection = TargetTextCollection()
+        empty_collection_1 = TargetTextCollection()
+        empty_combined = TargetTextCollection.combine(empty_collection, empty_collection_1)
+        assert len(empty_combined) == 0
+        assert empty_combined == empty_collection
+        assert empty_combined == empty_collection_1
 
 
 

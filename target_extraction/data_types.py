@@ -772,6 +772,8 @@ class TargetTextCollection(MutableMapping):
        TargetTextCollection.to_json.
     2. load_json -- Returns a TargetTextCollection based on each new line in 
        the given json file.
+    3. combine -- Returns a TargetTextCollection that is the combination of all 
+       of those given.
     '''
     def __init__(self, target_texts: Optional[List['TargetText']] = None,
                  name: Optional[str] = None) -> None:
@@ -1121,6 +1123,20 @@ class TargetTextCollection(MutableMapping):
 
         for target_text in self.values():
             target_text.sanitize()
+
+    @staticmethod
+    def combine(*collections) -> 'TargetTextCollection':
+        '''
+        :param collections: An iterator containing one or more 
+                            TargetTextCollections
+        :returns: A TargetTextCollection that is the combination of all of 
+                  those given.
+        '''
+        target_objects: 'TargetText' = []
+        for collection in collections:
+            for target in collection.values():
+                target_objects.append(target)
+        return TargetTextCollection(target_objects)
 
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:
