@@ -1070,6 +1070,10 @@ class TargetTextCollection(MutableMapping):
 
     def target_count(self, lower: bool = False) -> Dict[str, int]:
         '''
+        :Note: The target can not exist e.g. be a `None` target as the target 
+               can be combined with the category like in the SemEval 2016 
+               Restaurant dataset. In these case we do not include these 
+               in the target_count.
         :param lower: Whether or not to lower the target text.
         :returns: A dictionary of target text as key and values as the number 
                   of times the target text occurs in this TargetTextCollection
@@ -1078,19 +1082,27 @@ class TargetTextCollection(MutableMapping):
         for target_dict in self.values():
             if target_dict['targets']:
                 for target in target_dict['targets']:
+                    if target is None:
+                        continue
                     if lower:
                         target = target.lower()
                     target_count.update([target])
         return dict(target_count)
 
-    def number_targets(self) -> int:
+    def number_targets(self, incl_none_targets: bool = False) -> int:
         '''
-        :returns: The total number of targets in the collection
+        :param incl_none_targets: Whether to include targets that are `None`
+                                  and are therefore associated to the categories 
+                                  in the count.
+        :returns: The total number of targets in the collection. 
         '''
         target_count = 0
         for target_dict in self.values():
             if target_dict['targets']:
-                target_count += len(target_dict['targets'])
+                for target in target_dict['targets']:
+                    if not incl_none_targets and target is None:
+                        continue
+                    target_count += 1
         return target_count
 
     def one_sample_per_span(self, remove_empty: bool = False

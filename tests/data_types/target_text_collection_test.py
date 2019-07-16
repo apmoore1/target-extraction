@@ -584,7 +584,9 @@ class TestTargetTextCollection:
         assert sub_collection != test_collection
 
     @pytest.mark.parametrize("lower", (False, True))
-    def test_target_count_andnumber_targets(self, lower: bool):
+    @pytest.mark.parametrize("incl_none_targets", (False, True))
+    def test_target_count_andnumber_targets(self, lower: bool,
+                                            incl_none_targets: bool):
         # Start with an empty collection
         test_collection = TargetTextCollection()
         nothing = test_collection.target_count(lower)
@@ -598,7 +600,7 @@ class TestTargetTextCollection:
         assert len(nothing) == 0
         assert not nothing
 
-        assert test_collection.number_targets() == 0
+        assert test_collection.number_targets(incl_none_targets) == 0
 
         # Collection now contains at least one target
         test_collection.add(TargetText(text='another item today', text_id='2',
@@ -609,7 +611,7 @@ class TestTargetTextCollection:
         assert len(one) == 1
         assert one == {'another item': 1}
 
-        assert test_collection.number_targets() == 1
+        assert test_collection.number_targets(incl_none_targets) == 1
 
         # Collection now contains 3 targets but 2 are the same
         test_collection.add(TargetText(text='another item today', text_id='3',
@@ -623,7 +625,7 @@ class TestTargetTextCollection:
         assert len(two) == 2
         assert two == {'another item': 2, 'item': 1}
 
-        assert test_collection.number_targets() == 3
+        assert test_collection.number_targets(incl_none_targets) == 3
 
         # Difference between lower being False and True
         test_collection.add(TargetText(text='Item today', text_id='5',
@@ -638,7 +640,26 @@ class TestTargetTextCollection:
             assert len(three) == 3
             assert three == {'another item': 2, 'item': 1, 'Item': 1}
 
-        assert test_collection.number_targets() == 4
+        assert test_collection.number_targets(incl_none_targets) == 4
+
+        # Can be the case where the target is None and we do not want to 
+        # include these I don't thinkk
+        test_collection.add(TargetText(text='Item today', text_id='6',
+                                       spans=[Span(0, 0)], 
+                                       targets=[None]))
+        assert len(test_collection) == 6
+        three_alt = test_collection.target_count(lower)
+        if lower:
+            assert len(three_alt) == 2
+            assert three_alt == {'another item': 2, 'item': 2}
+        else:
+            assert len(three_alt) == 3
+            assert three_alt == {'another item': 2, 'item': 1, 'Item': 1}
+
+        if incl_none_targets:
+            assert test_collection.number_targets(incl_none_targets) == 5
+        else:
+            assert test_collection.number_targets(incl_none_targets) == 4
 
     @pytest.mark.parametrize("remove_empty", (False, True))
     def test_one_sample_per_span(self, remove_empty: bool):
