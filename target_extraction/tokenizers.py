@@ -5,6 +5,7 @@ All of the functions take exactly no positional arguments but can take
 keyword arguments.
 '''
 import copy
+import re
 from typing import List, Callable, Optional, Tuple
 from pathlib import Path
 import pkgutil
@@ -77,7 +78,8 @@ def whitespace() -> Callable[[str], List[str]]:
 def ark_twokenize() -> Callable[[str], List[str]]:
     '''
     A Twitter tokeniser from
-    `CMU Ark <https://github.com/brendano/ark-tweet-nlp>`_
+    `CMU Ark <https://github.com/brendano/ark-tweet-nlp>`_ and relevant 
+    `paper <https://www.cs.cmu.edu/~ark/TweetNLP/gimpel+etal.acl11.pdf>`_
 
     :returns: A callable that takes a String and returns the tokens for 
               that String.
@@ -176,7 +178,7 @@ def token_index_alignment(text: str, tokens: List[str]
         token_index_list.append(Span(token_start, token_end))
         # Covers the whitespaces of n length between tokens and after the text
         if len(text) > char_index:
-            while text[char_index] == ' ':
+            while re.search(r'\s', text[char_index]):
                 char_index += 1
                 if len(text) <= char_index:
                     break
