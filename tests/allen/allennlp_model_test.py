@@ -1,6 +1,7 @@
 import copy
 from pathlib import Path
 import tempfile
+from typing import Optional
 
 from allennlp.models.model import Model
 from allennlp.common.params import Params
@@ -69,7 +70,8 @@ class TestAllenNLPModel():
             model.fit(train_data, val_data)
             assert saved_model_fp.exists()
     
-    def test_predict_iter(self):
+    @pytest.mark.parametrize("batch_size", (None, 20))
+    def test_predict_iter(self, batch_size: Optional[int]):
         data = [{"text": "The laptop case was great and cover was rubbish"},
                 {"text": "Another day at the office"},
                 {"text": "The laptop case was great and cover was rubbish"}]
@@ -84,12 +86,12 @@ class TestAllenNLPModel():
         model.load()
         non_iter_data = 5
         with pytest.raises(TypeError):
-            for _ in model._predict_iter(non_iter_data):
+            for _ in model._predict_iter(non_iter_data, batch_size=batch_size):
                 pass
         # Test that it works on the normal cases which are lists and iterables
         for data_type in [data, iter(data)]:
             predictions = []
-            for prediction in model._predict_iter(data_type):
+            for prediction in model._predict_iter(data_type, batch_size=batch_size):
                 predictions.append(prediction)
             assert 3 == len(predictions)
             assert isinstance(predictions[0], dict)
@@ -100,7 +102,7 @@ class TestAllenNLPModel():
         larger_dataset = data * 50
         for data_type in [larger_dataset, iter(larger_dataset)]:
             predictions = []
-            for prediction in model._predict_iter(data_type):
+            for prediction in model._predict_iter(data_type, batch_size=batch_size):
                 predictions.append(prediction)
             assert 150 == len(predictions)
             assert isinstance(predictions[0], dict)
@@ -115,11 +117,12 @@ class TestAllenNLPModel():
         # ensure alt_data has no data
         assert 3 == len([d for d in alt_data])
         predictions = []
-        for prediction in model._predict_iter(alt_data):
+        for prediction in model._predict_iter(alt_data, batch_size=batch_size):
             predictions.append(prediction)
         assert not predictions
 
-    def test_predict_sequences(self):
+    @pytest.mark.parametrize("batch_size", (None, 20))
+    def test_predict_sequences(self, batch_size: Optional[int]):
         data = [{"text": "The laptop case was great and cover was rubbish"},
                 {"text": "Another day at the office"},
                 {"text": "The laptop case was great and cover was rubbish"}]
@@ -138,7 +141,7 @@ class TestAllenNLPModel():
         model = AllenNLPModel('TE', self.SOFTMAX_CONFIG_FILE, 'target-tagger', model_dir)
         model.load()
         predictions = []
-        for index, prediction in enumerate(model.predict_sequences(data)):
+        for index, prediction in enumerate(model.predict_sequences(data, batch_size)):
             predictions.append(prediction)
             answer = answers[index]
             assert 2 == len(prediction)

@@ -92,7 +92,8 @@ class AllenNLPModel():
             self.model = trained_model
 
     def _predict_iter(self, data: Union[Iterable[Dict[str, Any]], 
-                                        List[Dict[str, Any]]]
+                                        List[Dict[str, Any]]],
+                      batch_size: Optional[int] = None
                       ) -> Iterable[Dict[str, Any]]:
         '''
         Iterates over the predictions and yields one prediction at a time.
@@ -105,6 +106,10 @@ class AllenNLPModel():
         :param data: Iterable or list of dictionaries that the predictor can 
                      take as input e.g. `target-tagger` predictor expects at 
                      most a `text` key and value.
+        :param batch_size: Specify the batch size to predict on. If left None 
+                           defaults to 64 unless it is specified in the 
+                           `model_param_fp` within the constructor then 
+                           the batch size from the param file is used. 
         :yields: A dictionary containing all the values the model outputs e.g.
                  For the `target_tagger` model it would return `logits`, 
                  `class_probabilities`, `mask`, and `tags`.
@@ -123,8 +128,9 @@ class AllenNLPModel():
         dataset_reader = DatasetReader.from_params(reader_params)
         predictor = Predictor.by_name(self._predictor_name)(self.model, dataset_reader)
 
-        batch_size = 64
-        if 'iterator' in all_model_params:
+        # Argument batch size first then model param file and then default 64
+        batch_size = batch_size or 64
+        if 'iterator' in all_model_params and batch_size != 64:
             iter_params = all_model_params.get("iterator")
             if 'batch_size' in iter_params:
                 batch_size = iter_params['batch_size']
@@ -149,7 +155,8 @@ class AllenNLPModel():
                     yield prediction
 
     def predict_sequences(self, data: Union[Iterable[Dict[str, Any]], 
-                                            List[Dict[str, Any]]]
+                                            List[Dict[str, Any]]],
+                          batch_size: Optional[int] = None
                           ) -> Iterable[Dict[str, Any]]:
         '''
         Given the data it will predict the sequence labels and return the 
@@ -160,6 +167,10 @@ class AllenNLPModel():
                      predictor to do the tokenization then provide `tokens` 
                      as well. Some model may also expect `pos_tags` which the 
                      predictor will provide if the `text` key is only provided.
+        :param batch_size: Specify the batch size to predict on. If left None 
+                           defaults to 64 unless it is specified in the 
+                           `model_param_fp` within the constructor then 
+                           the batch size from the param file is used. 
         :yields: A dictionary containing all the following keys and values:
                  1. `sequence_labels`: A list of predicted sequence labels. 
                     This will be a List of Strings.
@@ -169,7 +180,7 @@ class AllenNLPModel():
         '''
         self.model: Model
         label_to_index = self.model.vocab.get_token_to_index_vocabulary('labels')
-        for prediction in self._predict_iter(data):
+        for prediction in self._predict_iter(data, batch_size):
             output_dict = {}
             # Length of the text
             sequence_length = sum(prediction['mask'])
