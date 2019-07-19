@@ -18,7 +18,7 @@ setup(name='target_extraction',
           'spacy==2.1.4',
           'torch==1.0.0',
           'stanfordnlp==0.2.0',
-          'allennlp==0.8.4',
+          'allennlp>=0.8.3',
           'twokenize>=1.0.0'
       ],
       python_requires='>=3.6.1',
