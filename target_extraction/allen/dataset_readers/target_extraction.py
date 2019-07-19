@@ -19,7 +19,8 @@ class TargetExtractionDatasetReader(DatasetReader):
     Dataset reader designed to read a list of JSON like objects of the 
     following type:
 
-    {`tokenized_text`: [`This`, `Camera`, `lens`, `is`, `great`], 
+    {`tokenized_text`: [`This`, `Camera`, `lens`, `is`, `great`],
+     `text`: `This Camera lens is great`, 
      `tags`: [`O`, `B`, `I`, `O`, `O`],
      `pos_tags`: [`DET`, `NOUN`, `NOUN`, `AUX`, `ADJ`]}
 
@@ -70,16 +71,22 @@ class TargetExtractionDatasetReader(DatasetReader):
 
                 example_instance['tags'] = sequence_labels
                 example_instance['tokens'] = tokens
+                example_instance['text'] = example['text']
                 yield self.text_to_instance(**example_instance)
     
-    def text_to_instance(self, tokens: List[Token], 
+    def text_to_instance(self, tokens: List[Token],
+                         text: str, 
                          tags: Optional[List[str]] = None,
                          pos_tags: Optional[List[str]] = None) -> Instance:
         '''
         The tokens are expected to be pre-tokenised.
 
+        The original token text and the text itself is stored in a 
+        MetadataField
+
         :param tokens: Tokenised text that either has target extraction labels 
                        or is to be tagged.
+        :param text: The text that the tokenised text has come from.
         :param tags: The target extraction BIO labels.
         :param pos_tags: POS tags to be used either as features or for joint 
                          learning.
@@ -88,7 +95,10 @@ class TargetExtractionDatasetReader(DatasetReader):
         '''
         sequence = TextField(tokens, self._token_indexers)
         instance_fields: Dict[str, Field] = {'tokens': sequence}
-        instance_fields["metadata"] = MetadataField({"words": [x.text for x in tokens]})
+        # Metadata field
+        metadata_dict = {"words": [x.text for x in tokens]}
+        metadata_dict['text'] = text
+        instance_fields["metadata"] = MetadataField(metadata_dict)
 
         if tags is not None:
             instance_fields['tags'] = SequenceLabelField(tags, sequence, "labels")

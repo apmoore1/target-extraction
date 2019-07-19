@@ -77,7 +77,7 @@ class TargetTaggerTest(ModelTestCase):
             output_dict = model(**training_tensors)
             for key in output_dict.keys():
                 assert key in {'logits', 'mask', 'tags', 'class_probabilities', 
-                               'loss', 'words'}
+                               'loss', 'words', 'text'}
             tags = output_dict['tags']
             assert len(tags) == 3
             assert len(tags[0]) == 9
@@ -89,6 +89,8 @@ class TargetTaggerTest(ModelTestCase):
             words = output_dict['words']
             assert words[0] == ["The", "laptop", "case", "was", "great", "and", 
                                 "cover", "was", "rubbish"]
+            text = output_dict['text']
+            assert text[0] == "The laptop case was great and cover was rubbish"
 
         for param_file in self.non_pos_param_files:
             test_param_file(param_file, False)

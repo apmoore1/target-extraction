@@ -49,15 +49,15 @@ class TargetTaggerPredictor(Predictor):
         provided. The last is similar to the second but POS tags are provided 
         as they are required by the classifier.
         """
+        text = json_dict['text']
         if 'tokens' in json_dict:
             tokens = [Token(token) for token in json_dict['tokens']]
-            input_dict = {'tokens': tokens}
+            input_dict = {'tokens': tokens, 'text': text}
             if 'pos_tags' in json_dict and \
                'pos_tags' in self._model.vocab._token_to_index:
                 input_dict['pos_tags'] = json_dict['pos_tags']
             return self._dataset_reader.text_to_instance(**input_dict)
         # Using the tokenizer and pos tagger from the constructor
-        text = json_dict['text']
         tokenized_text = self._tokenizer.split_words(text)
         tokens = []
         pos_tags = []
@@ -72,8 +72,9 @@ class TargetTaggerPredictor(Predictor):
                 pos_tags.append(pos_tag)
         if 'pos_tags' in self._model.vocab._token_to_index and self._pos_tags:
             return self._dataset_reader.text_to_instance(tokens=tokens, 
+                                                         text=text,
                                                          pos_tags=pos_tags)
         else:
-            return self._dataset_reader.text_to_instance(tokens=tokens)
+            return self._dataset_reader.text_to_instance(tokens=tokens, text=text)
         
         

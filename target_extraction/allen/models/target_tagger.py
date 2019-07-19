@@ -206,8 +206,7 @@ class TargetTagger(Model):
                            mask: torch.Tensor) -> List[List[int]]:
         '''
         This method has copied a large chunck of code from the 
-        `SimpleTagger.decode 
-        <https://github.com/allenai/allennlp/blob/master/allennlp/models/simple_tagger.py>`_ 
+        `SimpleTagger.decode <https://github.com/allenai/allennlp/blob/master/allennlp/models/simple_tagger.py>`_ 
         method.
         
         Parameters
@@ -264,7 +263,8 @@ class TargetTagger(Model):
             A torch tensor representing the sequence of integer gold class labels of shape
             ``(batch_size, num_tokens)``.
         metadata : ``List[Dict[str, Any]]``, optional, (default = None)
-            metadata containg the original words in the sentence to be tagged under a 'words' key.
+            metadata containg the original words in the sentence to be tagged under a 'words' key
+            as well as the original text under a 'text' key.
 
         Returns
         -------
@@ -286,6 +286,10 @@ class TargetTagger(Model):
             approach.
         loss : ``torch.FloatTensor``, optional
             A scalar loss to be optimised. Only computed if gold label ``tags`` are provided.
+        words : ``List[str]``, optional
+            A list of tokens that were the original input into the model
+        text : ``str``, optional
+            A string that was the original text that the tokens have come from.
         """
         
 
@@ -380,7 +384,13 @@ class TargetTagger(Model):
                                          "but no POS tags were passed.")
 
         if metadata is not None:
-            output["words"] = [x["words"] for x in metadata]
+            words = []
+            texts = []
+            for sample in metadata:
+                words.append(sample['words'])
+                texts.append(sample['text'])
+            output["words"] = words
+            output["text"] = texts
         return output
 
     @overrides

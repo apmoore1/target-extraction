@@ -30,13 +30,18 @@ class TestTargetTaggerPredictor():
         pos_predictor = Predictor.from_archive(pos_archive, 'target-tagger')
 
         predictors = [('non_pos', non_pos_predictor), ('pos', pos_predictor)]
-        output_keys = ['logits', 'mask', 'tags', 'class_probabilities']
+        output_keys = ['logits', 'mask', 'tags', 'class_probabilities', 'words', 
+                       'text']
         for name, predictor in predictors:
             # Example where the input only provides the text and the predictor 
             # has to generate the tokens and pos tags
             result = predictor.predict_json(example_input)
             for output_key in output_keys:
                     assert output_key in result
+            correct_tokens = ["The", "laptop"]
+            assert correct_tokens == result['words']
+            correct_text = example_input['text']
+            assert correct_text == result['text']
             # Example where the input only provides the tokens
             if name == 'pos':
                 # Raised as there will be no POS tags.
@@ -46,10 +51,18 @@ class TestTargetTaggerPredictor():
                 result = predictor.predict_json(example_token_input)
                 for output_key in output_keys:
                     assert output_key in result
+                correct_tokens = example_token_input['tokens']
+                assert correct_tokens == result['words']
+                correct_text = example_token_input['text']
+                assert correct_text == result['text']
             # Example where the input provides the tokens and pos tags
             result = predictor.predict_json(example_token_pos_input)
             for output_key in output_keys:
-                    assert output_key in result
+                assert output_key in result
+            correct_tokens = example_token_input['tokens']
+            assert correct_tokens == result['words']
+            correct_text = example_token_input['text']
+            assert correct_text == result['text']
 
     @pytest.mark.parametrize("pos_tags", (True, False))
     @pytest.mark.parametrize("fine_grained_tags", (True, False))
@@ -70,9 +83,10 @@ class TestTargetTaggerPredictor():
                                           pos_tags=pos_tags, 
                                           fine_grained_tags=fine_grained_tags)
         result = predictor.predict_json(example_input)
-        output_keys = ['logits', 'mask', 'tags', 'class_probabilities']
+        output_keys = ['logits', 'mask', 'tags', 'class_probabilities', 'words', 
+                       'text']
         for output_key in output_keys:
-                    assert output_key in result
+            assert output_key in result
         
         # The POS based model should fail when the 
         pos_archive = load_archive(str(Path(archive_dir, 'pos_model', 'model.tar.gz')))
@@ -87,9 +101,8 @@ class TestTargetTaggerPredictor():
         # When the no POS tags are given it should return a configuration error.
         if pos_tags == True and fine_grained_tags == False:
             result = predictor.predict_json(example_input)
-            output_keys = ['logits', 'mask', 'tags', 'class_probabilities']
             for output_key in output_keys:
-                        assert output_key in result
+                assert output_key in result
         elif pos_tags == True:
             with pytest.raises(KeyError):
                 result = predictor.predict_json(example_input)
@@ -110,7 +123,6 @@ class TestTargetTaggerPredictor():
         # When the no POS tags are given it should return a configuration error.
         if pos_tags == True and fine_grained_tags == True:
             result = predictor.predict_json(example_input)
-            output_keys = ['logits', 'mask', 'tags', 'class_probabilities']
             for output_key in output_keys:
                         assert output_key in result
         elif pos_tags == True:

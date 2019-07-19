@@ -112,7 +112,7 @@ class AllenNLPModel():
                            the batch size from the param file is used. 
         :yields: A dictionary containing all the values the model outputs e.g.
                  For the `target_tagger` model it would return `logits`, 
-                 `class_probabilities`, `mask`, and `tags`.
+                 `class_probabilities`, `mask`, `tags`, `words`, and `text`.
         :raises AssertionError: If the `model` attribute is None. This can be 
                                 overcome by either fitting or loading a model.
         :raises TypeError: If the data given is not of Type List or Iterable.
@@ -160,7 +160,8 @@ class AllenNLPModel():
                           ) -> Iterable[Dict[str, Any]]:
         '''
         Given the data it will predict the sequence labels and return the 
-        confidence socres in those labels as well.
+        confidence socres in those labels as well as the words and text the 
+        prediction was predicting on.
 
         :param data: Iterable or list of dictionaries that contains at least 
                      `text` key and value and if you do not want the 
@@ -177,6 +178,9 @@ class AllenNLPModel():
                  2. `confidence`: The confidence the model had in predicting 
                     each sequence label, this comes from the softmax score.
                     This will be a List of floats.
+                 3. `tokens`: The tokens that the confidence and sequence labels 
+                    are associated to
+                 4. `text`: The text that the tokens/words relate to. 
         '''
         self.model: Model
         label_to_index = self.model.vocab.get_token_to_index_vocabulary('labels')
@@ -197,6 +201,8 @@ class AllenNLPModel():
             for scores, index in zip(confidence_scores, confidence_indexs):
                 label_confidence_scores.append(scores[index])
             output_dict['confidence'] = label_confidence_scores
+            output_dict['tokens'] = prediction['words']
+            output_dict['text'] = prediction['text'] 
 
             yield output_dict
 

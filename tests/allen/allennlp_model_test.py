@@ -95,8 +95,14 @@ class TestAllenNLPModel():
                 predictions.append(prediction)
             assert 3 == len(predictions)
             assert isinstance(predictions[0], dict)
+            assert 6 == len(predictions[1])
             assert 5 == len(predictions[1]['tags'])
             assert 9 == len(predictions[1]['class_probabilities'])
+
+            correct_text = "Another day at the office"
+            correct_tokens = correct_text.split()
+            assert correct_tokens == predictions[1]['words']
+            assert correct_text == predictions[1]['text']
         
         # Test that it works on a larger dataset of 150
         larger_dataset = data * 50
@@ -127,11 +133,17 @@ class TestAllenNLPModel():
                 {"text": "Another day at the office"},
                 {"text": "The laptop case was great and cover was rubbish"}]
         answers = [{"sequence_labels": ['O', 'B', 'B', 'O', 'O', 'B', 'O', 'O', 'B'],
-                    "confidence": [0, 1, 2, 3, 4, 5, 6, 7, 8]},
+                    "confidence": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                    "text": "The laptop case was great and cover was rubbish",
+                    "tokens": "The laptop case was great and cover was rubbish".split()},
                    {"sequence_labels": ['O', 'B', 'B', 'O', 'B'],
-                    "confidence": [0, 1, 2, 3, 4]},
+                    "confidence": [0, 1, 2, 3, 4],
+                    "text": "Another day at the office",
+                    "tokens": "Another day at the office".split()},
                    {"sequence_labels": ['O', 'B', 'B', 'O', 'O', 'B', 'O', 'O', 'B'],
-                    "confidence": [0, 1, 2, 3, 4, 5, 6, 7, 8]}]
+                    "confidence": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                    "text": "The laptop case was great and cover was rubbish",
+                    "tokens": "The laptop case was great and cover was rubbish".split()}]
         # Requires the softmax rather than the CRF version as we want the 
         # confidence scores that are returned to be greater than 
         # 1 / number labels where as in the CRF case it maximses entire 
@@ -144,7 +156,7 @@ class TestAllenNLPModel():
         for index, prediction in enumerate(model.predict_sequences(data, batch_size)):
             predictions.append(prediction)
             answer = answers[index]
-            assert 2 == len(prediction)
+            assert 4 == len(prediction)
             for key, value in answer.items():
                 assert len(value) == len(prediction[key])
                 if key != 'confidence':
