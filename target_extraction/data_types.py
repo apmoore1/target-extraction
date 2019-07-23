@@ -664,8 +664,39 @@ class TargetText(MutableMapping):
             sequence_spans.append(Span(start_span, end_span))
         return sequence_spans
 
-    def get_targets_from_sequence_labels(self):
-        pass
+    def get_targets_from_sequence_labels(self, sequence_key: str, 
+                                         confidence: Optional[float]
+                                         ) -> List[str]:
+        '''
+        This function mains use is when the sequence labels have been 
+        predicted on a piece of text that has no gold annotations.
+
+        :param sequence_key: Key to sequence labels such as a BIO sequence 
+                             labels. Example key name would be `sequence_labels`
+                             after `sequence_labels` function has been called 
+                             or more appropiately `predicted_sequence_labels` 
+                             when you have predicted sequence labels.
+        :param confidence: Optional argument that will return only target 
+                           texts that have been predicted with a confidence 
+                           higher than this. 
+                           :NOTE: As it is BIO labelling in the case where 
+                                  all but one of the B and I's is greater than 
+                                  the threshold that target word would not be 
+                                  returned as one of the words in the multi 
+                                  word target word is less than the threshold.
+        :returns: The target text's that the sequence labels have predcited.
+        :raises KeyError: If no `tokenized_text` or `confidence` key are found.
+                          However `confidence` is only required if the 
+                          confidence argument is set.
+        :raises ValueError: If the confidence value is not between 0 and 1
+        '''
+        if confidence is not None:
+            self._key_error('confidence')
+            if confidence > 1 or confidence < 0:
+                raise ValueError('Confidence value has to be bounded between '
+                                 f'1 and 0 and not {confidence}')
+        self._key_error('tokenized_text')
+
 
     def one_sample_per_span(self, remove_empty: bool = False) -> 'TargetText':
         '''
