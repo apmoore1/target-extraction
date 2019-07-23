@@ -1,7 +1,7 @@
 import copy
 from itertools import repeat
 import traceback
-from typing import List, Dict, Any, Tuple, Iterable, Callable
+from typing import List, Dict, Any, Tuple, Iterable, Callable, Optional
 
 import pytest
 
@@ -1131,3 +1131,107 @@ class TestTargetText:
         test = TargetText(**normal_kwargs)
         for key, value in normal_kwargs.items():
             assert value == test[key]
+
+    @pytest.mark.parametrize("confidence", (None, 0.9))
+    def test_targets_from_sequence_labels(self, confidence: Optional[float]):
+        # Normal case where the confidence values do not affect
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        sequence_labels = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
+        confidences = [0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+        test = TargetText(text=text, text_id=text_id, sequence_labels=sequence_labels, 
+                          confidence=confidences)
+        test.tokenize(str.split)
+        test_targets = test.get_targets_from_sequence_labels('sequence_labels', 
+                                                              confidence)
+        targets = ['laptop case', 'cover']
+        assert targets == test_targets
+        # Case where the confidence values would affect, should not include 
+        # 0.9 as it has to be greater than
+        confidences = [0.0, 1.0, 0.91, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0]
+        test_targets = test.get_targets_from_sequence_labels('sequence_labels', 
+                                                              confidence)
+        if confidence is not None:
+            assert ['laptop case'] == test_targets
+        else:
+            assert targets == test_targets
+        # Case where one word in the target text spanning the B and the I's 
+        # is less than the threshold and the rest are not. In this case 
+        # the whole target should not be returned as the whole target 
+        # has to be greater than this threshold.
+        confidences = [0.0, 1.0, 0.9, 0.0, 0.0, 0.0, 0.95, 0.0, 0.0]
+        test_targets = test.get_targets_from_sequence_labels('sequence_labels', 
+                                                              confidence)
+        if confidence is not None:
+            assert ['cover'] == test_targets
+        else:
+            assert targets == test_targets
+        # Test the case of no targets due to confidence
+        confidences = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        test_targets = test.get_targets_from_sequence_labels('sequence_labels', 
+                                                              confidence)
+        if confidence is not None:
+            assert [] == test_targets
+        else:
+            assert targets == test_targets
+        # Test the case of no targets as it found none, as well as using a 
+        # difference sequence key
+        pred_labels = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+        test_targets['predicted_sequence_labels'] = pred_labels
+        test_targets = test.get_targets_from_sequence_labels('predicted_sequence_labels', 
+                                                              confidence)
+        assert [] == test_targets
+        # Test the case where two different targets are next to each other
+        text = 'Camera screen display'
+        text_id = '2'
+        sequence_labels = ['B', 'B', 'I']
+        confidences = [1.0, 0.9, 0.8]
+        test = TargetText(text=text, text_id=text_id, sequence_labels=sequence_labels, 
+                          confidence=confidences)
+        test.tokenize(str.split)
+        test_targets = test.get_targets_from_sequence_labels('sequence_labels', 
+                                                              confidence)
+        targets = ['Camera', 'screen display']
+        if confidence is not None:
+            ['Camera']
+        else:
+            assert targets == test_targets
+        # Test the tokenized key error
+        test = TargetText(text=text, text_id=text_id, sequence_labels=sequence_labels, 
+                          confidence=confidences)
+        with pytest.raises(KeyError):
+            test.get_targets_from_sequence_labels('sequence_labels', confidence)
+        # Test that the KeyError raises when no confidence key is there for 
+        # the confidence case
+        test = TargetText(text=text, text_id=text_id, sequence_labels=sequence_labels)
+        test.tokenize(str.split)
+        if confidence is not None:
+            with pytest.raises(KeyError):
+                test.get_targets_from_sequence_labels('sequence_labels', confidence)
+        else:
+            test_targets = test.get_targets_from_sequence_labels('sequence_labels', 
+                                                                 confidence)
+            assert targets == test_targets
+        # Test the case when the confidence is not between 0 and 1
+        confidences = [1.0, 0.9, -0.01]
+        test = TargetText(text=text, text_id=text_id, sequence_labels=sequence_labels, 
+                          confidence=confidences)
+        test.tokenize(str.split)
+        if confidence is not None:
+            with pytest.raises(ValueError):
+                test.get_targets_from_sequence_labels('sequence_labels', confidence)
+        else:
+            test_targets = test.get_targets_from_sequence_labels('sequence_labels', 
+                                                                 confidence)
+            assert targets == test_targets
+        confidences = [1.0, 0.9, 1.1]
+        test = TargetText(text=text, text_id=text_id, sequence_labels=sequence_labels, 
+                          confidence=confidences)
+        test.tokenize(str.split)
+        if confidence is not None:
+            with pytest.raises(ValueError):
+                test.get_targets_from_sequence_labels('sequence_labels', confidence)
+        else:
+            test_targets = test.get_targets_from_sequence_labels('sequence_labels', 
+                                                                 confidence)
+            assert targets == test_targets
