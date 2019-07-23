@@ -692,11 +692,37 @@ class TargetText(MutableMapping):
         '''
         if confidence is not None:
             self._key_error('confidence')
-            if confidence > 1 or confidence < 0:
+            if confidence > 1.0 or confidence < 0.0:
                 raise ValueError('Confidence value has to be bounded between '
                                  f'1 and 0 and not {confidence}')
         self._key_error('tokenized_text')
-
+        sequence_indexs: List[List[int]] = self.get_sequence_indexs(sequence_key)
+        # No targets to extract
+        if not sequence_indexs:
+            return []
+        tokens = self['tokenized_text']
+        confidences = None
+        if confidence is not None:
+            confidences = self['confidence']
+        targets = []
+        for span_sequence_index in sequence_indexs:
+            start_index = span_sequence_index[0]
+            end_index = span_sequence_index[-1] + 1
+            target_tokens = tokens[start_index: end_index]
+            # Test that each token in target tokens was predicted with a 
+            # great enough confidence
+            if confidence is not None:
+                next_span = False
+                for index in span_sequence_index:
+                    if confidences[index] <= confidence:
+                        next_span = True
+                if next_span:
+                    continue
+            print(start_index)
+            print(end_index)
+            target = ' '.join(target_tokens)
+            targets.append(target)
+        return targets
 
     def one_sample_per_span(self, remove_empty: bool = False) -> 'TargetText':
         '''
