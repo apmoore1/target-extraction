@@ -943,7 +943,8 @@ class TestTargetText:
         sequence_indexs = test.get_sequence_indexs('sequence_labels')
         assert [] == sequence_indexs
 
-    def test_get_sequence_spans(self):
+    @pytest.mark.parametrize("confidence", (None, 0.9))
+    def test_get_sequence_spans(self, confidence: float):
         # Simple example where the text and the tokens are perfectly aligned.
         # Also it is an example that includes single target and multi word 
         # target
@@ -1054,6 +1055,73 @@ class TestTargetText:
         test.sequence_labels()
         sequence_spans = test.get_sequence_spans('sequence_labels')
         assert [] == sequence_spans
+
+        #
+        # Testing the confidence argument
+        #
+
+        # Simple case where the confidence values should not affect the 
+        # output
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        confidences = [0.0, 0.91, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+        sequence_labels = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
+        test = TargetText(text=text, text_id=text_id, 
+                          sequence_labels=sequence_labels, confidence=confidences)
+        test.tokenize(str.split)
+        test_spans = test.get_sequence_spans('sequence_labels', 
+                                             confidence=confidence)
+        assert [Span(4, 15), Span(30, 35)] == test_spans
+        # The last sequence label should not be allowed in the confidence case
+        confidences = [0.0, 0.91, 1.0, 0.0, 0.0, 0.0, 0.9, 0.0, 0.0]
+        test['confidence'] = confidences
+        test_spans = test.get_sequence_spans('sequence_labels', 
+                                             confidence=confidence)
+        if confidence is not None:
+            assert [Span(4, 15)] == test_spans
+        else:
+            assert [Span(4, 15), Span(30, 35)] == test_spans
+        # The first set of spans should not exist as all of the label are 
+        # below the confidence threshold
+        confidences = [0.0, 0.89, 0.0, 0.0, 0.0, 0.0, 0.91, 0.0, 0.0]
+        test['confidence'] = confidences
+        test_spans = test.get_sequence_spans('sequence_labels', 
+                                             confidence=confidence)
+        if confidence is not None:
+            assert [Span(30, 35)] == test_spans
+        else:
+            assert [Span(4, 15), Span(30, 35)] == test_spans
+        # The first set of spans should not exist as at least one of the labels
+        # is below the confidence threshold
+        confidences = [0.0, 0.9, 0.91, 0.0, 0.0, 0.0, 0.91, 0.0, 0.0]
+        test['confidence'] = confidences
+        test_spans = test.get_sequence_spans('sequence_labels', 
+                                             confidence=confidence)
+        if confidence is not None:
+            assert [Span(30, 35)] == test_spans
+        else:
+            assert [Span(4, 15), Span(30, 35)] == test_spans
+        # None of the spans should exist as they are all below the confidence 
+        # threshold
+        confidences = [0.0, 0.89, 0.89, 0.0, 0.0, 0.0, 0.51, 0.0, 0.0]
+        test['confidence'] = confidences
+        test_spans = test.get_sequence_spans('sequence_labels', 
+                                             confidence=confidence)
+        if confidence is not None:
+            assert [] == test_spans
+        else:
+            assert [Span(4, 15), Span(30, 35)] == test_spans
+        # Test the confidence ValueError case
+        with pytest.raises(ValueError):
+            test.get_sequence_spans('sequence_labels', confidence=1.01)
+        with pytest.raises(ValueError):
+            test.get_sequence_spans('sequence_labels', confidence=-0.01)
+        # Test the KeyError test for confidence
+        del test['confidence']
+        if confidence is not None:
+            with pytest.raises(KeyError):
+                test.get_sequence_spans('sequence_labels', 
+                                        confidence=confidence)
 
     @pytest.mark.parametrize("remove_empty", (False, True))
     def test_one_sample_per_span(self, remove_empty: bool):
