@@ -1316,3 +1316,117 @@ class TestTargetText:
         spans = []
         test_targets = TargetText.targets_from_spans(text, spans)
         assert [] == test_targets
+
+    @pytest.mark.parametrize("confidence", (None, 0.9))
+    def test_target_text_from_prediction(self, confidence: float):
+        text = 'The laptop case was great and cover was rubbish'
+        tokens = ['The', 'laptop', 'case', 'was', 'great', 'and', 'cover', 
+                  'was', 'rubbish']
+        sequence_labels = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
+        confidences = [0.0, 1.0, 0.91, 0.0, 0.0, 0.0, 0.95, 0.0, 0.0]
+        targets = ['laptop case', 'cover']
+        spans = [Span(4, 15), Span(30, 35)]
+        text_id = '1'
+        # Test the normal case where the confidence and non-confidence are the 
+        # same
+        test= TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                     sequence_labels=sequence_labels,
+                                                     tokenized_text=tokens, 
+                                                     confidence=confidence, 
+                                                     confidences=confidences)
+        correct_dict = {'text_id': text_id, 'text': text, 'targets': targets,
+                        'spans': spans, 'tokenized_text': tokens, 
+                        'sequence_labels': sequence_labels, 
+                        'confidence': confidences, 'categories': None,
+                        'target_sentiments': None, 'category_sentiments': None}
+        assert isinstance(test, TargetText)
+        assert len(correct_dict) == len(test)
+        for key, value in correct_dict.items():
+            assert value == test[key]
+        # Test the case where the confidence and non-confidence are different
+        confidences = [0.0, 1.0, 0.89, 0.0, 0.0, 0.0, 0.95, 0.0, 0.0]
+        test= TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                     sequence_labels=sequence_labels,
+                                                     tokenized_text=tokens, 
+                                                     confidence=confidence, 
+                                                     confidences=confidences)
+        correct_dict['confidence'] = confidences
+        if confidence is not None:
+            correct_dict['spans'] = [Span(30, 35)]
+            correct_dict['targets'] = ['cover']
+        assert isinstance(test, TargetText)
+        assert len(correct_dict) == len(test)
+        for key, value in correct_dict.items():
+            assert value == test[key]
+        # Test the case where there are no targets or spans
+        confidences = [0.5, 1.0, 0.89, 0.0, 0.0, 0.0, 0.95, 0.9, 0.0]
+        sequence_labels = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+        test= TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                     sequence_labels=sequence_labels,
+                                                     tokenized_text=tokens, 
+                                                     confidence=confidence, 
+                                                     confidences=confidences)
+        correct_dict['confidence'] = confidences
+        correct_dict['targets'] = []
+        correct_dict['spans'] = []
+        correct_dict['sequence_labels'] = sequence_labels
+        assert isinstance(test, TargetText)
+        assert len(correct_dict) == len(test)
+        for key, value in correct_dict.items():
+            assert value == test[key]
+        # Ensure that additional data can be given
+        test= TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                     sequence_labels=sequence_labels,
+                                                     tokenized_text=tokens, 
+                                                     confidence=confidence, 
+                                                     confidences=confidences,
+                                                     pos_tags=['NN'])
+        correct_dict['pos_tags'] = ['NN'] 
+        assert isinstance(test, TargetText)
+        assert len(correct_dict) == len(test)
+        for key, value in correct_dict.items():
+            assert value == test[key]
+        # Test the Value Error case where the sequence labels are not the same 
+        # size as the other lists
+        sequence_labels = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+        with pytest.raises(ValueError):
+            TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                     sequence_labels=sequence_labels,
+                                                     tokenized_text=tokens, 
+                                                     confidence=confidence, 
+                                                     confidences=confidences)
+        # Test the case where the confidences are not the same length as the 
+        # other lists
+        confidences = [0.5, 1.0, 0.89, 0.0, 0.0, 0.0, 0.95, 0.9]
+        sequence_labels = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+        if confidence is not None:
+            with pytest.raises(ValueError):
+                TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                     sequence_labels=sequence_labels,
+                                                     tokenized_text=tokens, 
+                                                     confidence=confidence, 
+                                                     confidences=confidences)
+        else:
+            TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                     sequence_labels=sequence_labels,
+                                                     tokenized_text=tokens, 
+                                                     confidence=confidence, 
+                                                     confidences=confidences)
+        # Test that a ValueError raises if any of the additional data is the
+        # following; targets, spans
+        confidences = [0.5, 1.0, 0.89, 0.0, 0.0, 0.0, 0.95, 0.9, 0.0]
+        with pytest.raises(ValueError):
+            TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                   sequence_labels=sequence_labels,
+                                                   tokenized_text=tokens, 
+                                                   confidence=confidence, 
+                                                   confidences=confidences,
+                                                   targets=[])
+        with pytest.raises(ValueError):
+            TargetText.target_text_from_prediction(text=text, text_id=text_id,
+                                                   sequence_labels=sequence_labels,
+                                                   tokenized_text=tokens, 
+                                                   confidence=confidence, 
+                                                   confidences=confidences,
+                                                   spans=[])
+                    

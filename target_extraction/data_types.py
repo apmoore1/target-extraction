@@ -89,6 +89,8 @@ class TargetText(MutableMapping):
        example the json string can be the return of TargetText.to_json.
     2. targets_from_spans -- Given a sequence of spans and the associated text 
        it will return the targets that are within the text based on the spans
+    3. target_text_from_prediction -- Creates a TargetText object from data 
+       that has come from predictions of a Target Extract tagger
     '''
 
     def _check_is_list(self, item: List[Any], item_name: str) -> None:
@@ -867,6 +869,70 @@ class TargetText(MutableMapping):
             target = text[span.start: span.end]
             targets.append(target)
         return targets
+
+    @staticmethod
+    def target_text_from_prediction(text: str, text_id: str, 
+                                    sequence_labels: List[str], 
+                                    tokenized_text: List[str],
+                                    confidence: Optional[float] = None,
+                                    confidences: Optional[List[float]] = None,
+                                    **additional_data) -> 'TargetText':
+        '''
+        Creates a TargetText object from data that has come from predictions
+        of a Target Extract tagger e.g. the dictionaries that are returned 
+        from :meth:`target_extraction.allen.allennlp_model.predict_sequences`
+
+        :param text: Text to give to the TargetText object
+        :param text_id: Text ID to give to the TargetText object
+        :param sequence_labels: The predicted sequence labels
+        :param tokenized_text: The tokens that were used to produce the 
+                               predicted sequence labels (should be returned 
+                               by the Target Extract tagger predictor).
+        :param confidence: The level of confidence from the tagger that is 
+                           required for a target to be a target e.g. 0.9
+        :param confidences: The list of confidence values produced 
+                            by the Target Extract tagger predictor to be used 
+                            with the confidence argument. The list of confidence 
+                            values should be the same size as the sequence labels 
+                            list and tokenized text.
+        :param additional_data: Any other keyword arguments to provide to the 
+                                TargetText object
+        :returns: A TargetText object with spans and targets values
+        :raises ValueError: If sequence labels, tokenized text and confidecnes 
+                            are not of the same length
+        :raises ValueError: If the following keys are in the additional data;
+                            1. confidence, 2. text, 3. text_id, 4. tokenized_text
+                            5. sequence_labels, 6. targets, 7. spans. As these 
+                            keys will be populated by within the TargetText 
+                            object automatically.
+        '''
+        if len(sequence_labels) != len(tokenized_text):
+            raise ValueError('Sequence labels and tokenized texts are not of '
+                             f'the same length:\nSequence labels {sequence_labels}'
+                             f'\nTokenized text: {tokenized_text}')
+        if confidence is not None and len(sequence_labels) != len(confidences):
+            raise ValueError('Sequence labels and confidences are not of '
+                             f'the same length:\nSequence labels {sequence_labels}'
+                             f'\nconfidences: {confidences}')
+        not_allowed_additional_keys = {'confidence', 'text', 'text_id', 
+                                       'tokenized_text', 'sequence_labels',
+                                       'targets', 'spans'}
+        for key in additional_data:
+            if key in not_allowed_additional_keys:
+                raise ValueError("The following keys are not allowd in the "
+                                 f"additional data:\n{not_allowed_additional_keys}")
+        temp_target_text = TargetText(text_id=text_id, text=text, 
+                                      tokenized_text=tokenized_text,
+                                      sequence_labels=sequence_labels,
+                                      confidence=confidences)
+        target_spans = temp_target_text.get_sequence_spans('sequence_labels',
+                                                           confidence=confidence)
+        targets = TargetText.targets_from_spans(text, target_spans)
+        return TargetText(text_id=text_id, text=text, confidence=confidences,
+                          tokenized_text=tokenized_text, targets=targets,
+                          spans=target_spans, sequence_labels=sequence_labels,
+                          **additional_data)
+
 
 
 class TargetTextCollection(MutableMapping):
