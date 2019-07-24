@@ -78,13 +78,17 @@ class TargetText(MutableMapping):
        for each labelled sequence span.
     7. get_sequence_spans -- The span indexs from the sequence labels given 
        assuming that the sequence labels are in BIO format.
-    8. one_sample_per_span -- This returns a similar TargetText instance 
+    8. get_targets_from_sequence_labels -- Retrives the target words given the 
+       sequence labels.
+    9. one_sample_per_span -- This returns a similar TargetText instance 
        where the new instance will only contain one target per span.
     
     Static Functions:
 
     1. from_json -- Returns a TargetText object given a json string. For 
        example the json string can be the return of TargetText.to_json.
+    2. targets_from_spans -- Given a sequence of spans and the associated text 
+       it will return the targets that are within the text based on the spans
     '''
 
     def _check_is_list(self, item: List[Any], item_name: str) -> None:
@@ -846,6 +850,23 @@ class TargetText(MutableMapping):
                 target_text._storage[key] = value
         target_text.sanitize()
         return target_text
+
+    @staticmethod
+    def targets_from_spans(text:str, spans: List[Span]) -> List[str]:
+        '''
+        :param text: The text that the spans are associated too.
+        :param spans: A list of Span values that represent the character index 
+                      of the target words to be returned.
+        :returns: The target words that are associated to the spans and text 
+                  given.
+        '''
+        targets = []
+        if not spans:
+            return targets
+        for span in spans:
+            target = text[span.start: span.end]
+            targets.append(target)
+        return targets
 
 
 class TargetTextCollection(MutableMapping):

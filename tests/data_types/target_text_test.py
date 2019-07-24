@@ -1293,3 +1293,26 @@ class TestTargetText:
         if confidence is not None:
             with pytest.raises(ValueError):
                 test.get_targets_from_sequence_labels('sequence_labels', wrong_confidence)
+    
+    def test_targets_from_spans(self):
+        # Normal case
+        text = 'The laptop case was great and cover was rubbish'
+        spans = [Span(4, 15), Span(30, 35)]
+        test_targets = TargetText.targets_from_spans(text, spans)
+        assert ['laptop case', 'cover'] == test_targets
+        # Case just one target
+        spans = [Span(4, 15)]
+        test_targets = TargetText.targets_from_spans(text, spans)
+        assert ['laptop case'] == test_targets
+        # Case where the target is at the begining
+        spans = [Span(0, 3)]
+        test_targets = TargetText.targets_from_spans(text, spans)
+        assert ['The'] == test_targets
+        # Case where the target is at the end
+        spans = [Span(40, 47)]
+        test_targets = TargetText.targets_from_spans(text, spans)
+        assert ['rubbish'] == test_targets
+        # Case with no spans
+        spans = []
+        test_targets = TargetText.targets_from_spans(text, spans)
+        assert [] == test_targets
