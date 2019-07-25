@@ -1360,7 +1360,7 @@ class TargetTextCollection(MutableMapping):
                     # check if the sentiment already exists for that target
                     # and if unique then continue else if it does not add.
                     if unique_sentiment:
-                        current_target_sentiments =  target_sentiment_values[target]
+                        current_target_sentiments = target_sentiment_values[target]
                         if sentiment in current_target_sentiments:
                             continue
                     target_sentiment_values[target].append(sentiment)
