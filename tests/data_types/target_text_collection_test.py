@@ -770,14 +770,115 @@ class TestTargetTextCollection:
         assert empty_combined == empty_collection
         assert empty_combined == empty_collection_1
 
+    @pytest.mark.parametrize("lower", (False, True))
+    @pytest.mark.parametrize("unique_sentiment", (False, True))
+    def test_target_sentiments(self, lower: bool, unique_sentiment: bool):
+        # Test the empty case
+        test_collection = TargetTextCollection()
+        nothing = test_collection.target_sentiments(lower, unique_sentiment)
+        assert len(nothing) == 0
+        assert not nothing
 
+        # Collection that contains TargetText instances but with no targets
+        test_collection.add(TargetText(text='some text', text_id='1'))
+        assert len(test_collection) == 1
+        nothing = test_collection.target_sentiments(lower, unique_sentiment)
+        assert len(nothing) == 0
+        assert not nothing
 
+        # Test the case where targets exist but no sentiments
+        test_collection.add(TargetText(text='another item today', text_id='2',
+                                       spans=[Span(0, 12)], 
+                                       targets=['another item']))
+        assert len(test_collection) == 2
+        nothing = test_collection.target_sentiments(lower, unique_sentiment)
+        assert len(nothing) == 0
+        assert not nothing
 
+        # Test the single target and single sentiment case
+        test_collection['2']['target_sentiments'] = ['positive']
+        assert len(test_collection) == 2
+        one = test_collection.target_sentiments(lower, unique_sentiment)
+        assert {'another item': ['positive']} == one
 
-
-
-
-        
-        
-
-
+        # Test the case with more than one target but only one sentiment
+        test_collection.add(TargetText(text='item today', text_id='4',
+                                       spans=[Span(0, 4)],
+                                       target_sentiments=['negative'], 
+                                       targets=['item']))
+        assert len(test_collection) == 3
+        two = test_collection.target_sentiments(lower, unique_sentiment)
+        correct = {'another item': ['positive'], 'item': ['negative']}
+        for key, value in correct.items():
+            assert value == two[key]
+        assert len(correct) == len(two)
+        # Test the case where there are three targets but two sentiments
+        test_collection.add(TargetText(text='Item today', text_id='5',
+                                       spans=[Span(0, 4)], 
+                                       targets=['Item']))
+        assert len(test_collection) == 4
+        two = test_collection.target_sentiments(lower, unique_sentiment)
+        correct = {'another item': ['positive'], 'item': ['negative']}
+        for key, value in correct.items():
+            assert value == two[key]
+        assert len(correct) == len(two)
+        # Test the case where in the case sensitive there are three targets
+        # in the non case sensitive there are two
+        test_collection['5']['target_sentiments'] = ['negative']
+        two = test_collection.target_sentiments(lower, unique_sentiment)
+        if lower:
+            correct = {'another item': ['positive'], 
+                       'item': ['negative', 'negative']}
+            if unique_sentiment:
+                correct['item'] = ['negative']
+        else:
+            correct = {'another item': ['positive'], 
+                       'item': ['negative'],
+                       'Item': ['negative']}
+        for key, value in correct.items():
+            assert value == two[key]
+        assert len(correct) == len(two)
+        # Test the case where you can have multiple sentiment for one target
+        test_collection.add(TargetText(text='great Another item', text_id='6',
+                                       spans=[Span(6, 18)], 
+                                       target_sentiments=['negative'],
+                                       targets=['Another item']))
+        target_sentiment = test_collection.target_sentiments(lower, unique_sentiment)
+        if lower:
+            print(test_collection)
+            print(target_sentiment)
+            correct = {'another item': ['negative', 'positive'], 
+                       'item': ['negative', 'negative']}
+            if unique_sentiment:
+                correct['item'] = ['negative']
+        else:
+            correct = {'another item': ['positive'],
+                       'Another item': ['negative'], 
+                       'item': ['negative'],
+                       'Item': ['negative']}
+        for key, value in correct.items():
+            assert sorted(value) == sorted(target_sentiment[key])
+        assert len(correct) == len(target_sentiment)
+        # Test the case where one of the targets in the TargetCollection contains
+        # multiple targets and target sentiments as well as None value
+        test_collection.add(TargetText(text='great day but food was bad and the table', text_id='7',
+                                       spans=[Span(6, 9), Span(0, 0), Span(14, 18), Span(35, 41)], 
+                                       target_sentiments=['negative', 'positive', 'negative', 'neutral'],
+                                       targets=['day', None, 'food', 'table']))
+        target_sentiment = test_collection.target_sentiments(lower, unique_sentiment)
+        if lower:
+            correct = {'another item': ['negative', 'positive'], 
+                       'item': ['negative', 'negative'],
+                       'day': ['negative'], 'food': ['negative'], 
+                       'table': ['neutral']}
+            if unique_sentiment:
+                correct['item'] = ['negative']
+        else:
+            correct = {'another item': ['positive'],
+                       'Another item': ['negative'], 
+                       'item': ['negative'],'day': ['negative'], 
+                       'food': ['negative'], 'table': ['neutral'],
+                       'Item': ['negative']}
+        for key, value in correct.items():
+            assert sorted(value) == sorted(target_sentiment[key])
+        assert len(correct) == len(target_sentiment)
