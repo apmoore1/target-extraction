@@ -38,13 +38,14 @@ def same_one_sentiment(test_dataset: TargetTextCollection,
     0's and 1's where a 1 represents the associated target has the same one 
     sentiment label in the train and test where as the 0 means it does not.
 
+    :Note: If the target is None then an empty list is returned for that 
+           `same_one_sentiment` key value.
+
     :param test_dataset: Test dataset to sub-sample
     :param train_dataset: Train dataset to reference
     :param lower: Whether to lower case the target words
     :returns: The test dataset but with each TargetText object containing a 
               `same_one_sentiment` key and associated list of values.
-    :raises ValueError: If the `targets` key contains the value None should be 
-                        at least an empty list.
     '''
     train_target_sentiments = train_dataset.target_sentiments(lower=lower, 
                                                               unique_sentiment=True)
@@ -52,11 +53,10 @@ def same_one_sentiment(test_dataset: TargetTextCollection,
                                                             unique_sentiment=True)
     for target_data in test_dataset.values():
         test_targets = target_data['targets']
-        if test_targets is None:
-            raise ValueError('The targets key for this TargetText object '
-                             f'{target_data} is None. Should be at least an '
-                             'empty list')
         same_one_values: List[int] = []
+        if test_targets is None:
+            target_data['same_one_sentiment'] = same_one_values
+            continue
         for target in test_targets:
             if lower:
                 target = target.lower()

@@ -83,12 +83,12 @@ def test_target_sentiments(lower: bool):
     train = TargetTextCollection([empty_target])
     test = same_one_sentiment(test, train, lower)
     assert [[]] == get_error_counts(test, 'same_one_sentiment')
-    # Where the targets are None it should raise a ValueError
+    # Where the targets are it should return an empty list
     no_targets = TargetText(text='something', text_id='1')
     test = TargetTextCollection([no_targets])
-    with pytest.raises(ValueError):
-        same_one_sentiment(test, train, lower)
-
+    test = same_one_sentiment(test, train, lower)
+    assert [[]] == get_error_counts(test, 'same_one_sentiment')
+        
 def test_count_error_key_occurence():
     # The zero case
     pos, neg, neu = 'positive', 'negative', 'neutral'
