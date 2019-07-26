@@ -117,24 +117,17 @@ def same_multi_sentiment(test_dataset: TargetTextCollection,
     :returns: The test dataset but with each TargetText object containing a 
               `same_multi_sentiment` key and associated list of values.
     '''
-    pass
-    #train_target_sentiments = target_sentiments(train_dataset, lower)
-    #test_target_sentiments = target_sentiments(test_dataset, lower)
-
-    #same_multi_sentiments = set()
-    #for data in test_dataset.data():
-    #    target = data['target']
-    #    if lower:
-    #        target = target.lower()
-    #    if (target in train_target_sentiments and 
-    #        target in test_target_sentiments):
-    #        train_sentiments = train_target_sentiments[target]
-    #        test_sentiments = test_target_sentiments[target]
-    #        if (len(train_sentiments) > 1 and 
-    #            len(test_sentiments) > 1):
-    #            if train_sentiments == test_sentiments:
-    #                same_multi_sentiments.add(target)
-    #same_multi_samples = targets_to_samples(test_dataset, same_multi_sentiments, 
-    #                                        lower)
-    #same_multi_ids = [sample['target_id'] for sample in same_multi_samples]
-    #return same_multi_ids
+    def error_func(target: TargetText, 
+                   train_target_sentiments: Dict[str, List[str]],
+                   test_target_sentiments: Dict[str, List[str]]) -> bool:
+        if (target in train_target_sentiments and 
+            target in test_target_sentiments):
+            train_sentiments = train_target_sentiments[target]
+            test_sentiments = test_target_sentiments[target]
+            if (len(train_sentiments) > 1 and len(test_sentiments) > 1):
+                if train_sentiments == test_sentiments:
+                    return True
+        return False    
+    
+    return _pre_post_subsampling(test_dataset, train_dataset, lower, 
+                                 'same_multi_sentiment', error_func)

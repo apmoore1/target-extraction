@@ -5,6 +5,7 @@ import pytest
 from target_extraction.data_types_util import Span
 from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.error_analysis import same_one_sentiment
+from target_extraction.error_analysis import same_multi_sentiment
 from target_extraction.error_analysis import count_error_key_occurence
 
 
@@ -38,7 +39,7 @@ def get_error_counts(dataset: TargetTextCollection, error_key: str
     return error_counts
 
 @pytest.mark.parametrize("lower", (False, True))
-def test_target_sentiments(lower: bool):
+def test_same_one_sentiment(lower: bool):
     # The train and test collection where there are no targets 
     # with the same sentiment
     pos, neg, neu = 'positive', 'negative', 'neutral'
@@ -88,6 +89,63 @@ def test_target_sentiments(lower: bool):
     test = TargetTextCollection([no_targets])
     test = same_one_sentiment(test, train, lower)
     assert [[]] == get_error_counts(test, 'same_one_sentiment')
+
+@pytest.mark.parametrize("lower", (False, True))
+def test_same_multi_sentiment(lower: bool):
+    # The train and test collection where there are no targets 
+    # with the same sentiment
+    pos, neg, neu = 'positive', 'negative', 'neutral'
+    train_sentiments = [[pos], [neg], [neg, pos]]
+    test_sentiments = [[neu], [neu], [neu, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = same_multi_sentiment(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'same_multi_sentiment')
+    # The train and test collection where one target contains two sentiment 
+    # where one is the same but the other is not
+    test_sentiments = [[pos], [neu], [pos, neu]]
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = same_multi_sentiment(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'same_multi_sentiment')
+    # The train and test collection where one target has the same sentiment
+    train_sentiments = [[pos], [neg], [pos, pos]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = same_multi_sentiment(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'same_multi_sentiment')
+    # Where one of the targets has two different sentiments that are the same
+    train_sentiments = [[pos], [neu], [pos, neg]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test_sentiments = [[pos], [neu], [pos, neg]]
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = same_multi_sentiment(test, train, lower)
+    answer = [[0], [1], [0,1]]
+    assert answer == get_error_counts(test, 'same_multi_sentiment')
+    # The same as before but will not work in the cased version
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test['2']._storage['targets'] = ['laptop case', 'Cover']
+    test['2']._storage['text'] = 'The laptop case was great and Cover was rubbish'
+    train['2']._storage['targets'] = ['laptop case', 'Cover']
+    train['2']._storage['text'] = 'The laptop case was great and Cover was rubbish'
+    if not lower:
+        answer = [[0], [0], [0,0]]
+    test = same_multi_sentiment(test, train, lower)
+    assert answer == get_error_counts(test, 'same_multi_sentiment')
+    # Where both have no targets
+    empty_target = TargetText(text='something', text_id='1', targets=[], 
+                              spans=[])
+    test = TargetTextCollection([empty_target])
+    train = TargetTextCollection([empty_target])
+    test = same_multi_sentiment(test, train, lower)
+    assert [[]] == get_error_counts(test, 'same_multi_sentiment')
+    # Where the targets are it should return an empty list
+    no_targets = TargetText(text='something', text_id='1')
+    test = TargetTextCollection([no_targets])
+    test = same_multi_sentiment(test, train, lower)
+    assert [[]] == get_error_counts(test, 'same_multi_sentiment')
         
 def test_count_error_key_occurence():
     # The zero case
