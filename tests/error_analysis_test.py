@@ -6,6 +6,9 @@ from target_extraction.data_types_util import Span
 from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.error_analysis import same_one_sentiment
 from target_extraction.error_analysis import same_multi_sentiment
+from target_extraction.error_analysis import similar_sentiment
+from target_extraction.error_analysis import different_sentiment
+from target_extraction.error_analysis import unknown_targets
 from target_extraction.error_analysis import count_error_key_occurence
 
 
@@ -146,6 +149,188 @@ def test_same_multi_sentiment(lower: bool):
     test = TargetTextCollection([no_targets])
     test = same_multi_sentiment(test, train, lower)
     assert [[]] == get_error_counts(test, 'same_multi_sentiment')
+
+@pytest.mark.parametrize("lower", (False, True))
+def test_similar_sentiment(lower: bool):
+    # The train and test collection where there are no targets 
+    # with the same sentiment
+    pos, neg, neu = 'positive', 'negative', 'neutral'
+    train_sentiments = [[pos], [neg], [neg, pos]]
+    test_sentiments = [[neu], [neu], [neu, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = similar_sentiment(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'similar_sentiment')
+    # The train and test collection where one target contains two sentiment 
+    # where one is the same but the other is not
+    test_sentiments = [[pos], [neu], [pos, neu]]
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = similar_sentiment(test, train, lower)
+    answer = [[1], [0], [1,0]]
+    assert answer == get_error_counts(test, 'similar_sentiment')
+    # The train and test collection where one target has the same sentiment
+    train_sentiments = [[pos], [neg], [pos, pos]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = similar_sentiment(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'similar_sentiment')
+    # Where one of the targets has two different sentiments that are the same
+    train_sentiments = [[pos], [neu], [pos, neg]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test_sentiments = [[pos], [neu], [pos, neg]]
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = similar_sentiment(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'similar_sentiment')
+    # The same as the one with [[1], [0], [1,0]] before but will not work in 
+    # the cased version
+    train_sentiments = [[pos], [neg], [neg, pos]]
+    test_sentiments = [[pos], [neu], [pos, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test['2']._storage['targets'] = ['Laptop case', 'cover']
+    test['2']._storage['text'] = 'The Laptop case was great and cover was rubbish'
+    train['2']._storage['targets'] = ['Laptop case', 'cover']
+    train['2']._storage['text'] = 'The Laptop case was great and cover was rubbish'
+    answer = [[1], [0], [1,0]]
+    if not lower:
+        answer = [[0], [0], [0,0]]
+    test = similar_sentiment(test, train, lower)
+    assert answer == get_error_counts(test, 'similar_sentiment')
+    # Where both have no targets
+    empty_target = TargetText(text='something', text_id='1', targets=[], 
+                              spans=[])
+    test = TargetTextCollection([empty_target])
+    train = TargetTextCollection([empty_target])
+    test = similar_sentiment(test, train, lower)
+    assert [[]] == get_error_counts(test, 'similar_sentiment')
+    # Where the targets are it should return an empty list
+    no_targets = TargetText(text='something', text_id='1')
+    test = TargetTextCollection([no_targets])
+    test = similar_sentiment(test, train, lower)
+    assert [[]] == get_error_counts(test, 'similar_sentiment')
+
+@pytest.mark.parametrize("lower", (False, True))
+def test_different_sentiment(lower: bool):
+    # The train and test collection where there are no targets 
+    # with the same sentiment
+    pos, neg, neu = 'positive', 'negative', 'neutral'
+    train_sentiments = [[pos], [neg], [neg, pos]]
+    test_sentiments = [[neu], [neu], [neu, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = different_sentiment(test, train, lower)
+    answer = [[1], [1], [1,1]]
+    assert answer == get_error_counts(test, 'different_sentiment')
+    # The train and test collection where one target contains two sentiment 
+    # where one is the same but the other is not
+    test_sentiments = [[pos], [neu], [pos, neu]]
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = different_sentiment(test, train, lower)
+    answer = [[0], [1], [0,1]]
+    assert answer == get_error_counts(test, 'different_sentiment')
+    # The train and test collection where one target has the same sentiment
+    train_sentiments = [[pos], [neg], [pos, pos]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = different_sentiment(test, train, lower)
+    answer = [[0], [1], [0,1]]
+    assert answer == get_error_counts(test, 'different_sentiment')
+    # Where one of the targets has two different sentiments that are the same
+    train_sentiments = [[pos], [neu], [pos, neg]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test_sentiments = [[pos], [neu], [pos, neg]]
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = different_sentiment(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'different_sentiment')
+    # The same as the one with [[0], [1], [0,1]] before but will only work in 
+    # the cased version
+    train_sentiments = [[pos], [neg], [neg, pos]]
+    test_sentiments = [[pos], [neu], [pos, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test['2']._storage['targets'] = ['laptop case', 'Cover']
+    test['2']._storage['text'] = 'The laptop case was great and Cover was rubbish'
+    test['2']._storage['target_sentiments'] = [pos, pos]
+    train['2']._storage['targets'] = ['laptop case', 'Cover']
+    train['2']._storage['text'] = 'The laptop case was great and Cover was rubbish'
+    answer = [[0], [0], [0,0]]
+    if not lower:
+        answer = [[0], [1], [0,0]]
+    test = different_sentiment(test, train, lower)
+    assert answer == get_error_counts(test, 'different_sentiment')
+    # Where both have no targets
+    empty_target = TargetText(text='something', text_id='1', targets=[], 
+                              spans=[])
+    test = TargetTextCollection([empty_target])
+    train = TargetTextCollection([empty_target])
+    test = different_sentiment(test, train, lower)
+    assert [[]] == get_error_counts(test, 'different_sentiment')
+    # Where the targets are it should return an empty list
+    no_targets = TargetText(text='something', text_id='1')
+    test = TargetTextCollection([no_targets])
+    test = different_sentiment(test, train, lower)
+    assert [[]] == get_error_counts(test, 'different_sentiment')
+
+@pytest.mark.parametrize("lower", (False, True))
+def test_unknown_targets(lower: bool):
+    # The train and test collection where there are no targets 
+    # with the same sentiment
+    pos, neg, neu = 'positive', 'negative', 'neutral'
+    train_sentiments = [[pos], [neg], [neg, pos]]
+    test_sentiments = [[neu], [neu], [neu, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = unknown_targets(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'unknown_targets')
+    # The train and test collection where one target contains two sentiment 
+    # where one is the same but the other is not
+    test_sentiments = [[pos], [neu], [pos, neu]]
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = unknown_targets(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'unknown_targets')
+    # The train and test collection where one target has the same sentiment
+    train_sentiments = [[pos], [neg], [pos, pos]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = unknown_targets(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'unknown_targets')
+    # Where one of the targets has two different sentiments that are the same
+    train_sentiments = [[pos], [neu], [pos, neg]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test_sentiments = [[pos], [neu], [pos, neg]]
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = unknown_targets(test, train, lower)
+    answer = [[0], [0], [0,0]]
+    assert answer == get_error_counts(test, 'unknown_targets')
+    # This tests both lower and not as well as the only time that it can 
+    # be True as in the only time a target is in Test and not in Train.
+    train_sentiments = [[pos], [neg], [neg, pos]]
+    test_sentiments = [[pos], [neu], [pos, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test['2']._storage['targets'] = ['laptop case', 'Cover']
+    test['2']._storage['text'] = 'The laptop case was great and Cover was rubbish'
+    answer = [[0], [0], [0,0]]
+    if not lower:
+        answer = [[0], [0], [0,1]]
+    test = unknown_targets(test, train, lower)
+    assert answer == get_error_counts(test, 'unknown_targets')
+    # Where both have no targets
+    empty_target = TargetText(text='something', text_id='1', targets=[], 
+                              spans=[])
+    test = TargetTextCollection([empty_target])
+    train = TargetTextCollection([empty_target])
+    test = unknown_targets(test, train, lower)
+    assert [[]] == get_error_counts(test, 'unknown_targets')
+    # Where the targets are it should return an empty list
+    no_targets = TargetText(text='something', text_id='1')
+    test = TargetTextCollection([no_targets])
+    test = unknown_targets(test, train, lower)
+    assert [[]] == get_error_counts(test, 'unknown_targets')
         
 def test_count_error_key_occurence():
     # The zero case
