@@ -15,7 +15,7 @@ import copy
 import json
 from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
-from typing import Union, Dict
+from typing import Union, Dict, Set
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
 from target_extraction.data_types_util import Span
@@ -1323,32 +1323,33 @@ class TargetTextCollection(MutableMapping):
         return dict(target_count)
 
     def target_sentiments(self, lower: bool = False, 
-                          unique_sentiment: bool = False) -> Dict[str, List[str]]:
+                          unique_sentiment: bool = False
+                          ) -> Dict[str, Union[List[str], Set[str]]]:
         '''
         :Note: The target can not exist e.g. be a `None` target as the target 
                can be combined with the category like in the SemEval 2016 
                Restaurant dataset. In these case we do not include these 
                in the target_count.
         :param lower: Whether or not to lower the target text.
-        :param unique_sentiment: If True instead of each target in the 
-                                 dictionary having a sentiment value for 
-                                 each time the target has been associated to 
-                                 that sentiment it returns a List of sentiment 
-                                 values that are unique no matter how many times
-                                 that sentiment has occured with that target.
+        :param unique_sentiment: Whether or not the return is a dictionary  
+                                 whose values are a List of Strings or if 
+                                 True a Set of Strings.
         :returns: A dictionary where the keys are target texts and the values 
-                  are a list of sentiment values that have been associated to 
+                  are a List of sentiment values that have been associated to 
                   that target. The sentiment value can occur more than once 
                   indicating the number of times that target has been associated 
-                  with that sentiment unless unique_sentiment is True.
+                  with that sentiment unless unique_sentiment is True then 
+                  instead of a List of sentiment values a Set is used instead.
         :Explanation: If the target `camera` has occured with the sentiment 
                       `positive` twice and `negative` once then it will return 
                       {`camera`: [`positive`, `positive`, `negative`]}. However
                       if `unique_sentiment` is True then it will return:
-                      {`camera`: [`positive`, `negative`]}.
+                      {`camera`: {`positive`, `negative`}}.
 
         '''
         target_sentiment_values: Dict[str, List[str]] = defaultdict(list)
+        if unique_sentiment:
+            target_sentiment_values: Dict[str, Set[str]] = defaultdict(set)
         for target_dict in self.values():
             if target_dict['targets'] and target_dict['target_sentiments']:
                 for target, sentiment in zip(target_dict['targets'], 
@@ -1357,13 +1358,10 @@ class TargetTextCollection(MutableMapping):
                         continue
                     if lower:
                         target = target.lower()
-                    # check if the sentiment already exists for that target
-                    # and if unique then continue else if it does not add.
                     if unique_sentiment:
-                        current_target_sentiments = target_sentiment_values[target]
-                        if sentiment in current_target_sentiments:
-                            continue
-                    target_sentiment_values[target].append(sentiment)
+                        target_sentiment_values[target].add(sentiment)
+                    else:
+                        target_sentiment_values[target].append(sentiment)
         return dict(target_sentiment_values)
 
     def number_targets(self, incl_none_targets: bool = False) -> int:

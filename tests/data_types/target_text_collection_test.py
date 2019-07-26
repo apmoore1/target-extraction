@@ -799,7 +799,10 @@ class TestTargetTextCollection:
         test_collection['2']['target_sentiments'] = ['positive']
         assert len(test_collection) == 2
         one = test_collection.target_sentiments(lower, unique_sentiment)
-        assert {'another item': ['positive']} == one
+        if unique_sentiment:
+            assert {'another item': {'positive'}} == one
+        else:
+            assert {'another item': ['positive']} == one
 
         # Test the case with more than one target but only one sentiment
         test_collection.add(TargetText(text='item today', text_id='4',
@@ -808,7 +811,10 @@ class TestTargetTextCollection:
                                        targets=['item']))
         assert len(test_collection) == 3
         two = test_collection.target_sentiments(lower, unique_sentiment)
-        correct = {'another item': ['positive'], 'item': ['negative']}
+        if unique_sentiment:
+            correct = {'another item': {'positive'}, 'item': {'negative'}}
+        else:
+            correct = {'another item': ['positive'], 'item': ['negative']}
         for key, value in correct.items():
             assert value == two[key]
         assert len(correct) == len(two)
@@ -818,7 +824,6 @@ class TestTargetTextCollection:
                                        targets=['Item']))
         assert len(test_collection) == 4
         two = test_collection.target_sentiments(lower, unique_sentiment)
-        correct = {'another item': ['positive'], 'item': ['negative']}
         for key, value in correct.items():
             assert value == two[key]
         assert len(correct) == len(two)
@@ -830,11 +835,16 @@ class TestTargetTextCollection:
             correct = {'another item': ['positive'], 
                        'item': ['negative', 'negative']}
             if unique_sentiment:
-                correct['item'] = ['negative']
+                correct['item'] = {'negative'}
+                correct['another item'] = {'positive'}
         else:
             correct = {'another item': ['positive'], 
                        'item': ['negative'],
                        'Item': ['negative']}
+            if unique_sentiment:
+                correct = {'another item': {'positive'}, 
+                           'item': {'negative'},
+                           'Item': {'negative'}}
         for key, value in correct.items():
             assert value == two[key]
         assert len(correct) == len(two)
@@ -845,17 +855,21 @@ class TestTargetTextCollection:
                                        targets=['Another item']))
         target_sentiment = test_collection.target_sentiments(lower, unique_sentiment)
         if lower:
-            print(test_collection)
-            print(target_sentiment)
             correct = {'another item': ['negative', 'positive'], 
                        'item': ['negative', 'negative']}
             if unique_sentiment:
-                correct['item'] = ['negative']
+                correct['item'] = {'negative'}
+                correct['another item'] = {'positive', 'negative'}
         else:
             correct = {'another item': ['positive'],
                        'Another item': ['negative'], 
                        'item': ['negative'],
                        'Item': ['negative']}
+            if unique_sentiment:
+                correct['item'] = {'negative'}
+                correct['Item'] = {'negative'}
+                correct['Another item'] = {'negative'}
+                correct['another item'] = {'positive'}
         for key, value in correct.items():
             assert sorted(value) == sorted(target_sentiment[key])
         assert len(correct) == len(target_sentiment)
@@ -872,13 +886,25 @@ class TestTargetTextCollection:
                        'day': ['negative'], 'food': ['negative'], 
                        'table': ['neutral']}
             if unique_sentiment:
-                correct['item'] = ['negative']
+                correct['item'] = {'negative'}
+                correct['another item'] = {'positive', 'negative'}
+                correct['table'] = {'neutral'}
+                correct['day'] = {'negative'}
+                correct['food'] = {'negative'}
         else:
             correct = {'another item': ['positive'],
                        'Another item': ['negative'], 
                        'item': ['negative'],'day': ['negative'], 
                        'food': ['negative'], 'table': ['neutral'],
                        'Item': ['negative']}
+            if unique_sentiment:
+                correct['item'] = {'negative'}
+                correct['another item'] = {'positive'}
+                correct['Another item'] = {'negative'}
+                correct['Item'] = {'negative'}
+                correct['table'] = {'neutral'}
+                correct['day'] = {'negative'}
+                correct['food'] = {'negative'}
         for key, value in correct.items():
             assert sorted(value) == sorted(target_sentiment[key])
         assert len(correct) == len(target_sentiment)
