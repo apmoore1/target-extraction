@@ -237,3 +237,25 @@ def unknown_targets(test_dataset: TargetTextCollection,
     
     return _pre_post_subsampling(test_dataset, train_dataset, lower, 
                                  'unknown_targets', error_func)
+
+def distinct_sentiment(dataset: TargetTextCollection) -> TargetTextCollection:
+    '''
+    :param dataset: The dataset to add the distinct sentiment labels to
+    :returns: The same dataset but with each TargetText object containing a 
+              `distinct_sentiment` key and associated number of distinct 
+              sentiments that are in that TargetText object per target.
+
+    :Example: Given a TargetTextCollection that contains a single TargetText 
+              object that has three targets where the first two have the label 
+              positive and the last is negative it will add the 
+              `distinct_sentiment` key to the TargetText object with the
+              following value [2,2,2] as there are two unique/distinct 
+              sentiments in that TargetText object.
+    '''
+    for target_data in dataset.values():
+        target_sentiments = target_data['target_sentiments']
+        num_unique_sentiments = len(set(target_sentiments))
+        num_targets = len(target_sentiments)
+        target_data['distinct_sentiment'] = [num_unique_sentiments 
+                                             for _ in range(num_targets)]
+    return dataset

@@ -9,6 +9,7 @@ from target_extraction.error_analysis import same_multi_sentiment
 from target_extraction.error_analysis import similar_sentiment
 from target_extraction.error_analysis import different_sentiment
 from target_extraction.error_analysis import unknown_targets
+from target_extraction.error_analysis import distinct_sentiment
 from target_extraction.error_analysis import count_error_key_occurence
 
 
@@ -374,3 +375,44 @@ def test_count_error_key_occurence():
     test = TargetTextCollection([empty_target])
     test = same_one_sentiment(test, train, True)
     assert 0 == count_error_key_occurence(test, 'same_one_sentiment')
+
+
+def larger_target_text_examples(target_sentiment_values: List[List[str]]
+                                ) -> List[TargetText]:
+    '''
+    :param target_sentiment_values: A list of 4 lists where each inner list 
+                                    represent the sentiment values for each 
+                                    of the targets in that TargetText object
+    '''
+    text = 'The laptop case was great and cover was rubbish'
+    text_ids = ['0', 'another_id', '2', '4']
+    spans = [[Span(4, 15)], [Span(30, 35)], [Span(4, 15), Span(30, 35)],
+             [Span(0, 3), Span(4, 15), Span(20, 25), Span(30, 35)]]
+    targets = [['laptop case'], ['cover'], ['laptop case', 'cover'],
+               ['The', 'laptop case', 'great', 'cover']]
+    categories = [['LAPTOP#CASE'], ['LAPTOP'], ['LAPTOP#CASE', 'LAPTOP'],
+                  ['LAPTOP#CASE', 'LAPTOP', 'LAPTOP#CASE', 'LAPTOP']]
+
+    target_text_examples = []
+    for i in range(4):
+        example = TargetText(text, text_ids[i], targets=targets[i],
+                                spans=spans[i], 
+                                target_sentiments=target_sentiment_values[i],
+                                categories=categories[i])
+        target_text_examples.append(example)
+    return target_text_examples
+    
+def test_distinct_sentiment():
+    # Test the case with up to 2 distinct sentiments
+    pos, neg, neu = 'positive', 'negative', 'neutral'
+    train_sentiments = [[pos], [neg], [neg, pos], [neg, neu, neg, neg]]
+    dataset = TargetTextCollection(larger_target_text_examples(train_sentiments))
+    dataset = distinct_sentiment(dataset)
+    answer = [[1], [1], [2,2], [2,2,2,2]]
+    assert answer == get_error_counts(dataset, 'distinct_sentiment')
+    # Test the case where they can have all three
+    train_sentiments = [[pos], [neg], [neu, pos], [neg, neu, neg, pos]]
+    dataset = TargetTextCollection(larger_target_text_examples(train_sentiments))
+    dataset = distinct_sentiment(dataset)
+    answer = [[1], [1], [2,2], [3,3,3,3]]
+    assert answer == get_error_counts(dataset, 'distinct_sentiment')
