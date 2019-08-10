@@ -3,7 +3,7 @@ This module is dedictaed to creating new TargetTextCollections that are
 subsamples of the original(s) that will allow the user to analysis the 
 data with respect to some certain property.
 '''
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Union
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 
@@ -31,7 +31,8 @@ def _pre_post_subsampling(test_dataset: TargetTextCollection,
                           train_dataset: TargetTextCollection, 
                           lower: bool, error_key: str,
                           error_func: Callable[[TargetText, Dict[str, List[str]], 
-                                                Dict[str, List[str]]], bool]
+                                                Dict[str, List[str]], 
+                                                Union[int, str]], bool]
                           ) -> TargetTextCollection:
     train_target_sentiments = train_dataset.target_sentiments(lower=lower, 
                                                               unique_sentiment=True)
@@ -40,15 +41,16 @@ def _pre_post_subsampling(test_dataset: TargetTextCollection,
 
     for target_data in test_dataset.values():
         test_targets = target_data['targets']
+        target_sentiments = target_data['target_sentiments']
         error_values: List[int] = []
         if test_targets is None:
             target_data[error_key] = error_values
             continue
-        for target in test_targets:
+        for target, target_sentiment in zip(test_targets, target_sentiments):
             if lower:
                 target = target.lower()
             if error_func(target, train_target_sentiments, 
-                          test_target_sentiments):
+                          test_target_sentiments, target_sentiment):
                 error_values.append(1)
                 continue
             error_values.append(0)
@@ -70,8 +72,9 @@ def same_one_sentiment(test_dataset: TargetTextCollection,
     0's and 1's where a 1 represents the associated target has the same one 
     sentiment label in the train and test where as the 0 means it does not.
 
-    :Note: If the target is None then an empty list is returned for that 
-           `same_one_sentiment` key value.
+    :Note: If the TargetText object `targets` is None as in there are no
+           targets in that sample then the `same_one_sentiment` key
+           will be represented as an empty list
 
     :param test_dataset: Test dataset to sub-sample
     :param train_dataset: Train dataset to reference
@@ -82,7 +85,8 @@ def same_one_sentiment(test_dataset: TargetTextCollection,
     
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
-                   test_target_sentiments: Dict[str, List[str]]) -> bool:
+                   test_target_sentiments: Dict[str, List[str]],
+                   target_sentiment: Union[str, int]) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -108,8 +112,9 @@ def same_multi_sentiment(test_dataset: TargetTextCollection,
     not just poisitive or not just negative) in the train and test 
     where as the 0 means it does not.
 
-    :Note: If the target is None then an empty list is returned for that 
-           `same_multi_sentiment` key value.
+    :Note: If the TargetText object `targets` is None as in there are no
+           targets in that sample then the `same_multi_sentiment` key
+           will be represented as an empty list
 
     :param test_dataset: Test dataset to sub-sample
     :param train_dataset: Train dataset to reference
@@ -119,7 +124,8 @@ def same_multi_sentiment(test_dataset: TargetTextCollection,
     '''
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
-                   test_target_sentiments: Dict[str, List[str]]) -> bool:
+                   test_target_sentiments: Dict[str, List[str]],
+                   target_sentiment: Union[str, int]) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -146,8 +152,9 @@ def similar_sentiment(test_dataset: TargetTextCollection,
     could occur with `positive` and `negative` sentiment in the test set and 
     only `negative` in the train set.
 
-    :Note: If the target is None then an empty list is returned for that 
-           `similar_sentiment` key value.
+    :Note: If the TargetText object `targets` is None as in there are no
+           targets in that sample then the `similar_sentiment` key
+           will be represented as an empty list
 
     :param test_dataset: Test dataset to sub-sample
     :param train_dataset: Train dataset to reference
@@ -157,7 +164,8 @@ def similar_sentiment(test_dataset: TargetTextCollection,
     '''
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
-                   test_target_sentiments: Dict[str, List[str]]) -> bool:
+                   test_target_sentiments: Dict[str, List[str]],
+                   target_sentiment: Union[str, int]) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -184,8 +192,9 @@ def different_sentiment(test_dataset: TargetTextCollection,
     0's and 1's where a 1 represents the associated target has no overlap 
     in sentiment labels between the test and the train.
 
-    :Note: If the target is None then an empty list is returned for that 
-           `different_sentiment` key value.
+    :Note: If the TargetText object `targets` is None as in there are no
+           targets in that sample then the `different_sentiment` key
+           will be represented as an empty list
 
     :param test_dataset: Test dataset to sub-sample
     :param train_dataset: Train dataset to reference
@@ -195,7 +204,8 @@ def different_sentiment(test_dataset: TargetTextCollection,
     '''
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
-                   test_target_sentiments: Dict[str, List[str]]) -> bool:
+                   test_target_sentiments: Dict[str, List[str]],
+                   target_sentiment: Union[str, int]) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -218,8 +228,9 @@ def unknown_targets(test_dataset: TargetTextCollection,
     0's and 1's where a 1 represents a target that exists in the test set 
     but not in the train.
 
-    :Note: If the target is None then an empty list is returned for that 
-           `unknown_targets` key value.
+    :Note: If the TargetText object `targets` is None as in there are no
+           targets in that sample then the `unknown_targets` key
+           will be represented as an empty list
 
     :param test_dataset: Test dataset to sub-sample
     :param train_dataset: Train dataset to reference
@@ -229,7 +240,8 @@ def unknown_targets(test_dataset: TargetTextCollection,
     '''
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
-                   test_target_sentiments: Dict[str, List[str]]) -> bool:
+                   test_target_sentiments: Dict[str, List[str]],
+                   target_sentiment: Union[str, int]) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             return False
@@ -237,6 +249,80 @@ def unknown_targets(test_dataset: TargetTextCollection,
     
     return _pre_post_subsampling(test_dataset, train_dataset, lower, 
                                  'unknown_targets', error_func)
+
+def known_sentiment_known_target(test_dataset: TargetTextCollection, 
+                                 train_dataset: TargetTextCollection, 
+                                 lower: bool = True) -> TargetTextCollection:
+    '''
+    Given a test and train dataset will return the same test dataset but 
+    with an additional key `known_sentiment_known_target` for each 
+    TargetText object in the test collection. This 
+    `known_sentiment_known_target` key will contain a list 
+    the same length as the number of targets in that TargetText object with 
+    0's and 1's where a 1 represents a target that exists in both train and 
+    test where that target for that instance in the test set has a sentiment 
+    that has been seen before in the training set for that target.
+
+    :Note: If the TargetText object `targets` is None as in there are no
+           targets in that sample then the `known_sentiment_known_target` key
+           will be represented as an empty list
+
+    :param test_dataset: Test dataset to sub-sample
+    :param train_dataset: Train dataset to reference
+    :param lower: Whether to lower case the target words
+    :returns: The test dataset but with each TargetText object containing a 
+              `known_sentiment_known_target` key and associated list of values.
+    '''
+    def error_func(target: TargetText, 
+                   train_target_sentiments: Dict[str, List[str]],
+                   test_target_sentiments: Dict[str, List[str]],
+                   target_sentiment: Union[str, int]) -> bool:
+        if (target in train_target_sentiments and 
+            target in test_target_sentiments):
+            train_sentiments = train_target_sentiments[target]
+            if target_sentiment in train_sentiments:
+                return True
+        return False
+
+    return _pre_post_subsampling(test_dataset, train_dataset, lower, 
+                                 'known_sentiment_known_target', error_func)
+
+def unknown_sentiment_known_target(test_dataset: TargetTextCollection, 
+                                   train_dataset: TargetTextCollection, 
+                                   lower: bool = True) -> TargetTextCollection:
+    '''
+    Given a test and train dataset will return the same test dataset but 
+    with an additional key `unknown_sentiment_known_target` for each 
+    TargetText object in the test collection. This 
+    `unknown_sentiment_known_target` key will contain a list 
+    the same length as the number of targets in that TargetText object with 
+    0's and 1's where a 1 represents a target that exists in both train and 
+    test where that target for that instance in the test set has a sentiment 
+    that has NOT been seen before in the training set for that target.
+
+    :Note: If the TargetText object `targets` is None as in there are no
+           targets in that sample then the `unknown_sentiment_known_target` key
+           will be represented as an empty list
+
+    :param test_dataset: Test dataset to sub-sample
+    :param train_dataset: Train dataset to reference
+    :param lower: Whether to lower case the target words
+    :returns: The test dataset but with each TargetText object containing a 
+              `unknown_sentiment_known_target` key and associated list of values.
+    '''
+    def error_func(target: TargetText, 
+                   train_target_sentiments: Dict[str, List[str]],
+                   test_target_sentiments: Dict[str, List[str]],
+                   target_sentiment: Union[str, int]) -> bool:
+        if (target in train_target_sentiments and 
+            target in test_target_sentiments):
+            train_sentiments = train_target_sentiments[target]
+            if target_sentiment not in train_sentiments:
+                return True
+        return False
+
+    return _pre_post_subsampling(test_dataset, train_dataset, lower, 
+                                 'unknown_sentiment_known_target', error_func)
 
 def distinct_sentiment(dataset: TargetTextCollection) -> TargetTextCollection:
     '''
