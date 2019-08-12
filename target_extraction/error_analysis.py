@@ -340,8 +340,11 @@ def distinct_sentiment(dataset: TargetTextCollection) -> TargetTextCollection:
     '''
     for target_data in dataset.values():
         target_sentiments = target_data['target_sentiments']
-        num_unique_sentiments = len(set(target_sentiments))
-        num_targets = len(target_sentiments)
-        target_data['distinct_sentiment'] = [num_unique_sentiments 
-                                             for _ in range(num_targets)]
+        distinct_sentiments = []
+        if target_sentiments is not None:
+            num_unique_sentiments = len(set(target_sentiments))
+            num_targets = len(target_sentiments)
+            distinct_sentiments = [num_unique_sentiments 
+                                   for _ in range(num_targets)]
+        target_data['distinct_sentiment'] = distinct_sentiments
     return dataset

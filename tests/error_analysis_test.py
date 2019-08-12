@@ -523,3 +523,16 @@ def test_distinct_sentiment():
     dataset = distinct_sentiment(dataset)
     answer = [[1], [1], [2,2], [3,3,3,3]]
     assert answer == get_error_counts(dataset, 'distinct_sentiment')
+    # Case where there are no targets
+    empty_target = TargetText(text='something', text_id='1', targets=[], 
+                              spans=[], target_sentiments=[])
+    dataset = TargetTextCollection([empty_target])
+    dataset = distinct_sentiment(dataset)
+    assert [[]] == get_error_counts(dataset, 'distinct_sentiment')
+    # Case where there are no targets where the targets are None values 
+    # instead
+    empty_target = TargetText(text='something', text_id='1', targets=None, 
+                              spans=None, target_sentiments=None)
+    dataset = TargetTextCollection([empty_target])
+    dataset = distinct_sentiment(dataset)
+    assert [[]] == get_error_counts(dataset, 'distinct_sentiment')
