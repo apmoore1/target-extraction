@@ -82,6 +82,9 @@ class TargetText(MutableMapping):
        sequence labels.
     9. one_sample_per_span -- This returns a similar TargetText instance 
        where the new instance will only contain one target per span.
+    10. left_right_target_contexts -- This will return the sentence that is 
+        left and right of the target as well as the words in the target for 
+        each target in the sentence.
     
     Static Functions:
 
@@ -810,6 +813,34 @@ class TargetText(MutableMapping):
         spans = temp_spans
         return TargetText(text=text, text_id=text_id, 
                           targets=targets, spans=spans)
+
+    def left_right_target_contexts(self, incl_target: bool
+                                   ) -> List[Tuple[List[str], List[str], List[str]]]:
+        '''
+        :param incl_target: Whether or not the left and right sentences should 
+                            also include the target word.
+        :returns: The sentence that is left and right of the target as well as 
+                  the words in the target for each target in the sentence.
+        '''
+        left_right_target_list = []
+        text = self['text']
+        if self['spans'] is not None:
+            for span in self['spans']:
+                span: Span
+                span_start = span.start
+                span_end = span.end
+                if incl_target:
+                    left_context = text[:span_end]
+                    right_context = text[span_start:]
+                else:
+                    left_context = text[:span_start]
+                    right_context = text[span_end:]
+                target_context = text[span_start:span_end]
+                contexts = (left_context, right_context, target_context)
+                left_right_target_list.append(contexts)
+        return left_right_target_list  
+
+
 
     @staticmethod
     def from_json(json_text: str) -> 'TargetText':

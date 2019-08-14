@@ -1429,4 +1429,49 @@ class TestTargetText:
                                                    confidence=confidence, 
                                                    confidences=confidences,
                                                    spans=[])
+    
+    @pytest.mark.parametrize("incl_target", (False, True))
+    def test_left_right_target_contexts(self, incl_target: bool):
+        def add_target_left_right(answer: List[Tuple[List[str], List[str], List[str]]],
+                                  target_object: TargetText) -> List[Tuple[List[str], List[str], List[str]]]:
+            targets = target_object['targets']
+            temp_answers = []
+            for target_answer, target_word in zip(answer, targets):
+                left, right, target = target_answer
+                left += target_word
+                right = f'{target_word}{right}'
+                temp_answers.append((left, right, target))
+            return temp_answers
+
+        text = 'The laptop case was great and cover was rubbish'
+        text_ids = ['4', '5', '6']
+        spans = [[Span(0, 4)], [Span(43, 47)], None]
+        targets = [['The '], ['bish'], None]
+        edge_examples = []
+        for i in range(3):
+            example = TargetText(text, text_ids[i], targets=targets[i],
+                                 spans=spans[i])
+            edge_examples.append(example)
+        
+        normal_examples, _ = self._regular_examples()
+        all_examples = normal_examples + edge_examples
+        correct_answers = [[('The ', ' was great and cover was rubbish', 'laptop case')],
+                           [('The laptop case was great and ', ' was rubbish', 'cover')],
+                           [('The ', ' was great and cover was rubbish', 'laptop case'),
+                           ('The laptop case was great and ', ' was rubbish', 'cover')],
+                           [('', 'laptop case was great and cover was rubbish', 'The ')],
+                           [('The laptop case was great and cover was rub', '', 'bish')],
+                           []]
+        if incl_target:
+            temp_correct_answers = []
+            for correct_answer, target_text_object in zip(correct_answers, all_examples):
+                if correct_answer == []:
+                    temp_correct_answers.append([])
+                else:
+                    temp_correct_answers.append(add_target_left_right(correct_answer, target_text_object))
+            correct_answers = temp_correct_answers
+        for i, example in enumerate(normal_examples):
+            answer = correct_answers[i]
+            test_answer = example.left_right_target_contexts(incl_target=incl_target)
+            assert answer == test_answer
                     
