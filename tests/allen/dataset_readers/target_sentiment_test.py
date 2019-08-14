@@ -197,3 +197,19 @@ class TestTargetSentimentDatasetReader():
                 assert 7 == len(fields)
             else:
                 assert 5 == len(fields)
+        # Test the case for the Left right contexts case where the spans are not 
+        # given
+        reader = TargetSentimentDatasetReader(lazy=lazy, incl_target=False,
+                                              left_right_contexts=left_right_contexts,
+                                              reverse_right_context=reverse_right_context)
+        text_fp = Path(data_dir, 'just_text.json')
+        with pytest.raises(ValueError):
+            instances = ensure_list(reader.read(str(text_fp)))
+
+        # Test the case for when we are not using the left right contexts 
+        # and no targets or categories are given
+        reader = TargetSentimentDatasetReader(lazy=lazy, incl_target=False,
+                                              left_right_contexts=False,
+                                              reverse_right_context=False)
+        with pytest.raises(ValueError):
+            instances = ensure_list(reader.read(str(text_fp)))
