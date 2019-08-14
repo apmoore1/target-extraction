@@ -64,6 +64,9 @@ class TargetSentimentDatasetReader(DatasetReader):
     :param incl_target: If left_right_context is True and this also 
                         the left and right contexts will include the target
                         word(s) as well.
+    :raises ValueError: If the `left_right_contexts` is not True while either the 
+                        `incl_targets` or `reverse_right_context` arguments are 
+                        True.
     '''
     def __init__(self, lazy: bool = False,
                  token_indexers: Dict[str, TokenIndexer] = None,
@@ -170,7 +173,13 @@ class TargetSentimentDatasetReader(DatasetReader):
                                each target in the sentence.
         :returns: An Instance object with all of the above enocded for a
                   PyTorch model.
+        :raises ValueError: If either targets and categories are both None
         '''
+        if targets is None and categories is None:
+            raise ValueError('Either targets or categories must be given if you '
+                             'want to be predict the sentiment of a target '
+                             'or a category')
+
         instance_fields: Dict[str, Field] = {}
         
         tokens = self._tokenizer.tokenize(text)
@@ -208,11 +217,6 @@ class TargetSentimentDatasetReader(DatasetReader):
                 instance_fields['category_sentiments'] = category_sentiments_field
             # Add the categories to the metadata
             metadata_dict['categories'] = [category for category in categories]
-        
-        if targets is None and categories is None:
-            raise ValueError('Either targets or categories must be given if you '
-                             'want to be predict the sentiment of a target '
-                             'or a category')
         
         if left_contexts is not None:
             left_field = self._add_context_field(left_contexts)
