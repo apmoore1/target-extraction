@@ -200,7 +200,8 @@ class TargetSentimentDatasetReader(DatasetReader):
             # Target sentiment if it exists
             if target_sentiments is not None:
                 target_sentiments_field = SequenceLabelField(target_sentiments, 
-                                                             target_fields)
+                                                             target_fields,
+                                                             label_namespace='target-sentiment-labels')
                 instance_fields['target_sentiments'] = target_sentiments_field
             # Add the targets and the tokenised targets to the metadata
             metadata_dict['targets'] = [target for target in targets]
@@ -213,7 +214,8 @@ class TargetSentimentDatasetReader(DatasetReader):
             # Category sentiment if it exists
             if category_sentiments is not None:
                 category_sentiments_field = SequenceLabelField(category_sentiments, 
-                                                               category_fields)
+                                                               category_fields,
+                                                               label_namespace='category-sentiment-labels')
                 instance_fields['category_sentiments'] = category_sentiments_field
             # Add the categories to the metadata
             metadata_dict['categories'] = [category for category in categories]
