@@ -1,0 +1,1 @@
+from target_extraction.allen.models.target_sentiment.split_contexts import SplitContextsClassifier
