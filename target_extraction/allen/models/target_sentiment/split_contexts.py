@@ -152,26 +152,25 @@ class SplitContextsClassifier(Model):
         # Batch size, number of targets, sequence length, vector dimension
         left_embedded_text = self.text_field_embedder(left_contexts)
         left_embedded_text = self._variational_dropout(left_embedded_text)
-        left_text_mask = util.get_text_field_mask(left_contexts)
+        left_text_mask = util.get_text_field_mask(left_contexts, num_wrapping_dims=1)
 
         right_embedded_text = self.text_field_embedder(right_contexts)
         right_embedded_text = self._variational_dropout(right_embedded_text)
-        right_text_mask = util.get_text_field_mask(right_contexts)
+        right_text_mask = util.get_text_field_mask(right_contexts, num_wrapping_dims=1)
         print('here')
         if self.target_encoder:
             if self.target_field_embedder:
-                embedded_target = self.target_field_embedder(target)
+                embedded_target = self.target_field_embedder(targets)
             else:
-                embedded_target = self.text_field_embedder(target)
-            embedded_target = self._word_dropout(embedded_target)
+                embedded_target = self.text_field_embedder(targets)
             embedded_target = self._variational_dropout(embedded_target)
-            target_text_mask = util.get_text_field_mask(target)
+            target_text_mask = util.get_text_field_mask(targets, num_wrapping_dims=1))
 
             target_encoded_text = self.target_encoder(embedded_target, 
                                                       target_text_mask)
             target_encoded_text = self._naive_dropout(target_encoded_text)
-            # Encoded target to be of dimension (batch, words, dim) currently
-            # (batch, dim)
+            # Encoded target to be of dimension (batch, Number of Targets, words, dim) 
+            # currently (batch, Number of Targets, dim)
             target_encoded_text = target_encoded_text.unsqueeze(1)
 
             # Need to repeat the target word for each word in the left 
@@ -179,8 +178,8 @@ class SplitContextsClassifier(Model):
             left_num_padded = left_embedded_text.shape[1]
             right_num_padded = right_embedded_text.shape[1]
 
-            left_targets = target_encoded_text.repeat((1, left_num_padded, 1))
-            right_targets = target_encoded_text.repeat((1, right_num_padded, 1))
+            left_targets = target_encoded_text.repeat((1, 1, left_num_padded, 1))
+            right_targets = target_encoded_text.repeat((1, 1, right_num_padded, 1))
             # Add the target to each word in the left and right contexts
             left_embedded_text = torch.cat((left_embedded_text, left_targets), -1)
             right_embedded_text = torch.cat((right_embedded_text, right_targets), -1)
@@ -205,10 +204,10 @@ class SplitContextsClassifier(Model):
         output_dict = {"class_probabilities": class_probabilities}
 
         if target_sentiments is not None:
-            loss = self.loss(logits, label)
+            loss = self.loss(logits, target_sentiments)
             for metrics in [self.metrics, self.f1_metrics]:
                 for metric in metrics.values():
-                    metric(logits, label)
+                    metric(logits, target_sentiments)
             output_dict["loss"] = loss
 
         return output_dict
