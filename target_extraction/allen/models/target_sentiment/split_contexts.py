@@ -3,7 +3,7 @@ from typing import Dict, Optional
 from allennlp.common.checks import ConfigurationError
 from allennlp.data import Vocabulary
 from allennlp.modules import FeedForward, Seq2VecEncoder, TextFieldEmbedder
-from allennlp.modules import InputVariationalDropout
+from allennlp.modules import InputVariationalDropout, TimeDistributed
 from allennlp.models.model import Model
 from allennlp.nn import InitializerApplicator, RegularizerApplicator
 from allennlp.nn import util
@@ -25,7 +25,6 @@ class SplitContextsClassifier(Model):
                  target_encoder: Optional[Seq2VecEncoder] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
-                 word_dropout: float = 0.0,
                  dropout: float = 0.0,
                  label_name: str = 'target-sentiment-labels') -> None:
         super().__init__(vocab, regularizer)
@@ -100,12 +99,11 @@ class SplitContextsClassifier(Model):
         self._variational_dropout = InputVariationalDropout(dropout)
         self._naive_dropout = Dropout(dropout)
         
-        self.loss = torch.nn.CrossEntropyLoss()
 
         # Ensure that the input to the right_text_encoder and left_text_encoder
         # is the size of the target encoder output plus the size of the text 
         # embedding output.
-        if self.target_encoder:
+        if self.target_encoder is not None:
             right_in_dim = self.right_text_encoder.get_input_dim()
             left_in_dim = self.left_text_encoder.get_input_dim()
 
@@ -135,6 +133,18 @@ class SplitContextsClassifier(Model):
             if target_embed_out != target_in:
                 raise ConfigurationError(config_embed_err_msg)
 
+        # TimeDistributed everything as we are processing multiple Targets at 
+        # once as the input is a sentence containing one or more targets
+        self.left_text_encoder = TimeDistributed(self.left_text_encoder)
+        self.right_text_encoder = TimeDistributed(self.right_text_encoder)
+        if self.target_encoder is not None:
+            self.target_encoder = TimeDistributed(self.target_encoder)
+        if self.feedforward is not None:
+            self.feedforward = TimeDistributed(self.feedforward)
+        self.label_projection = TimeDistributed(self.label_projection)
+        self._variational_dropout = TimeDistributed(self._variational_dropout)
+        self._naive_dropout = TimeDistributed(self._naive_dropout)
+
         initializer(self)
 
     def forward(self, left_contexts: Dict[str, torch.LongTensor],
@@ -157,26 +167,25 @@ class SplitContextsClassifier(Model):
         right_embedded_text = self.text_field_embedder(right_contexts)
         right_embedded_text = self._variational_dropout(right_embedded_text)
         right_text_mask = util.get_text_field_mask(right_contexts, num_wrapping_dims=1)
-        print('here')
         if self.target_encoder:
             if self.target_field_embedder:
                 embedded_target = self.target_field_embedder(targets)
             else:
                 embedded_target = self.text_field_embedder(targets)
             embedded_target = self._variational_dropout(embedded_target)
-            target_text_mask = util.get_text_field_mask(targets, num_wrapping_dims=1))
+            target_text_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
 
             target_encoded_text = self.target_encoder(embedded_target, 
                                                       target_text_mask)
             target_encoded_text = self._naive_dropout(target_encoded_text)
             # Encoded target to be of dimension (batch, Number of Targets, words, dim) 
             # currently (batch, Number of Targets, dim)
-            target_encoded_text = target_encoded_text.unsqueeze(1)
+            target_encoded_text = target_encoded_text.unsqueeze(2)
 
             # Need to repeat the target word for each word in the left 
             # and right word.
-            left_num_padded = left_embedded_text.shape[1]
-            right_num_padded = right_embedded_text.shape[1]
+            left_num_padded = left_embedded_text.shape[2]
+            right_num_padded = right_embedded_text.shape[2]
 
             left_targets = target_encoded_text.repeat((1, 1, left_num_padded, 1))
             right_targets = target_encoded_text.repeat((1, 1, right_num_padded, 1))
@@ -204,7 +213,10 @@ class SplitContextsClassifier(Model):
         output_dict = {"class_probabilities": class_probabilities}
 
         if target_sentiments is not None:
-            loss = self.loss(logits, target_sentiments)
+            targets_mask = util.get_text_field_mask(targets)
+            # gets the loss per target instance due to the average=`token`
+            loss = util.sequence_cross_entropy_with_logits(logits, target_sentiments, 
+                                                           targets_mask, average='token')
             for metrics in [self.metrics, self.f1_metrics]:
                 for metric in metrics.values():
                     metric(logits, target_sentiments)
