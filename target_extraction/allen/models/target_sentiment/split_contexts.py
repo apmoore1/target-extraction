@@ -208,12 +208,14 @@ class SplitContextsClassifier(Model):
         if self.feedforward:
             encoded_left_right = self.feedforward(encoded_left_right)
         logits = self.label_projection(encoded_left_right)
-        class_probabilities = F.softmax(logits, dim=-1)
 
-        output_dict = {"class_probabilities": class_probabilities}
+        targets_mask = util.get_text_field_mask(targets)
+        masked_class_probabilities = util.masked_softmax(logits, targets_mask.unsqueeze(-1))
+
+        output_dict = {"class_probabilities": masked_class_probabilities, 
+                       "targets_mask": targets_mask}
 
         if target_sentiments is not None:
-            targets_mask = util.get_text_field_mask(targets)
             # gets the loss per target instance due to the average=`token`
             loss = util.sequence_cross_entropy_with_logits(logits, target_sentiments, 
                                                            targets_mask, average='token')
@@ -221,6 +223,21 @@ class SplitContextsClassifier(Model):
                 for metric in metrics.values():
                     metric(logits, target_sentiments)
             output_dict["loss"] = loss
+
+        if metadata is not None:
+            words = []
+            texts = []
+            targets = []
+            target_words = []
+            for sample in metadata:
+                words.append(sample['text words'])
+                texts.append(sample['text'])
+                targets.append(sample['targets'])
+                target_words.append(sample['target words'])
+            output_dict["words"] = words
+            output_dict["text"] = texts
+            output_dict["targets"] = targets
+            output_dict["target words"] = target_words
 
         return output_dict
 

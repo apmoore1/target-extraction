@@ -79,4 +79,33 @@ class SplitContextsClassifierTest(ModelTestCase):
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
 
+    def test_forward_pass_runs_correctly(self):
+        params = Params.from_file(self.param_file)   
+        model = Model.from_params(vocab=self.vocab, 
+                                  params=params.get('model'))
+        training_tensors = self.dataset.as_tensor_dict()
 
+        output_dict = model(**training_tensors)
+        for key in output_dict.keys():
+            assert key in {'class_probabilities', 'targets_mask',
+                           'loss', 'words', 'text', 'targets', 'target words'}
+        words = output_dict['words']
+        assert words[1] == ["The", "food", "was", "lousy", "-", "too", "sweet", 
+                            "or", "too", "salty", "and", "the", "portions", 
+                            "tiny", "."]
+        text = output_dict['text']
+        assert text[1] == "The food was lousy - too sweet or too salty and "\
+                          "the portions tiny."
+        targets = output_dict['targets']
+        assert targets[1] == ["food", "portions"]
+        target_words = output_dict['target words']
+        assert target_words[1] == [["food"], ["portions"]]
+        target_mask = output_dict['targets_mask']
+        assert target_mask.cpu().data.numpy().tolist() == [[1,0], [1,1]]
+        class_probs = output_dict['class_probabilities']
+        class_probs = class_probs[0].cpu().data.numpy().tolist()
+        for prob in class_probs[0]:
+            assert prob < 1
+            assert prob > 0
+        for prob in class_probs[1]:
+            assert prob == 0
