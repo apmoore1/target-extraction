@@ -1,1 +1,2 @@
 from target_extraction.allen.predictors.target_tagger import TargetTaggerPredictor
+from target_extraction.allen.predictors.target_sentiment import TargetSentimentPredictor

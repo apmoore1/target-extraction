@@ -243,14 +243,40 @@ class SplitContextsClassifier(Model):
     def decode(self, output_dict: Dict[str, torch.Tensor]
                ) -> Dict[str, torch.Tensor]:
         '''
-        Adds the predicted label to the output dict.
+        Adds the predicted label to the output dict, also removes any class 
+        probabilities that do not have a target associated which is caused 
+        through the batch prediction process and can be removed by using the 
+        target mask.
         '''
-        predictions = output_dict['class_probabilities'].cpu().data.numpy()
-        argmax_indices = numpy.argmax(predictions, axis=-1)
-        labels = [self.vocab.get_token_from_index(x, namespace=self.label_name)
-                  for x in argmax_indices]
-        output_dict['label'] = labels
-        return output_dict    
+        batch_target_predictions = output_dict['class_probabilities'].cpu().data.numpy()
+        target_masks = output_dict['targets_mask'].cpu().data.numpy()
+        # Should have the same batch size and max target nubers
+        batch_size = batch_target_predictions.shape[0]
+        max_number_targets = batch_target_predictions.shape[1]
+        assert target_masks.shape[0] == batch_size
+        assert target_masks.shape[1] == max_number_targets
+
+        sentiments = []
+        non_masked_class_probabilities = []
+        for batch_index in range(batch_size):
+            target_sentiments = []
+            target_non_masked_class_probabilities = []
+
+            target_predictions = batch_target_predictions[batch_index]
+            target_mask = target_masks[batch_index]
+            for index, target_prediction in enumerate(target_predictions):
+                if target_mask[index] != 1:
+                    continue
+                label_index = numpy.argmax(target_prediction)
+                label = self.vocab.get_token_from_index(label_index, 
+                                                        namespace=self.label_name)
+                target_sentiments.append(label)
+                target_non_masked_class_probabilities.append(target_prediction)
+            sentiments.append(target_sentiments)
+            non_masked_class_probabilities.append(target_non_masked_class_probabilities)
+        output_dict['sentiments'] = sentiments
+        output_dict['class_probabilities'] = non_masked_class_probabilities
+        return output_dict
 
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         # Other scores
