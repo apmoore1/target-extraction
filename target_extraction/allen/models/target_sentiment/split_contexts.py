@@ -10,7 +10,6 @@ from allennlp.nn import util
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure
 import numpy
 import torch
-import torch.nn.functional as F
 from torch.nn.modules import Dropout, Linear
 
 @Model.register("split_contexts_classifier")

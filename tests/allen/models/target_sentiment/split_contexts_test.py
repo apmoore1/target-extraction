@@ -1,25 +1,14 @@
-from pathlib import Path
-
-from allennlp.common.testing import ModelTestCase
-from allennlp.models import Model
-from allennlp.common.checks import ConfigurationError
-from allennlp.common.params import Params
-from allennlp.data import DatasetReader, Vocabulary
-from allennlp.data.dataset import Batch
-import pytest
-
-import target_extraction
-
 import copy
 from pathlib import Path
-
-import pytest
 
 from allennlp.common.testing import ModelTestCase
 from allennlp.common.params import Params
 from allennlp.models import Model
 from flaky import flaky
 from allennlp.common.checks import ConfigurationError
+import pytest
+
+import target_extraction
 
 class SplitContextsClassifierTest(ModelTestCase):
     def setUp(self):

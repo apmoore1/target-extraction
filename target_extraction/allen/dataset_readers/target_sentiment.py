@@ -12,6 +12,7 @@ from allennlp.data.fields import SequenceLabelField
 from overrides import overrides
 
 from target_extraction.data_types import TargetText
+from target_extraction.data_types_util import Span
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -38,6 +39,18 @@ class TargetSentimentDatasetReader(DatasetReader):
      `categories`: [`CAMERA`],
      `target_sentiments`: [`positive`]}
 
+    or 
+
+    {`text`: `This Camera lens is great`, 
+     `targets`: [`Camera`],
+     `target_sentiments`: [`positive`],
+     `spans`: [[5,11]]}
+    {`text`: `This Camera lens is great`, 
+     `targets`: [`Camera`],
+     `target_sentiments`: [`positive`],
+     `categories`: [`CAMERA`],
+     `spans`: [[5,11]]}
+
     This type of JSON can be created from exporting a 
     `target_extraction.data_types.TargetTextCollection` using the 
     `to_json_file` method.
@@ -48,6 +61,8 @@ class TargetSentimentDatasetReader(DatasetReader):
     2. Version is for a purely Aspect or latent based sentiment classifier.
     3. Version is if you want to make use of the relationship between the 
        Target and Aspect in the sentiment classifier.
+    4. If the Target based sentiment classifier requires the knowledge of 
+       where the target is.
 
     :param lazy: Whether or not instances can be read lazily.
     :param token_indexers: We use this to define the input representation 
@@ -108,32 +123,8 @@ class TargetSentimentDatasetReader(DatasetReader):
                     example_instance['categories'] = example['categories']
                 if 'category_sentiments' in example:
                     example_instance['category_sentiments'] = example['category_sentiments']
-
-                if self._left_right_contexts:
-                    if 'spans' not in example:
-                        raise ValueError('To create left, right, target '
-                                         'contexts requires the `spans` of the '
-                                         'targets which is not in this json '
-                                         f'line {example}')
-                    target_text_object = TargetText.from_json(line)
-                    # left, right, and target contexts for each target in the 
-                    # the text
-                    left_right_targets = target_text_object.left_right_target_contexts(incl_target=self._incl_target)
-                    left_contexts: List[str] = []
-                    right_contexts: List[str] = []
-                    for left_right_target in left_right_targets:
-                        left, right, target = left_right_target
-                        left_contexts.append(left)
-                        if self._reverse_right_context:
-                            right_tokens = self._tokenizer.tokenize(right)
-                            reversed_right_tokens = []
-                            for token in reversed(right_tokens):
-                                reversed_right_tokens.append(token.text)
-                            right = ' '.join(reversed_right_tokens)
-                        right_contexts.append(right)
-                    example_instance['left_contexts'] = left_contexts
-                    example_instance['right_contexts'] = right_contexts
-
+                if 'spans' in example:
+                    example_instance['spans'] = example['spans']
                 yield self.text_to_instance(**example_instance)
 
     def _add_context_field(self, sentence_contexts: List[str]) -> ListField:
@@ -144,14 +135,12 @@ class TargetSentimentDatasetReader(DatasetReader):
             context_fields.append(context_field)
         return ListField(context_fields)
             
-
     def text_to_instance(self, text: str, 
                          targets: Optional[List[str]] = None,
                          target_sentiments: Optional[List[Union[str, int]]] = None,
+                         spans: Optional[List[List[int]]] = None,
                          categories: Optional[List[str]] = None,
-                         category_sentiments: Optional[List[Union[str, int]]]= None,
-                         left_contexts: Optional[List[str]] = None,
-                         right_contexts: Optional[List[str]] = None
+                         category_sentiments: Optional[List[Union[str, int]]]= None
                          ) -> Instance:
         '''
         The original text, text tokens as well as the targets and target 
@@ -165,12 +154,10 @@ class TargetSentimentDatasetReader(DatasetReader):
         :param targets: The targets that are within the text
         :param target_sentiments: The sentiment of the targets. To be used if 
                                   training the classifier
+        :param spans: The spans that represent the character offsets for each 
+                      of the targets given in the targets list.
         :param categories: The categories that are within the text
         :param category_sentiments: The sentiment of the categories
-        :param left_contexts: The left part of the sentence with respect to 
-                              each target in the sentence.
-        :param right_contexts: The right part of the sentence with respect to 
-                               each target in the sentence.
         :returns: An Instance object with all of the above enocded for a
                   PyTorch model.
         :raises ValueError: If either targets and categories are both None
@@ -219,6 +206,32 @@ class TargetSentimentDatasetReader(DatasetReader):
                 instance_fields['category_sentiments'] = category_sentiments_field
             # Add the categories to the metadata
             metadata_dict['categories'] = [category for category in categories]
+
+        # If required processes the left and right contexts
+        left_contexts = None
+        right_contexts = None
+        if self._left_right_contexts:
+            if spans is None:
+                raise ValueError('To create left, right, target contexts requires'
+                                 ' the `spans` of the targets which is None')
+            spans = [Span(span[0], span[1]) for span in spans]
+            target_text_object = TargetText(text=text, spans=spans, 
+                                            targets=targets, text_id='anything')
+            # left, right, and target contexts for each target in the 
+            # the text
+            left_right_targets = target_text_object.left_right_target_contexts(incl_target=self._incl_target)
+            left_contexts: List[str] = []
+            right_contexts: List[str] = []
+            for left_right_target in left_right_targets:
+                left, right, target = left_right_target
+                left_contexts.append(left)
+                if self._reverse_right_context:
+                    right_tokens = self._tokenizer.tokenize(right)
+                    reversed_right_tokens = []
+                    for token in reversed(right_tokens):
+                        reversed_right_tokens.append(token.text)
+                    right = ' '.join(reversed_right_tokens)
+                right_contexts.append(right)
         
         if left_contexts is not None:
             left_field = self._add_context_field(left_contexts)
