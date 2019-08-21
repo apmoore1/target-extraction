@@ -45,7 +45,7 @@ def test_download_election_folder():
         test_files_and_folders_downloaded(temp_dir_path_1)
 
         assert second_time < first_download_time
-        assert second_time < 0.001
+        assert second_time < 0.005
         assert first_download_time > 0.1
     
     # Test the case that the folder exists raises an error
