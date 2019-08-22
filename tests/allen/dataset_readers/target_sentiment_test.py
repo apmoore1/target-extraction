@@ -18,12 +18,13 @@ class TestTargetSentimentDatasetReader():
         # and incl_target is True
         with pytest.raises(ValueError):
             TargetSentimentDatasetReader(lazy=lazy, incl_target=True,
-                                         left_right_contexts=False)
+                                         left_right_contexts=False, 
+                                         use_categories=True)
         # Test that a ValueError is raised if left_right_contexts is False 
         # and reverse_right_context is True
         with pytest.raises(ValueError):
             TargetSentimentDatasetReader(lazy=lazy, reverse_right_context=True,
-                                         left_right_contexts=False)
+                                         left_right_contexts=False, use_categories=True)
         # Stop ValueErrors from being raised
         if reverse_right_context and not left_right_contexts:
             return
@@ -32,7 +33,8 @@ class TestTargetSentimentDatasetReader():
         reader = TargetSentimentDatasetReader(lazy=lazy,
                                               incl_target=incl_target,
                                               left_right_contexts=left_right_contexts,
-                                              reverse_right_context=reverse_right_context)
+                                              reverse_right_context=reverse_right_context,
+                                              use_categories=True)
         data_dir = Path(__file__, '..', '..', '..', 'data', 'allen', 
                         'dataset_readers', 'target_sentiment').resolve()
         tokenizer = spacy_tokenizer()
@@ -103,7 +105,8 @@ class TestTargetSentimentDatasetReader():
 
         # Test the categories case
         reader = TargetSentimentDatasetReader(lazy=lazy, incl_target=False,
-                                              left_right_contexts=False)
+                                              left_right_contexts=False,
+                                              use_categories=True)
         text1 = "Not only was the food outstanding, but the little perks were great."
         tokens1 = tokenizer(text1)
         instance1 = {'text': text1, 'text words': tokens1, 
@@ -138,7 +141,8 @@ class TestTargetSentimentDatasetReader():
         # Test the categories and target case
         reader = TargetSentimentDatasetReader(lazy=lazy, incl_target=False,
                                               left_right_contexts=left_right_contexts,
-                                              reverse_right_context=reverse_right_context)
+                                              reverse_right_context=reverse_right_context,
+                                              use_categories=True)
         text1 = "We, there were four of us, arrived at noon - the place was "\
                 "empty - and the staff acted like we were imposing on them and "\
                 "they were very rude."
@@ -201,7 +205,8 @@ class TestTargetSentimentDatasetReader():
         # given
         reader = TargetSentimentDatasetReader(lazy=lazy, incl_target=False,
                                               left_right_contexts=left_right_contexts,
-                                              reverse_right_context=reverse_right_context)
+                                              reverse_right_context=reverse_right_context,
+                                              use_categories=True)
         text_fp = Path(data_dir, 'just_text.json')
         with pytest.raises(ValueError):
             instances = ensure_list(reader.read(str(text_fp)))
@@ -210,6 +215,7 @@ class TestTargetSentimentDatasetReader():
         # and no targets or categories are given
         reader = TargetSentimentDatasetReader(lazy=lazy, incl_target=False,
                                               left_right_contexts=False,
-                                              reverse_right_context=False)
+                                              reverse_right_context=False,
+                                              use_categories=True)
         with pytest.raises(ValueError):
             instances = ensure_list(reader.read(str(text_fp)))
