@@ -79,6 +79,10 @@ class TargetSentimentDatasetReader(DatasetReader):
     :param incl_target: If left_right_context is True and this also 
                         the left and right contexts will include the target
                         word(s) as well.
+    :param use_categories: Whether or not to return the categories in the 
+                           instances even if they do occur in the dataset. 
+                           This is a temporary solution to the following 
+                           `issue <https://github.com/apmoore1/target-extraction/issues/5>`_ 
     :raises ValueError: If the `left_right_contexts` is not True while either the 
                         `incl_targets` or `reverse_right_context` arguments are 
                         True.
@@ -88,7 +92,8 @@ class TargetSentimentDatasetReader(DatasetReader):
                  tokenizer: Tokenizer = None,
                  left_right_contexts: bool = False,
                  reverse_right_context: bool = False,
-                 incl_target: bool = False) -> None:
+                 incl_target: bool = False,
+                 use_categories: bool = False) -> None:
         super().__init__(lazy)
         self._tokenizer = tokenizer or WordTokenizer()
         self._token_indexers = token_indexers or \
@@ -102,6 +107,7 @@ class TargetSentimentDatasetReader(DatasetReader):
         self._incl_target = incl_target
         self._reverse_right_context = reverse_right_context
         self._left_right_contexts = left_right_contexts
+        self._use_categories = use_categories
 
     @overrides
     def _read(self, file_path: str):
@@ -194,7 +200,7 @@ class TargetSentimentDatasetReader(DatasetReader):
             metadata_dict['targets'] = [target for target in targets]
             metadata_dict['target words'] = [[x.text for x in target_tokens] 
                                              for target_tokens in all_target_tokens]
-        if categories is not None:
+        if categories is not None and self._use_categories:
             category_fields = TextField([Token(category) for category in categories], 
                                         self._token_indexers)
             instance_fields['categories'] = category_fields

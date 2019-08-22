@@ -35,6 +35,13 @@
         "hidden_size": 20,
         "bidirectional": true,
         "num_layers": 1
+      },
+      "feedforward": {
+        "input_dim": 80,
+        "num_layers": 1,
+        "hidden_dims": 20,
+        "activations": "relu",
+        "dropout": 0.5
       }
     },
     "iterator": {

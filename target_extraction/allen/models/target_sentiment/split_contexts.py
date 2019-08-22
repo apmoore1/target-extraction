@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from allennlp.common.checks import ConfigurationError
 from allennlp.data import Vocabulary
@@ -25,7 +25,8 @@ class SplitContextsClassifier(Model):
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
-                 label_name: str = 'target-sentiment-labels') -> None:
+                 label_name: str = 'target-sentiment-labels',
+                 loss_weights: Optional[List[float]] = None) -> None:
         super().__init__(vocab, regularizer)
         '''
         :param vocab: A Vocabulary, required in order to compute sizes 
@@ -57,6 +58,12 @@ class SplitContextsClassifier(Model):
                         will be `variational dropout`_ all else will be  
                         standard dropout.
         :param label_name: Name of the label name space.
+        :param loss_weights: The amount of weight to give the negative, neutral,
+                             positive classes respectively. e.g. [0.2, 0.5, 0.3]
+                             would weight the negative class by a factor of 
+                             0.2, neutral by 0.5 and positive by 0.3. NOTE It 
+                             assumes the sentiment labels are the following:
+                             [negative, neutral, positive].
         
         Without the target encoder this will be the standard TDLSTM method 
         from `Effective LSTM's for Target-Dependent Sentiment classification`_
@@ -76,6 +83,22 @@ class SplitContextsClassifier(Model):
         self.right_text_encoder = right_text_encoder
         self.target_encoder = target_encoder
         self.feedforward = feedforward
+        
+        # Set the loss weights (have to sort them by order of label index in 
+        # the vocab)
+        if loss_weights is not None:
+            label_name_index = self.vocab.get_token_to_index_vocabulary(namespace=self.label_name)
+            label_name_index = sorted(label_name_index.items(), key=lambda x: x[1])
+            
+            temp_loss_weights = []
+            loss_weight_labels = ['negative', 'neutral', 'positive']
+            loss_weights = {label_name: weight for label_name, weight 
+                            in zip(loss_weight_labels, loss_weights)}
+            for label_name, index in label_name_index:
+                temp_loss_weights.append(loss_weights[label_name])
+            self.loss_weights = temp_loss_weights
+        else:
+            self.loss_weights = None
 
         if feedforward is not None:
             output_dim = self.feedforward.get_output_dim()
@@ -216,11 +239,16 @@ class SplitContextsClassifier(Model):
 
         if target_sentiments is not None:
             # gets the loss per target instance due to the average=`token`
-            loss = util.sequence_cross_entropy_with_logits(logits, target_sentiments, 
-                                                           targets_mask, average='token')
+            if self.loss_weights is not None:
+                loss = util.sequence_cross_entropy_with_logits(logits, target_sentiments, 
+                                                               targets_mask, average='token',
+                                                               alpha=self.loss_weights)
+            else:
+                loss = util.sequence_cross_entropy_with_logits(logits, target_sentiments, 
+                                                               targets_mask, average='token')
             for metrics in [self.metrics, self.f1_metrics]:
                 for metric in metrics.values():
-                    metric(logits, target_sentiments)
+                    metric(logits, target_sentiments, targets_mask)
             output_dict["loss"] = loss
 
         if metadata is not None:
