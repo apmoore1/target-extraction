@@ -1013,6 +1013,9 @@ class TargetTextCollection(MutableMapping):
         that all of the instances follow the specified rules that TargetText 
         instances should follow.
     13. number_targets -- Returns the total number of targets.
+    14. target_sentiments -- A dictionary where the keys are target texts and 
+        the values are a List of sentiment values that have been associated to 
+        that target.
     
     Static Functions:
 
