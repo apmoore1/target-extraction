@@ -66,14 +66,15 @@ In this section we describe the different models that we have created and some s
 All of the models below work at the Target/Aspect term level.
 
 A note on the problem of in-balanced sentiment data within the datasets noted above. As each dataset is in-balanced which can be seen through the following [tutorial](./tutorials/Load_and_Explore_Target_Extraction.ipynb) and in the table below, we can take measures to overcome this (to some extent) by weighting the loss function so that more weight is given to less frequent classes. In each of the training configurations within the model section you can add a list of weights to give to the loss function to weight the loss we therefore note below in the table the inverse frequeny weights that can be used calculated based on the following equation (reference [wikipedia](https://en.wikipedia.org/wiki/Tf%E2%80%93idf#Inverse_document_frequency)):
-$$\log \frac{N}{n_c}$$
 
-Where $N$ is the size of the dataset and $n_c$ represents the number of samples in class $c$.
+*log N/n<sub>c</sub>*
+
+Where *N* is the size of the dataset and *n<sub>c</sub>* represents the number of samples in class *c*.
 
 All of the Datasets below represent the training dataset statistics.
 
 | Dataset | Num Negative (%)| Num Neutral (%)| Num Negative (%)| Dataset Size | Inv Weights |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | SemEval Laptop 2014 | 866 (37.44) | 460 (19.89) | 987 (42.67) | 2313 | [0.43,0.70,0.37] |
 | SemEval Restaurant 2014 | 805 (22.35) | 633 (17.57) | 2164 (60.08) | 3602 | [0.65,0.76,0.22] |
 | Twitter Election | 4377 (46.77) | 3615 (38.63) | 1366 (14.6) | 9358 | [0.33,0.41,0.84] |
