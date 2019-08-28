@@ -760,8 +760,6 @@ class TargetText(MutableMapping):
                         next_span = True
                 if next_span:
                     continue
-            print(start_index)
-            print(end_index)
             target = ' '.join(target_tokens)
             targets.append(target)
         return targets
@@ -878,7 +876,6 @@ class TargetText(MutableMapping):
         # Change the target spans
         spans = self_dict['spans']
         span_to_change = spans[target_index]
-        print(span_to_change)
         spans_to_change: List[int] = []
         for span_index, span in enumerate(spans):
             if span_index == target_index:
