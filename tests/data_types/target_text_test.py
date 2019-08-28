@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Tuple, Iterable, Callable, Optional
 
 import pytest
 
-from target_extraction.data_types import TargetText, Span
+from target_extraction.data_types import TargetText, Span, OverLappingTargetsError
 from target_extraction.tokenizers import spacy_tokenizer, stanford
 from target_extraction.pos_taggers import spacy_tagger
 
@@ -1524,9 +1524,9 @@ class TestTargetText:
         new_target_object = target_object.replace_target(3, 'bad day')
         assert 'The laptop case was great and bad day was rubbish' == new_target_object['text']
         # Should raise an error if we want to replace either 0, 1, 2
-        with pytest.raises(ValueError):
+        with pytest.raises(OverLappingTargetsError):
             target_object.replace_target(0, 'hello')
-        with pytest.raises(ValueError):
+        with pytest.raises(OverLappingTargetsError):
             target_object.replace_target(1, 'hello')
-        with pytest.raises(ValueError):
+        with pytest.raises(OverLappingTargetsError):
             target_object.replace_target(2, 'hello')

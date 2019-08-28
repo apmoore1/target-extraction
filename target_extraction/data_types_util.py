@@ -5,6 +5,7 @@ Module that contains helpful classes and methods for
 classes:
 
 1. Span
+2. OverLappingTargetsError
 '''
 from typing import NamedTuple
 
@@ -18,3 +19,10 @@ class Span(NamedTuple):
     '''
     start: int = 0
     end: int = 0
+
+class OverLappingTargetsError(Exception):
+   '''
+   If two targets within the same sentence overlap with each other when they 
+   shouldn't.
+   '''
+   pass

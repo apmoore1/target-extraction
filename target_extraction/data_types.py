@@ -18,7 +18,7 @@ from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
 from typing import Union, Dict, Set
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
-from target_extraction.data_types_util import Span
+from target_extraction.data_types_util import Span, OverLappingTargetsError
 
 class TargetText(MutableMapping):
     '''
@@ -855,11 +855,13 @@ class TargetText(MutableMapping):
                   from this new target.
         :raises ValueError: If the target_index is less than 0 or an index 
                             number that does not exist.
-        :raises ValueError: If the target to replace is contained within another 
-                            target e.g. `what a great day` if this has two 
-                            targets `great` and `great day` then it will raise 
-                            ValueError if you replace either word as each is 
-                            within the other.
+        :raises OverLappingTargetsError: If the target to replace is contained 
+                                         within another target e.g. 
+                                         `what a great day` if this has two 
+                                         targets `great` and `great day` then 
+                                         it will raise this error if you 
+                                         replace either word as each is 
+                                         within the other.
         :Example: Given the following TargetText Object 
         '''
         self_dict = copy.deepcopy(dict(self))
@@ -890,8 +892,8 @@ class TargetText(MutableMapping):
             elif span.end > span_to_change.start and span.end <= span_to_change.end:
                 raise_in_target_error = True
             if raise_in_target_error:
-                raise ValueError('There are targets that share the same '
-                                 f'context {self}')
+                raise OverLappingTargetsError('There are targets that share '
+                                              f'the same context {self}')
             
             if span.start >= span_to_change.end:
                 spans_to_change.append(span_index)
@@ -904,14 +906,10 @@ class TargetText(MutableMapping):
             new_end = span.end + difference_in_length
             spans[span_index] = Span(new_start, new_end)
         # Change the target that is being replaced span by only the end
-        print(spans)
         new_end = span_to_change.end + difference_in_length
-        print(difference_in_length)
         spans[target_index] = Span(span_to_change.start, new_end)
-        print(spans)
         # Change the text
         text = self_dict['text']
-        print(span_to_change)
         span_to_change_start = span_to_change.start
         span_to_change_end = span_to_change.end
         start_text = text[:span_to_change_start]
@@ -921,7 +919,6 @@ class TargetText(MutableMapping):
         self_dict['targets'] = targets
         self_dict['spans'] = spans
         self_dict['text'] = text
-        print(self_dict)
         return TargetText(**self_dict)
             
     @staticmethod
