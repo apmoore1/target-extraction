@@ -1474,4 +1474,59 @@ class TestTargetText:
             answer = correct_answers[i]
             test_answer = example.left_right_target_contexts(incl_target=incl_target)
             assert answer == test_answer
-                    
+
+    def test_target_replacement(self):
+        text = 'The laptop case was great and cover was rubbish'
+        targets = ['The', 'laptop case', 'great', 'cover', 'rubbish']
+        spans = [Span(0,3), Span(4,15), Span(20, 25), Span(30,35), Span(40, 47)]
+        sentiments = [1,0,1,0,-1]
+        target_object = TargetText(text_id='1', text=text, spans=spans, 
+                                   targets=targets, target_sentiments=sentiments)
+        # Simple two words to one words
+        new_target_object = target_object.replace_target(1, 'hello')
+        assert 'The hello was great and cover was rubbish' == new_target_object['text']
+        new_targets = ['The', 'hello', 'great', 'cover', 'rubbish']
+        assert new_targets == new_target_object['targets']
+        new_spans = [Span(0,3), Span(4,9), Span(14, 19), Span(24,29), Span(34, 41)]
+        assert new_spans == new_target_object['spans']
+        assert sentiments == new_target_object['target_sentiments']
+        # Last target should only affect the last target
+        new_target_object = target_object.replace_target(4, 'something else')
+        assert 'The laptop case was great and cover was something else' == new_target_object['text']
+        new_targets = ['The', 'laptop case', 'great', 'cover', 'something else']
+        assert new_targets == new_target_object['targets']
+        new_spans = [Span(0,3), Span(4,15), Span(20, 25), Span(30,35), Span(40, 54)]
+        assert new_spans == new_target_object['spans']
+        assert sentiments == new_target_object['target_sentiments']
+        # The first target and thus affect all other targets
+        new_target_object = target_object.replace_target(0, 'bad day')
+        assert 'bad day laptop case was great and cover was rubbish' == new_target_object['text']
+        assert ['bad day', 'laptop case', 'great', 'cover', 'rubbish'] == new_target_object['targets']
+        new_spans = [Span(0,7), Span(8,19), Span(24, 29), Span(34,39), Span(44, 51)]
+        assert new_spans == new_target_object['spans']
+        assert sentiments == new_target_object['target_sentiments']
+        
+        # Raise a ValueError if you give an index less than 0
+        with pytest.raises(ValueError):
+            target_object.replace_target(-1, 'hello')
+        # Raise a ValueError if you give an index greater than the number of targets
+        with pytest.raises(ValueError):
+            target_object.replace_target(5, 'hello')
+
+        # Test the case where the TargetText object contains targets that 
+        # overlap each other
+        text = 'The laptop case was great and cover was rubbish'
+        targets = ['The l', 'laptop case', 'e was great', 'cover', 'rubbish']
+        spans = [Span(0,5), Span(4,15), Span(14, 25), Span(30,35), Span(40, 47)]
+        sentiments = [1,0,1,0,-1]
+        target_object = TargetText(text_id='1', text=text, spans=spans, 
+                                   targets=targets, target_sentiments=sentiments)
+        new_target_object = target_object.replace_target(3, 'bad day')
+        assert 'The laptop case was great and bad day was rubbish' == new_target_object['text']
+        # Should raise an error if we want to replace either 0, 1, 2
+        with pytest.raises(ValueError):
+            target_object.replace_target(0, 'hello')
+        with pytest.raises(ValueError):
+            target_object.replace_target(1, 'hello')
+        with pytest.raises(ValueError):
+            target_object.replace_target(2, 'hello')

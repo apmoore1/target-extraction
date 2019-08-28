@@ -85,6 +85,9 @@ class TargetText(MutableMapping):
     10. left_right_target_contexts -- This will return the sentence that is 
         left and right of the target as well as the words in the target for 
         each target in the sentence.
+    11. replace_target -- Given an index and a new target word it will replace 
+        the target at the index with the new target word and return a new 
+        TargetText object with everything the same apart from this new target.
     
     Static Functions:
 
@@ -840,8 +843,87 @@ class TargetText(MutableMapping):
                 left_right_target_list.append(contexts)
         return left_right_target_list  
 
+    def replace_target(self, target_index: int, replacement_target_word: str
+                       ) -> 'TargetText':
+        '''
+        :params target_index: The target index of the target word to replace
+        :param replacement_target_word: The target word to replace the target 
+                                        word at the given index
+        :returns: Given the target index and replacement target word it will 
+                  replace the target at the index with the new target word and 
+                  return a new TargetText object with everything the same apart 
+                  from this new target.
+        :raises ValueError: If the target_index is less than 0 or an index 
+                            number that does not exist.
+        :raises ValueError: If the target to replace is contained within another 
+                            target e.g. `what a great day` if this has two 
+                            targets `great` and `great day` then it will raise 
+                            ValueError if you replace either word as each is 
+                            within the other.
+        :Example: Given the following TargetText Object 
+        '''
+        self_dict = copy.deepcopy(dict(self))
 
+        number_targets = len(self_dict['targets'])
+        if target_index < 0 or target_index >= number_targets:
+            raise ValueError('Not a valid target_index number. Number of targets'
+                             f'in the current object {number_targets}')
+        # Change the target word
+        targets = self_dict['targets']
+        target_to_be_replaced = targets[target_index]
+        targets[target_index] = replacement_target_word
 
+        # Change the target spans
+        spans = self_dict['spans']
+        span_to_change = spans[target_index]
+        print(span_to_change)
+        spans_to_change: List[int] = []
+        for span_index, span in enumerate(spans):
+            if span_index == target_index:
+                continue
+            span: Span
+            
+            # Check that there are no overlapping targets
+            raise_in_target_error = False
+            if span.start >= span_to_change.start and span.start < span_to_change.end:
+                raise_in_target_error = True
+            elif span.end > span_to_change.start and span.end <= span_to_change.end:
+                raise_in_target_error = True
+            if raise_in_target_error:
+                raise ValueError('There are targets that share the same '
+                                 f'context {self}')
+            
+            if span.start >= span_to_change.end:
+                spans_to_change.append(span_index)
+        
+        difference_in_length = len(replacement_target_word) - len(target_to_be_replaced) 
+        # Change all of the spans
+        for span_index in spans_to_change:
+            span = spans[span_index]
+            new_start = span.start + difference_in_length
+            new_end = span.end + difference_in_length
+            spans[span_index] = Span(new_start, new_end)
+        # Change the target that is being replaced span by only the end
+        print(spans)
+        new_end = span_to_change.end + difference_in_length
+        print(difference_in_length)
+        spans[target_index] = Span(span_to_change.start, new_end)
+        print(spans)
+        # Change the text
+        text = self_dict['text']
+        print(span_to_change)
+        span_to_change_start = span_to_change.start
+        span_to_change_end = span_to_change.end
+        start_text = text[:span_to_change_start]
+        end_text = text[span_to_change_end:]
+        text = f'{start_text}{replacement_target_word}{end_text}'
+        
+        self_dict['targets'] = targets
+        self_dict['spans'] = spans
+        self_dict['text'] = text
+        print(self_dict)
+        return TargetText(**self_dict)
+            
     @staticmethod
     def from_json(json_text: str) -> 'TargetText':
         '''
