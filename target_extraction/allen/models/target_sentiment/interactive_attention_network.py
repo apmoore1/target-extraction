@@ -12,6 +12,7 @@ from allennlp.nn import Activation, util
 from allennlp.training.metrics import CategoricalAccuracy, F1Measure
 import torch
 from torch.nn.modules import Dropout, Linear
+import numpy
 
 from target_extraction.allen.models import target_sentiment
 
@@ -293,26 +294,46 @@ class InteractivateAttentionNetworkClassifier(Model):
             target_words = []
             # Attention weights and the related masks
             target_attention = []
-            targets_word_mask = []
             word_attention = []
-            word_mask = []
             for batch_index, sample in enumerate(metadata):
                 words.append(sample['text words'])
                 texts.append(sample['text'])
-                word_attention.append(context_attentions_weights[batch_index])
-                word_mask.append(context_mask[batch_index])
                 targets.append(sample['targets'])
                 target_words.append(sample['target words'])
-                target_attention.append(target_attention_weights[batch_index])
-                targets_word_mask.append(targets_mask[batch_index])
+
+                # Get the attention for the sentence/context given the target
+                word_attention_batch = []
+                for target_index in range(number_targets):
+                    if not label_mask[batch_index][target_index]:
+                        continue
+
+                    target_word_attention = []
+                    relevant_word_mask = context_mask[batch_index]
+                    for word_index in range(context_sequence_length):
+                        if not relevant_word_mask[word_index]:
+                            continue
+                        target_word_attention.append(context_attentions_weights[batch_index][target_index][word_index][0])
+                    word_attention_batch.append(target_word_attention)
+                word_attention.append(word_attention_batch)
+                # Get the attention for the target words
+                target_attention_batch = []
+                for target_index in range(number_targets):
+                    if not label_mask[batch_index][target_index]:
+                        continue
+                    
+                    target_word_attention = []
+                    for target_word_index in range(target_sequence_length):
+                        if not targets_mask[batch_index][target_index][target_word_index]:
+                           continue
+                        target_word_attention.append(target_attention_weights[batch_index][target_index][target_word_index][0])
+                    target_attention_batch.append(target_word_attention)
+                target_attention.append(target_attention_batch)
             output_dict["words"] = words
             output_dict["text"] = texts
             output_dict["word_attention"] = word_attention
-            output_dict["word_mask"] = word_mask
             output_dict["targets"] = targets
             output_dict["target words"] = target_words
             output_dict["targets_attention"] = target_attention
-            output_dict["targets_word_mask"] = targets_word_mask
 
         return output_dict
 
@@ -323,6 +344,12 @@ class InteractivateAttentionNetworkClassifier(Model):
         probabilities that do not have a target associated which is caused 
         through the batch prediction process and can be removed by using the 
         target mask.
+
+        Everyting in the dictionary will be of length (batch size * number of 
+        targets) where the number of targets is based on the number of targets 
+        in each sentence e.g. if the batch has two sentences where the first 
+        contian 2 targets and the second 3 targets the number returned will be 
+        (2 + 3) 5 target sentiments.
         '''
         batch_target_predictions = output_dict['class_probabilities'].cpu().data.numpy()
         target_masks = output_dict['targets_mask'].cpu().data.numpy()

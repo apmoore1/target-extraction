@@ -16,10 +16,6 @@ class TargetSentimentPredictor(Predictor):
         :param model: Allennlp Model to be used.
         :param dataset: The dataset reader to be used to convert input objects 
                         into model friendly inputs.
-        :param langauge: Name of the Spacy model e.g. en_core_web_sm
-        :param pos_tags: Whether the Spacy model requires to produce POS tags.
-        :param fine_grained_tags: If True then returns XPOS else returns 
-                                  UPOS (universal) tags.
         '''
         super().__init__(model, dataset_reader)
 

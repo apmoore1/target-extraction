@@ -64,7 +64,9 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
 
     @flaky
     def test_batch_predictions_are_consistent(self):
-        self.ensure_batch_predictions_are_consistent()
+        ignore = ['words', 'text', 'targets', 'target words',
+                  'word_attention', 'targets_attention']
+        self.ensure_batch_predictions_are_consistent(keys_to_ignore=ignore)
 
     def test_target_field_embedder(self):
         # Test that can handle having a target embedder as well as a text
@@ -112,8 +114,7 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         for key in output_dict.keys():
             assert key in {'class_probabilities', 'targets_mask',
                            'loss', 'words', 'text', 'targets', 'target words',
-                           'word_attention', 'word_mask', 'targets_attention',
-                           'targets_word_mask'}
+                           'word_attention', 'targets_attention'}
         words = output_dict['words']
         assert words[1] == ["The", "food", "was", "lousy", "-", "too", "sweet", 
                             "or", "too", "salty", "and", "the", "portions", 
@@ -134,49 +135,31 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
             assert prob > 0
         for prob in class_probs[1]:
             assert prob == 0
-        # Word mask for each sentence
-        assert 2 == len(output_dict['word_mask'])
-        assert 33 == len(output_dict['word_mask'][0])
-        assert 33 == len(output_dict['word_mask'][1])
-        assert [1]*33 == output_dict['word_mask'][0].cpu().numpy().tolist()
-        assert [1]*15 + [0]*18 == output_dict['word_mask'][1].cpu().numpy().tolist()
         # Word attention
         assert 2 == len(output_dict['word_attention'])
-        assert 2 == len(output_dict['word_attention'][0])
-        assert 33 == len(output_dict['word_attention'][0][1])
+        assert 1 == len(output_dict['word_attention'][0])
+        assert 33 == len(output_dict['word_attention'][0][0])
         assert 2 == len(output_dict['word_attention'][1])
-        assert 33 == len(output_dict['word_attention'][1][1])
-        # Should be attention on all words in the first sentence
-        for value in output_dict['word_attention'][0][0].cpu().detach().numpy().tolist():
-            assert 1 == len(value)
-            assert 0 < value[0]
-        # Should be attention on the first 15 words and then zero in the second sentence
-        for index, value in enumerate(output_dict['word_attention'][1][0].cpu().detach().numpy().tolist()):
-            assert 1 == len(value)
-            if index < 15:
-                assert 0 < value[0]
-            else:
-                assert 0 == value[0]
+        assert 15 == len(output_dict['word_attention'][1][1])
+
+        for value in output_dict['word_attention'][0][0]:
+            assert 0 < value
+        for value in output_dict['word_attention'][1][0]:
+            assert 0 < value
+        for value in output_dict['word_attention'][1][1]:
+            assert 0 < value
         # Target attention
         assert 2 == len(output_dict['targets_attention'])
-        assert 2 == len(output_dict['targets_attention'][0])
-        assert 3 == len(output_dict['targets_attention'][0][1])
+        assert 1 == len(output_dict['targets_attention'][0])
+        assert 2 == len(output_dict['targets_attention'][0][0])
         assert 2 == len(output_dict['targets_attention'][1])
         assert 3 == len(output_dict['targets_attention'][1][0])
-        assert [[1.0],[0.0],[0.0]] == output_dict['targets_attention'][1][1].cpu().detach().numpy().tolist()
-        assert [[0.0],[0.0],[0.0]] == output_dict['targets_attention'][0][1].cpu().detach().numpy().tolist()
-        for value in output_dict['targets_attention'][1][0].cpu().detach().numpy().tolist():
-            assert 1 == len(value)
-            assert 0 < value[0]
-        # Target word mask
-        assert 2 == len(output_dict['targets_word_mask'])
-        assert 2 == len(output_dict['targets_word_mask'][0])
-        assert 3 == len(output_dict['targets_word_mask'][0][0])
-        assert 2 == len(output_dict['targets_word_mask'][1])
-        assert 3 == len(output_dict['targets_word_mask'][1][0])
-        assert [0,0,0] == output_dict['targets_word_mask'][0][1].cpu().numpy().tolist()
-        assert [1,1,1] == output_dict['targets_word_mask'][1][0].cpu().numpy().tolist()
-        assert [1,1,0] == output_dict['targets_word_mask'][0][0].cpu().numpy().tolist()
+        assert 1 == len(output_dict['targets_attention'][1][1])
+        assert [1.0] == output_dict['targets_attention'][1][1]
+        for value in output_dict['targets_attention'][0][0]:
+            assert 0 < value
+        for value in output_dict['targets_attention'][1][0]:
+            assert 0 < value
 
     def test_loss_weights(self):
         loss_weights(self.param_file, self.vocab, self.dataset) 
