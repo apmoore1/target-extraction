@@ -29,14 +29,14 @@
         }
       },
       "left_text_encoder": {
-        "type": "gru",
+        "type": "lstm",
         "input_size": 600,
         "hidden_size": 300,
         "bidirectional": false,
         "num_layers": 1
       },
       "right_text_encoder": {
-        "type": "gru",
+        "type": "lstm",
         "input_size": 600,
         "hidden_size": 300,
         "bidirectional": false,
