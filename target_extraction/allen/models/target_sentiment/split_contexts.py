@@ -1,6 +1,6 @@
 from typing import Dict, Optional, List
 
-from allennlp.common.checks import ConfigurationError
+from allennlp.common.checks import ConfigurationError, check_dimensions_match
 from allennlp.data import Vocabulary
 from allennlp.modules import FeedForward, Seq2VecEncoder, TextFieldEmbedder
 from allennlp.modules import InputVariationalDropout, TimeDistributed
@@ -11,6 +11,8 @@ from allennlp.training.metrics import CategoricalAccuracy, F1Measure
 import numpy
 import torch
 from torch.nn.modules import Dropout, Linear
+
+from target_extraction.allen.models import target_sentiment
 
 @Model.register("split_contexts_classifier")
 class SplitContextsClassifier(Model):
@@ -86,19 +88,7 @@ class SplitContextsClassifier(Model):
         
         # Set the loss weights (have to sort them by order of label index in 
         # the vocab)
-        if loss_weights is not None:
-            label_name_index = self.vocab.get_token_to_index_vocabulary(namespace=self.label_name)
-            label_name_index = sorted(label_name_index.items(), key=lambda x: x[1])
-            
-            temp_loss_weights = []
-            loss_weight_labels = ['negative', 'neutral', 'positive']
-            loss_weights = {label_name: weight for label_name, weight 
-                            in zip(loss_weight_labels, loss_weights)}
-            for label_name, index in label_name_index:
-                temp_loss_weights.append(loss_weights[label_name])
-            self.loss_weights = temp_loss_weights
-        else:
-            self.loss_weights = None
+        self.loss_weights = target_sentiment.util.loss_weight_order(self, loss_weights, self.label_name)
 
         if feedforward is not None:
             output_dim = self.feedforward.get_output_dim()
@@ -148,12 +138,9 @@ class SplitContextsClassifier(Model):
         if self.target_encoder and self.target_field_embedder:
             target_embed_out = self.target_field_embedder.get_output_dim()
             target_in = self.target_encoder.get_input_dim()
-            config_embed_err_msg = ("The Target field embedder should have"
-                                    " the same output size "
-                                    f"{target_embed_out} as the input to "
-                                    f"the target encoder {target_in}")
-            if target_embed_out != target_in:
-                raise ConfigurationError(config_embed_err_msg)
+            check_dimensions_match(target_in, target_embed_out, 
+                                   'target_field_embedder output', 
+                                   'target_encoder input')
 
         # TimeDistributed everything as we are processing multiple Targets at 
         # once as the input is a sentence containing one or more targets
