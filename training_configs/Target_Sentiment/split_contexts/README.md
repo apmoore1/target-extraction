@@ -10,7 +10,7 @@ As can be seen from the image the sentence is split into two contexts:
 2. Right context -- starts from left most target word to the end of the sentence.
 
 The left context is represented using a forward running LSTM starting from the beginning of the sentence. The right context through a backward running LSTM starting from the end of the sentence.
-![alt text](./TDLSTM\ and\ TCLSTM\ figure.png "TDLSTM and TCLSTM architecture")
+![alt text](./TDLSTM%20and%20TCLSTM%20figure.png "TDLSTM and TCLSTM architecture")
 
 In this sub-folder we have 4 different training configuration files:
 1. [tdlstm](./tdlstm.jsonnet) - The original TDLSTM as described in the paper.
