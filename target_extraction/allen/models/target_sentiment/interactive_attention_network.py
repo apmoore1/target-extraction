@@ -292,48 +292,20 @@ class InteractivateAttentionNetworkClassifier(Model):
             texts = []
             targets = []
             target_words = []
-            # Attention weights and the related masks
-            target_attention = []
-            word_attention = []
             for batch_index, sample in enumerate(metadata):
                 words.append(sample['text words'])
                 texts.append(sample['text'])
                 targets.append(sample['targets'])
                 target_words.append(sample['target words'])
-
-                # Get the attention for the sentence/context given the target
-                word_attention_batch = []
-                for target_index in range(number_targets):
-                    if not label_mask[batch_index][target_index]:
-                        continue
-
-                    target_word_attention = []
-                    relevant_word_mask = context_mask[batch_index]
-                    for word_index in range(context_sequence_length):
-                        if not relevant_word_mask[word_index]:
-                            continue
-                        target_word_attention.append(context_attentions_weights[batch_index][target_index][word_index][0])
-                    word_attention_batch.append(target_word_attention)
-                word_attention.append(word_attention_batch)
-                # Get the attention for the target words
-                target_attention_batch = []
-                for target_index in range(number_targets):
-                    if not label_mask[batch_index][target_index]:
-                        continue
-                    
-                    target_word_attention = []
-                    for target_word_index in range(target_sequence_length):
-                        if not targets_mask[batch_index][target_index][target_word_index]:
-                           continue
-                        target_word_attention.append(target_attention_weights[batch_index][target_index][target_word_index][0])
-                    target_attention_batch.append(target_word_attention)
-                target_attention.append(target_attention_batch)
+                        
             output_dict["words"] = words
             output_dict["text"] = texts
-            output_dict["word_attention"] = word_attention
+            output_dict["word_attention"] = context_attentions_weights
             output_dict["targets"] = targets
             output_dict["target words"] = target_words
-            output_dict["targets_attention"] = target_attention
+            output_dict["targets_attention"] = target_attention_weights
+            output_dict["context_mask"] = context_mask
+            output_dict["targets_word_mask"] = targets_mask
 
         return output_dict
 
@@ -352,33 +324,71 @@ class InteractivateAttentionNetworkClassifier(Model):
         (2 + 3) 5 target sentiments.
         '''
         batch_target_predictions = output_dict['class_probabilities'].cpu().data.numpy()
-        target_masks = output_dict['targets_mask'].cpu().data.numpy()
+        label_masks = output_dict['targets_mask'].cpu().data.numpy()
+
+        cpu_context_mask = output_dict["context_mask"].cpu().data.numpy()
+        cpu_context_attentions_weights = output_dict["word_attention"].cpu().data.numpy()
+        cpu_targets_mask = output_dict["targets_word_mask"].cpu().data.numpy()
+        cpu_target_attention_weights = output_dict["targets_attention"].cpu().data.numpy()
         # Should have the same batch size and max target nubers
         batch_size = batch_target_predictions.shape[0]
         max_number_targets = batch_target_predictions.shape[1]
-        assert target_masks.shape[0] == batch_size
-        assert target_masks.shape[1] == max_number_targets
+        assert label_masks.shape[0] == batch_size
+        assert label_masks.shape[1] == max_number_targets
+
+        _, context_sequence_length = cpu_context_mask.shape
+        _, _, target_sequence_length = cpu_targets_mask.shape
 
         sentiments = []
         non_masked_class_probabilities = []
+        word_attention = []
+        target_attention = []
         for batch_index in range(batch_size):
+            # Sentiment and class probabilities
             target_sentiments = []
             target_non_masked_class_probabilities = []
-
             target_predictions = batch_target_predictions[batch_index]
-            target_mask = target_masks[batch_index]
-            for index, target_prediction in enumerate(target_predictions):
-                if target_mask[index] != 1:
+            label_mask = label_masks[batch_index]
+            
+            # Attention parameters
+            word_attention_batch = []
+            target_attention_batch = []
+            relevant_word_mask = cpu_context_mask[batch_index]
+            relevant_target_mask = cpu_targets_mask[batch_index]
+            for target_index in range(max_number_targets):
+                if label_mask[target_index] != 1:
                     continue
+                # Sentiment and class probabilities
+                target_prediction = target_predictions[target_index]
                 label_index = numpy.argmax(target_prediction)
                 label = self.vocab.get_token_from_index(label_index, 
                                                         namespace=self.label_name)
                 target_sentiments.append(label)
                 target_non_masked_class_probabilities.append(target_prediction)
+
+                # Attention parameters
+                context_target_word_attention = []
+                for word_index in range(context_sequence_length):
+                    if not relevant_word_mask[word_index]:
+                        continue
+                    context_target_word_attention.append(cpu_context_attentions_weights[batch_index][target_index][word_index][0])
+                word_attention_batch.append(context_target_word_attention)
+
+                target_word_attention = []
+                for target_word_index in range(target_sequence_length):
+                    if not relevant_target_mask[target_index][target_word_index]:
+                        continue
+                    target_word_attention.append(cpu_target_attention_weights[batch_index][target_index][target_word_index][0])
+                target_attention_batch.append(target_word_attention)
+            
+            word_attention.append(word_attention_batch)
+            target_attention.append(target_attention_batch)
             sentiments.append(target_sentiments)
             non_masked_class_probabilities.append(target_non_masked_class_probabilities)
         output_dict['sentiments'] = sentiments
         output_dict['class_probabilities'] = non_masked_class_probabilities
+        output_dict['word_attention'] = word_attention
+        output_dict['targets_attention'] = target_attention
         return output_dict
 
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:

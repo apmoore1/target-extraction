@@ -24,10 +24,11 @@ class TestInteractiveAttentionNetworkPredictor():
         tokens = ["The", "food", "was", "lousy", "-", "too", "sweet", "or", 
                   "too", "salty", "and", "the", "portions", "tiny" ,"."]
         example_input = {"text": text, "spans": [[4, 18]], "targets": ["food was lousy"]}
-       
+        # The last two do not matter.
         output_keys = ['words', 'text', 'targets', 'target words', 
                        'class_probabilities', 'sentiments', 'targets_mask',
-                       'word_attention', 'targets_attention']
+                       'word_attention', 'targets_attention', 'targets_word_mask',
+                       'context_mask']
 
         
         result = self.ian_predictor.predict_json(example_input)
@@ -90,7 +91,6 @@ class TestInteractiveAttentionNetworkPredictor():
         
         results = self.ian_predictor.predict_batch_json(example_input)
         for i, result in enumerate(results):
-            print(result.keys())
             assert tokens[i] == result['words']
             assert texts[i] == result['text']
             assert targets[i] == result['targets']

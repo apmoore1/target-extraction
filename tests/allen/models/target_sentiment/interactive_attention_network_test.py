@@ -114,7 +114,8 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         for key in output_dict.keys():
             assert key in {'class_probabilities', 'targets_mask',
                            'loss', 'words', 'text', 'targets', 'target words',
-                           'word_attention', 'targets_attention'}
+                           'word_attention', 'targets_attention','targets_word_mask',
+                           'context_mask'}
         words = output_dict['words']
         assert words[1] == ["The", "food", "was", "lousy", "-", "too", "sweet", 
                             "or", "too", "salty", "and", "the", "portions", 
@@ -135,31 +136,6 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
             assert prob > 0
         for prob in class_probs[1]:
             assert prob == 0
-        # Word attention
-        assert 2 == len(output_dict['word_attention'])
-        assert 1 == len(output_dict['word_attention'][0])
-        assert 33 == len(output_dict['word_attention'][0][0])
-        assert 2 == len(output_dict['word_attention'][1])
-        assert 15 == len(output_dict['word_attention'][1][1])
-
-        for value in output_dict['word_attention'][0][0]:
-            assert 0 < value
-        for value in output_dict['word_attention'][1][0]:
-            assert 0 < value
-        for value in output_dict['word_attention'][1][1]:
-            assert 0 < value
-        # Target attention
-        assert 2 == len(output_dict['targets_attention'])
-        assert 1 == len(output_dict['targets_attention'][0])
-        assert 2 == len(output_dict['targets_attention'][0][0])
-        assert 2 == len(output_dict['targets_attention'][1])
-        assert 3 == len(output_dict['targets_attention'][1][0])
-        assert 1 == len(output_dict['targets_attention'][1][1])
-        assert [1.0] == output_dict['targets_attention'][1][1]
-        for value in output_dict['targets_attention'][0][0]:
-            assert 0 < value
-        for value in output_dict['targets_attention'][1][0]:
-            assert 0 < value
 
     def test_loss_weights(self):
         loss_weights(self.param_file, self.vocab, self.dataset) 
