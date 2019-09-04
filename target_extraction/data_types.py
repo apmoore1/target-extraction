@@ -1092,6 +1092,8 @@ class TargetTextCollection(MutableMapping):
     14. target_sentiments -- A dictionary where the keys are target texts and 
         the values are a List of sentiment values that have been associated to 
         that target.
+    15. dict_iter -- Returns an interator of all of the TargetText objects 
+        within the collection as dictionaries.
     
     Static Functions:
 
@@ -1509,6 +1511,15 @@ class TargetTextCollection(MutableMapping):
         for target_text in self.values():
             new_collection.add(target_text.one_sample_per_span(remove_empty=remove_empty))
         return new_collection
+
+    def dict_iterator(self) -> Iterable[Dict[str, Any]]:
+        '''
+        :returns: An interator of all of the TargetText objects 
+                  within the collection as dictionaries.
+        '''
+        for target_text in self.values():
+            target_text: TargetText
+            yield dict(target_text)
 
     def sanitize(self) -> None:
         '''

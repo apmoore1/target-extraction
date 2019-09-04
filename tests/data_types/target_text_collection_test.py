@@ -71,6 +71,25 @@ class TestTargetTextCollection:
             collection_examples.append(collection)
         return collection_examples
 
+    def test_dict_iterator(self):
+        collections = self._regular_examples()[:2]
+
+        target_0 = {'text': 'The laptop case was great and cover was rubbish', 
+                    'text_id': '0', 'spans': [Span(4,15)], 
+                    'targets': ['laptop case'], 
+                    'categories': ['LAPTOP#CASE'], 'target_sentiments': [0],
+                    'category_sentiments': None}
+        target_1 = {'text': 'The laptop case was great and cover was rubbish', 
+                    'text_id': 'another_id', 'spans': [Span(30,35)], 
+                    'targets': ['cover'], 'category_sentiments': None,
+                    'categories': ['LAPTOP'], 'target_sentiments': [1]}
+        answers = [[target_0], [target_0, target_1]]
+        for index, collection in enumerate(collections):
+            answer = answers[index]
+            for answer_index, target_dict in enumerate(collection.dict_iterator()):
+                assert answer[answer_index] == target_dict
+
+
     def test_length(self):
         examples = self._regular_examples()
         example_lengths = [1,2,3]

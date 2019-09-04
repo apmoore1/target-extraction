@@ -146,8 +146,8 @@ class TargetSentimentDatasetReader(DatasetReader):
                          target_sentiments: Optional[List[Union[str, int]]] = None,
                          spans: Optional[List[List[int]]] = None,
                          categories: Optional[List[str]] = None,
-                         category_sentiments: Optional[List[Union[str, int]]]= None
-                         ) -> Instance:
+                         category_sentiments: Optional[List[Union[str, int]]]= None,
+                         **kwargs) -> Instance:
         '''
         The original text, text tokens as well as the targets and target 
         tokens are stored in the MetadataField.
