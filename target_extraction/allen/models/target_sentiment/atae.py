@@ -358,8 +358,6 @@ class ATAEClassifier(Model):
         assert label_masks.shape[1] == max_number_targets
 
         _, context_sequence_length = cpu_context_mask.shape
-        print(cpu_context_mask)
-        print(cpu_context_attentions_weights)
 
         sentiments = []
         non_masked_class_probabilities = []
