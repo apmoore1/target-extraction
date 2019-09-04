@@ -37,16 +37,16 @@ For Target Extraction and Target Sentiment the datasets have to be created diffe
 ## Target Extraction:
 SemEval 2014 Laptop
 ``` bash
-python create_splits.py ../original_target_datasets/semeval_2014/SemEval\'14-ABSA-TrainData_v2\ \&\ AnnotationGuidelines/Laptop_Train_v2.xml ../original_target_datasets/semeval_2014/ABSA_Gold_TestData/Laptops_Test_Gold.xml semeval_2014 ../original_target_datasets/semeval_2014/laptop_json/train.json ../original_target_datasets/semeval_2014/laptop_json/val.json ../original_target_datasets/semeval_2014/laptop_json/test.json
+python create_splits.py extraction ../original_target_datasets/semeval_2014/SemEval\'14-ABSA-TrainData_v2\ \&\ AnnotationGuidelines/Laptop_Train_v2.xml ../original_target_datasets/semeval_2014/ABSA_Gold_TestData/Laptops_Test_Gold.xml semeval_2014 ../original_target_datasets/semeval_2014/laptop_json/train.json ../original_target_datasets/semeval_2014/laptop_json/val.json ../original_target_datasets/semeval_2014/laptop_json/test.json
 ```
 
 SemEval 2014 Restaurant
 ``` bash
-python create_splits.py ../original_target_datasets/semeval_2014/SemEval\'14-ABSA-TrainData_v2\ \&\ AnnotationGuidelines/Restaurants_Train_v2.xml ../original_target_datasets/semeval_2014/ABSA_Gold_TestData/Restaurants_Test_Gold.xml semeval_2014 ../original_target_datasets/semeval_2014/restaurant_json/train.json ../original_target_datasets/semeval_2014/restaurant_json/val.json ../original_target_datasets/semeval_2014/restaurant_json/test.json
+python create_splits.py extraction ../original_target_datasets/semeval_2014/SemEval\'14-ABSA-TrainData_v2\ \&\ AnnotationGuidelines/Restaurants_Train_v2.xml ../original_target_datasets/semeval_2014/ABSA_Gold_TestData/Restaurants_Test_Gold.xml semeval_2014 ../original_target_datasets/semeval_2014/restaurant_json/train.json ../original_target_datasets/semeval_2014/restaurant_json/val.json ../original_target_datasets/semeval_2014/restaurant_json/test.json
 ```
 SemEval 2016 Restaurant
 ``` bash
-python create_splits.py ../original_target_datasets/semeval_2016/ABSA16_Restaurants_Train_SB1_v2.xml ../original_target_datasets/semeval_2016/EN_REST_SB1_TEST.xml.gold semeval_2016 ../original_target_datasets/semeval_2016/restaurant_json/train.json ../original_target_datasets/semeval_2016/restaurant_json/val.json ../original_target_datasets/semeval_2016/restaurant_json/test.json
+python create_splits.py extraction ../original_target_datasets/semeval_2016/ABSA16_Restaurants_Train_SB1_v2.xml ../original_target_datasets/semeval_2016/EN_REST_SB1_TEST.xml.gold semeval_2016 ../original_target_datasets/semeval_2016/restaurant_json/train.json ../original_target_datasets/semeval_2016/restaurant_json/val.json ../original_target_datasets/semeval_2016/restaurant_json/test.json
 ```
 ## Target Sentiment Prediction
 SemEval 2014 Laptop

@@ -26,10 +26,12 @@ if __name__ == '__main__':
     dataset_parsers = [semeval_2014, semeval_2016, 'nothing']
 
     remove_errors_help = "This will remove any sequence error errors, "\
-                         "else it will raise an error"
+                         "else it will raise an error. This does not apply for the sentiment task"
+    task_help = 'Sentiment or extraction task'
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("task", type=str, choices=['extraction', 'sentiment'])
+    parser.add_argument("task", type=str, choices=['extraction', 'sentiment'],
+                        help=task_help)
     parser.add_argument("train_dataset_fp", type=parse_path,
                         help="File path to the training dataset")
     parser.add_argument("test_dataset_fp", type=parse_path,
@@ -49,7 +51,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.dataset_name == 'election_twitter':
-        election_dataset_folder = Path('/tmp', 'election_dataset')
+        election_dataset_folder = Path('/', 'tmp', 'twitter_election_dataset')
         print(f'Downloading the Twitter dataset to {election_dataset_folder}')
         train_dataset: TargetTextCollection = wang_2017_election_twitter_train(election_dataset_folder)
         test_dataset: TargetTextCollection = wang_2017_election_twitter_test(election_dataset_folder)
@@ -93,20 +95,24 @@ if __name__ == '__main__':
     pos_tagger = pos_taggers.spacy_tagger()
     for dataset in datasets:
         dataset: TargetTextCollection
-        dataset.pos_text(pos_tagger)
-        errors = dataset.sequence_labels(return_errors=True)
-        if errors and not args.remove_errors:
-            raise ValueError('While creating the sequence labels the '
-                             f'following sequence labels have occured {errors}')
-        elif errors:
-            print(f'{len(errors)} number of sequence labels errors have occured'
-                  ' and will be removed from the dataset')
-            for error in errors:
-                del dataset[error['text_id']]
+        if args.task == 'sentiment':
+            dataset.pos_text(pos_tagger)
+        else:
+            dataset.pos_text(pos_tagger)
+            errors = dataset.sequence_labels(return_errors=True)
+            if errors and not args.remove_errors:
+                raise ValueError('While creating the sequence labels the '
+                                f'following sequence labels have occured {errors}')
+            elif errors:
+                print(f'{len(errors)} number of sequence labels errors have occured'
+                    ' and will be removed from the dataset')
+                for error in errors:
+                    del dataset[error['text_id']]
     print(f'Length of train, val and test:')
     print([dataset_length(args.task, dataset) 
            for dataset in [train_dataset, val_dataset, test_dataset]])
 
+    args.save_train_fp.parent.mkdir(parents=True, exist_ok=True)
     print(f'Saving the JSON training dataset to {args.save_train_fp}')
     train_dataset.to_json_file(args.save_train_fp)
     print(f'Saving the JSON training dataset to {args.save_val_fp}')
