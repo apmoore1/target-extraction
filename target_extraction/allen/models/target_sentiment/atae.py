@@ -29,6 +29,7 @@ class ATAEClassifier(Model):
                  context_attention_activation_function: str = 'tanh',
                  target_field_embedder: Optional[TextFieldEmbedder] = None,
                  AE: bool = True, AttentionAE: bool = True,
+                 inter_target_encoding: Optional[Seq2SeqEncoder] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
@@ -46,8 +47,8 @@ class ATAEClassifier(Model):
                                 appears in.
         :param target_encoder: Encoder that will create the representation of 
                                target text tokens.
-        :param feedforward: An optional feed forward layer to apply after the 
-                            encoder.
+        :param feedforward: An optional feed forward layer(s) to apply before 
+                            the final softmax layer.
         :param context_attention_activation_function: The activation function 
                                                       to be used after the 
                                                       projection of the encoded
@@ -62,6 +63,13 @@ class ATAEClassifier(Model):
         :param AttentionAE: Whether to concatenate the target representations 
                             to each contextualised word representation i.e. 
                             to each word's vector after the `context_encoder` 
+        :param inter_target_encoding: Whether to model the relationship between 
+                                      targets/aspect. This was done in the 
+                                      `Modeling Inter-Aspect Dependencies for 
+                                      Aspect-Based Sentiment Analysis 
+                                      <https://www.aclweb.org/anthology/N18-2043>`_
+                                      where this defines equation 4 from that 
+                                      paper.
         :param initializer: Used to initialize the model parameters.
         :param regularizer: If provided, will be used to calculate the 
                             regularization penalty during training.
@@ -91,6 +99,11 @@ class ATAEClassifier(Model):
         For the 1'st model ensure `AE` is True and `AttentionAE` is False. For
         the 2'nd ensure that `AE` is False and `AttentionAE` is True. For the 
         the 3'rd ensure both `AE` and `AttentionAE` are True.
+
+        This can also be used to re-create the model from `Modeling Inter-Aspect Dependencies for 
+        Aspect-Based Sentiment Analysis <https://www.aclweb.org/anthology/N18-2043>`_
+        with the fustion part being `concat`. To do so `inter_target_encoding`
+        argument must be a LSTM.
 
          .. _variational dropout:
            https://papers.nips.cc/paper/6241-a-theoretically-grounded-application-of-dropout-in-recurrent-neural-networks.pdf
@@ -139,8 +152,13 @@ class ATAEClassifier(Model):
         # the vocab)
         self.loss_weights = target_sentiment.util.loss_weight_order(self, loss_weights, self.label_name)
 
+        # Inter target modelling
+        self.inter_target_encoding = inter_target_encoding
+
         if feedforward is not None:
             output_dim = self.feedforward.get_output_dim()
+        elif self.inter_target_encoding is not None:
+            output_dim = self.inter_target_encoding.get_output_dim()
         else:
             output_dim = context_encoder_out
         self.label_projection = Linear(output_dim, self.num_classes)
@@ -181,11 +199,22 @@ class ATAEClassifier(Model):
             check_dimensions_match(context_field_embedder_out, 
                                    context_encoder.get_input_dim(),
                                    "context field embedding dim", "text encoder input dim")
-        if self.feedforward is not None:
+        if self.inter_target_encoding is not None:
             check_dimensions_match(context_encoder_out,
-                                   self.feedforward.get_input_dim(),
-                                   'Context encoder output', 
-                                   'FeedForward input dim')
+                                   self.inter_target_encoding.get_input_dim(),
+                                   'Context field enocder output', 
+                                   'Inter target encoder input')
+        if self.feedforward is not None:
+            if self.inter_target_encoding is not None:
+                check_dimensions_match(self.inter_target_encoding.get_output_dim(),
+                                       self.feedforward.get_input_dim(),
+                                       'Inter target encoder output', 
+                                       'FeedForward input dim')
+            else:
+                check_dimensions_match(context_encoder_out,
+                                       self.feedforward.get_input_dim(),
+                                       'Context encoder output', 
+                                       'FeedForward input dim')
 
         self._time_variational_dropout = TimeDistributed(self._variational_dropout)
 
@@ -285,13 +314,28 @@ class ATAEClassifier(Model):
         feature_vector = context_final_states + weighted_encoded_context_vec
         feature_vector = self._naive_dropout(feature_vector)
 
+        # Mask for targets (Batch Size, Number targets)
+        label_mask = util.get_text_field_mask(targets)
+        if self.inter_target_encoding is not None:
+            # Reshape the vector into (Batch Size, Number Targets, number labels)
+            # So that we can perform an LSTM over the target feature representations
+            # over the targets in the same sentence
+            _, feature_dim = feature_vector.shape
+            feature_target_seq = feature_vector.view(batch_size, number_targets, 
+                                                     feature_dim)
+            feature_target_seq = self.inter_target_encoding(feature_target_seq, label_mask)
+            feature_target_seq = self._variational_dropout(feature_target_seq)
+            _, _, feature_seq_dim = feature_target_seq.shape
+            feature_vector = feature_target_seq.view(batch_size_num_targets, feature_seq_dim)
+        
         if self.feedforward is not None:
             feature_vector = self.feedforward(feature_vector)
+        
         logits = self.label_projection(feature_vector)
         # Reshape the logits from (Batch Size * Number target, number labels)
         # to (Batch Size, Number Targets, number labels)
         logits = logits.view(batch_size, number_targets, self.num_classes)
-        label_mask = util.get_text_field_mask(targets)
+        #label_mask = util.get_text_field_mask(targets)
         masked_class_probabilities = util.masked_softmax(logits, label_mask.unsqueeze(-1))
         output_dict = {"class_probabilities": masked_class_probabilities, 
                        "targets_mask": label_mask}

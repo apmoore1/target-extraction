@@ -58,6 +58,7 @@ class ATAEClassifierTest(ModelTestCase):
         self.atae_config = str(Path(config_dir, 'atae_config.jsonnet'))
         self.ae_config = str(Path(config_dir, 'ae_config.jsonnet'))
         self.at_config = str(Path(config_dir, 'at_config.jsonnet'))
+        self.inter_atae_config = str(Path(config_dir, 'inter_atae_config.jsonnet'))
 
         self.set_up_model(self.atae_config, test_data)
 
@@ -74,6 +75,38 @@ class ATAEClassifierTest(ModelTestCase):
     
     def test_at_train_save(self):
         params = Params.from_file(self.at_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_inter_atae_train_save(self):
+        params = Params.from_file(self.inter_atae_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_inter_ae_train_save(self):
+        params = Params.from_file(self.ae_config).duplicate()
+        inter_target_encoder = {"type": "gru", "input_size": 20,
+                                "hidden_size": 6, "bidirectional": False,
+                                "num_layers": 1}
+        params['model']['inter_target_encoding'] = inter_target_encoder
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+    
+    def test_inter_at_train_save(self):
+        params = Params.from_file(self.at_config).duplicate()
+        inter_target_encoder = {"type": "gru", "input_size": 20,
+                                "hidden_size": 6, "bidirectional": False,
+                                "num_layers": 1}
+        params['model']['inter_target_encoding'] = inter_target_encoder
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
@@ -153,6 +186,24 @@ class ATAEClassifierTest(ModelTestCase):
         # if the context encoder input dim is not equal to the context_field_embdder
         params = Params.from_file(self.at_config).duplicate()
         params['model']['context_encoder']['input_size'] = 17
+        params_copy = copy.deepcopy(params)
+        with pytest.raises(ConfigurationError):
+            Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+
+    def test_inter_context(self):
+        # Raises a config error if the output context encoder does not match 
+        # the input of the inter target encoder
+        params = Params.from_file(self.inter_atae_config).duplicate()
+        params['model']['context_encoder']['hidden_size'] = 6
+        params_copy = copy.deepcopy(params)
+        with pytest.raises(ConfigurationError):
+            Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+
+    def test_inter_feedforward(self):
+        # Raises a config error if the inter target encoder does not match 
+        # the input of the feedforward
+        params = Params.from_file(self.inter_atae_config).duplicate()
+        params['model']['feedforward']['input_dim'] = 20
         params_copy = copy.deepcopy(params)
         with pytest.raises(ConfigurationError):
             Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
