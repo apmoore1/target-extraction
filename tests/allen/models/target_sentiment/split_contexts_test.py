@@ -54,11 +54,11 @@ class SplitContextsClassifierTest(ModelTestCase):
         test_dir = Path(__file__, '..', '..', '..', '..','data', 'allen',  
                         'models', 'target_sentiment').resolve()
         test_data = str(Path(test_dir, 'target_category_sentiments.json'))
-        self.tdlstm_config = str(Path(test_dir, 'tdlstm_config.jsonnet'))
-        self.tclstm_config = str(Path(test_dir, 'tclstm_config.jsonnet'))
+        config_dir = Path(test_dir, 'split_contexts')
+        self.tdlstm_config = str(Path(config_dir, 'tdlstm_config.jsonnet'))
+        self.tclstm_config = str(Path(config_dir, 'tclstm_config.jsonnet'))
 
-        self.set_up_model(self.tdlstm_config,
-                          test_data)
+        self.set_up_model(self.tdlstm_config, test_data)
 
     def test_model_can_train_save_and_load(self):
         self.ensure_model_can_train_save_and_load(self.param_file)
