@@ -34,11 +34,9 @@
       "num_layers": 1
     },
     "target_encoder": {
-      "type": "lstm",
-      "input_size": 300,
-      "hidden_size": 300,
-      "bidirectional": false,
-      "num_layers": 1
+        "type": "boe",
+        "embedding_dim": 300,
+        "averaged": true
     },
   },
   "iterator": {
