@@ -351,8 +351,6 @@ class ATAEClassifier(Model):
 
         cpu_context_mask = output_dict["context_mask"].cpu().data.numpy()
         cpu_context_attentions_weights = output_dict["word_attention"].cpu().data.numpy()
-        cpu_targets_mask = output_dict["targets_word_mask"].cpu().data.numpy()
-        cpu_target_attention_weights = output_dict["targets_attention"].cpu().data.numpy()
         # Should have the same batch size and max target nubers
         batch_size = batch_target_predictions.shape[0]
         max_number_targets = batch_target_predictions.shape[1]
@@ -360,12 +358,12 @@ class ATAEClassifier(Model):
         assert label_masks.shape[1] == max_number_targets
 
         _, context_sequence_length = cpu_context_mask.shape
-        _, _, target_sequence_length = cpu_targets_mask.shape
+        print(cpu_context_mask)
+        print(cpu_context_attentions_weights)
 
         sentiments = []
         non_masked_class_probabilities = []
         word_attention = []
-        target_attention = []
         for batch_index in range(batch_size):
             # Sentiment and class probabilities
             target_sentiments = []
@@ -375,9 +373,7 @@ class ATAEClassifier(Model):
             
             # Attention parameters
             word_attention_batch = []
-            target_attention_batch = []
             relevant_word_mask = cpu_context_mask[batch_index]
-            relevant_target_mask = cpu_targets_mask[batch_index]
             for target_index in range(max_number_targets):
                 if label_mask[target_index] != 1:
                     continue
@@ -391,27 +387,19 @@ class ATAEClassifier(Model):
 
                 # Attention parameters
                 context_target_word_attention = []
+                relevant_word_attention = cpu_context_attentions_weights[batch_index][target_index]
                 for word_index in range(context_sequence_length):
                     if not relevant_word_mask[word_index]:
                         continue
-                    context_target_word_attention.append(cpu_context_attentions_weights[batch_index][target_index][word_index][0])
+                    context_target_word_attention.append(relevant_word_attention[word_index])
                 word_attention_batch.append(context_target_word_attention)
 
-                target_word_attention = []
-                for target_word_index in range(target_sequence_length):
-                    if not relevant_target_mask[target_index][target_word_index]:
-                        continue
-                    target_word_attention.append(cpu_target_attention_weights[batch_index][target_index][target_word_index][0])
-                target_attention_batch.append(target_word_attention)
-            
             word_attention.append(word_attention_batch)
-            target_attention.append(target_attention_batch)
             sentiments.append(target_sentiments)
             non_masked_class_probabilities.append(target_non_masked_class_probabilities)
         output_dict['sentiments'] = sentiments
         output_dict['class_probabilities'] = non_masked_class_probabilities
         output_dict['word_attention'] = word_attention
-        output_dict['targets_attention'] = target_attention
         return output_dict
 
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
