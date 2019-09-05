@@ -5,7 +5,8 @@ import tempfile
 
 from allennlp.commands import main
 
-config_file = "debug_sentiment.json"
+#config_file = "debug_sentiment.json"
+config_file = "./debug_sentiment.json"
 
 # Use overrides to train on CPU.
 overrides = json.dumps({"trainer": {"cuda_device": -1}})

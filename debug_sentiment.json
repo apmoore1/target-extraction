@@ -1,56 +1,70 @@
 {
-    "dataset_reader": {
-      "type": "target_sentiment",
-      "token_indexers": {
-        "tokens": {
-          "type": "single_id",
-          "lowercase_tokens": true
-        }
+  "dataset_reader": {
+    "type": "target_sentiment",
+    "token_indexers": {
+      "tokens": {
+        "type": "single_id",
+        "lowercase_tokens": true
       },
-      "left_right_contexts": true,
-      "reverse_right_context": true
-    },
-    "train_data_path": "./tests/data/allen/dataset_readers/target_sentiment/target_category_sentiments.json",
-    "validation_data_path": "./tests/data/allen/dataset_readers/target_sentiment/target_category_sentiments.json",
-    "test_data_path": "./tests/data/allen/dataset_readers/target_sentiment/target_category_sentiments.json",
-    "evaluate_on_test": true,
-    "model": {
-      "type": "split_contexts_classifier",
-      "dropout": 0.5,
-      "text_field_embedder": {
-        "tokens": {
-          "type": "embedding",
-          "embedding_dim": 10,
-          "trainable": false
-        }
-      },
-      "left_text_encoder": {
-        "type": "gru",
-        "input_size": 10,
-        "hidden_size": 20,
-        "bidirectional": true,
-        "num_layers": 1
-      },
-      "right_text_encoder": {
-        "type": "gru",
-        "input_size": 10,
-        "hidden_size": 20,
-        "bidirectional": true,
-        "num_layers": 1
-      }
-    },
-    "iterator": {
-      "type": "basic",
-      "batch_size": 64
-    },
-    "trainer": {
-      "optimizer": {
-        "type": "adam"
-      },
-      "validation_metric": "+f1-measure-overall",
-      "num_epochs": 150,
-      "grad_norm": 5.0,
-      "patience": 10,
-      "cuda_device": -1
+    "elmo": {
+      "type": "elmo_characters"
     }
+    },
+    "left_right_contexts": true,
+    "reverse_right_context": true
+  },
+  "train_data_path": "./test_data.json",
+  "validation_data_path": "./test_data.json",
+  "model": {
+    "type": "split_contexts_classifier",
+    "dropout": 0.5,
+    "text_field_embedder": {
+      "tokens": {
+        "type": "embedding",
+        "embedding_dim": 10,
+        "trainable": false
+      },
+    "elmo": {
+      "type": "language_model_token_embedder",
+      "archive_file": "./tests/data/elmo_test_model/elmo_lm_test_model.tar.gz",
+      "dropout": 0.2,
+      "bos_eos_tokens": ["<S>", "</S>"],
+      "remove_bos_eos": true,
+      "requires_grad": false
+    }
+    },
+    "left_text_encoder": {
+      "type": "gru",
+      "input_size": 42,
+      "hidden_size": 20,
+      "bidirectional": true,
+      "num_layers": 1
+    },
+    "right_text_encoder": {
+      "type": "gru",
+      "input_size": 42,
+      "hidden_size": 20,
+      "bidirectional": true,
+      "num_layers": 1
+    },
+    "feedforward": {
+      "input_dim": 80,
+      "num_layers": 1,
+      "hidden_dims": 20,
+      "activations": "relu",
+      "dropout": 0.5
+    }
+  },
+  "iterator": {
+    "type": "basic",
+    "batch_size": 64
+  },
+  "trainer": {
+    "optimizer": {
+      "type": "adam"
+    },
+    "num_epochs": 5,
+    "grad_norm": 5.0,
+    "cuda_device": -1
   }
+}

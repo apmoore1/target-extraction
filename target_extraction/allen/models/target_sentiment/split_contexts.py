@@ -14,6 +14,50 @@ from torch.nn.modules import Dropout, Linear
 
 from target_extraction.allen.models import target_sentiment
 
+def elmo_input_reshape(inputs: Dict[str, torch.Tensor], batch_size: int,
+                       number_targets: int, batch_size_num_targets: int
+                       ) -> Dict[str, torch.Tensor]:
+    '''
+    :param inputs: The token indexer dictionary where the keys state the token 
+                   indexer and the values are the Tensors that are of shape 
+                   (Batch Size, Number Targets, Sequence Length)
+    :param batch_size: The Batch Size
+    :param number_targets: The max number of targets in the batch
+    :param batch_size_num_targets: Batch Size * number of targets
+    :returns: If the inputs contains a `elmo` key it will reshape all the keys 
+              values into shape (Batch Size * Number Targets, Sequence Length)
+              so that it can be processed by the ELMO embedder. 
+    '''
+    if 'elmo' not in inputs:
+        return inputs
+    temp_inputs: Dict[str, torch.Tensor] = {}
+    for key, value in inputs.items():
+        temp_value = value.view(batch_size_num_targets, *value.shape[2:])
+        temp_inputs[key] = temp_value
+    return temp_inputs
+
+def elmo_input_reverse(embedded_input: torch.Tensor, 
+                       inputs: Dict[str, torch.Tensor], batch_size: int,
+                       number_targets: int, batch_size_num_targets: int
+                       ) -> torch.Tensor:
+    '''
+    :param embedded_input: The embedding generated after the embedder has been 
+                           forwarded over the `inputs`
+    :param inputs: The token indexer dictionary where the keys state the token 
+                   indexer and the values are the Tensors that are of shape 
+                   (Batch Size, Number Targets, Sequence Length)
+    :param batch_size: The Batch Size
+    :param number_targets: The max number of targets in the batch
+    :param batch_size_num_targets: Batch Size * number of targets
+    :returns: If the inputs contains a `elmo` key it will reshape the 
+              `embedded_input` into the original shape of 
+              (Batch Size, Number Targets, Sequence Length, embedding dim)
+    '''
+    if 'elmo' not in inputs:
+        return embedded_input
+    return embedded_input.view(batch_size, number_targets,
+                               *embedded_input.shape[1:])
+    
 @Model.register("split_contexts_classifier")
 class SplitContextsClassifier(Model):
     def __init__(self,
@@ -168,19 +212,37 @@ class SplitContextsClassifier(Model):
         etc therefore the dictionary represents these different ways e.g. 
         {'words': words_tensor_ids, 'chars': char_tensor_ids}
         '''
-        # Batch size, number of targets, sequence length, vector dimension
-        left_embedded_text = self.text_field_embedder(left_contexts)
+        targets_mask = util.get_text_field_mask(targets)
+        batch_size, number_targets = targets_mask.shape
+        batch_size_num_targets = batch_size * number_targets
+
+        temp_left_contexts = elmo_input_reshape(left_contexts, batch_size, 
+                                                number_targets, batch_size_num_targets)
+        left_embedded_text = self.text_field_embedder(temp_left_contexts)
+        left_embedded_text = elmo_input_reverse(left_embedded_text, left_contexts, 
+                                                batch_size, number_targets, 
+                                                batch_size_num_targets)
         left_embedded_text = self._variational_dropout(left_embedded_text)
         left_text_mask = util.get_text_field_mask(left_contexts, num_wrapping_dims=1)
 
-        right_embedded_text = self.text_field_embedder(right_contexts)
+        temp_right_contexts = elmo_input_reshape(right_contexts, batch_size, 
+                                                 number_targets, batch_size_num_targets)
+        right_embedded_text = self.text_field_embedder(temp_right_contexts)
+        right_embedded_text = elmo_input_reverse(right_embedded_text, right_contexts, 
+                                                 batch_size, number_targets, 
+                                                 batch_size_num_targets)
         right_embedded_text = self._variational_dropout(right_embedded_text)
         right_text_mask = util.get_text_field_mask(right_contexts, num_wrapping_dims=1)
         if self.target_encoder:
+            temp_target = elmo_input_reshape(targets, batch_size, number_targets, 
+                                             batch_size_num_targets)
             if self.target_field_embedder:
-                embedded_target = self.target_field_embedder(targets)
+                embedded_target = self.target_field_embedder(temp_target)
             else:
-                embedded_target = self.text_field_embedder(targets)
+                embedded_target = self.text_field_embedder(temp_target)
+            embedded_target = elmo_input_reverse(embedded_target, targets, 
+                                                 batch_size, number_targets, 
+                                                 batch_size_num_targets)
             embedded_target = self._variational_dropout(embedded_target)
             target_text_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
 
@@ -218,7 +280,6 @@ class SplitContextsClassifier(Model):
             encoded_left_right = self.feedforward(encoded_left_right)
         logits = self.label_projection(encoded_left_right)
 
-        targets_mask = util.get_text_field_mask(targets)
         masked_class_probabilities = util.masked_softmax(logits, targets_mask.unsqueeze(-1))
 
         output_dict = {"class_probabilities": masked_class_probabilities, 

@@ -56,12 +56,21 @@ class SplitContextsClassifierTest(ModelTestCase):
         test_data = str(Path(test_dir, 'target_category_sentiments.json'))
         config_dir = Path(test_dir, 'split_contexts')
         self.tdlstm_config = str(Path(config_dir, 'tdlstm_config.jsonnet'))
+        self.tdlstm_elmo_config = str(Path(config_dir, 'tdlstm_elmo_config.jsonnet'))
         self.tclstm_config = str(Path(config_dir, 'tclstm_config.jsonnet'))
 
         self.set_up_model(self.tdlstm_config, test_data)
 
     def test_model_can_train_save_and_load(self):
         self.ensure_model_can_train_save_and_load(self.param_file)
+
+    def test_elmo_tdlstm_train_save(self):
+        params = Params.from_file(self.tdlstm_elmo_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
 
     @flaky
     def test_batch_predictions_are_consistent(self):

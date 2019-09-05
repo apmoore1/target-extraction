@@ -243,17 +243,43 @@ class ATAEClassifier(Model):
         etc therefore the dictionary represents these different ways e.g. 
         {'words': words_tensor_ids, 'chars': char_tensor_ids}
         '''
+        # Get masks for the targets before they get manipulated 
+        label_mask = util.get_text_field_mask(targets)
+        targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
+        batch_size, number_targets = label_mask.shape
+        batch_size_num_targets = batch_size * number_targets
         # Embed and encode target as a sequence
+        elmo_temp_targets = {}
+        if 'elmo' in targets:
+            elmo_temp_targets = {}
+            for key, value in targets.items():
+                # change all of the targets from (Batch Size, Number Targets, *)
+                # to (Batch Size * Number Targets, *)
+                temp_value = value.view(batch_size_num_targets, *value.shape[2:])
+                elmo_temp_targets[key] = temp_value
+
         if self.target_field_embedder:
-            embedded_targets = self.target_field_embedder(targets)
+            if 'elmo' in targets:
+                embedded_targets = self.context_field_embedder(elmo_temp_targets)
+            else:
+                embedded_targets = self.target_field_embedder(targets)
         else:
-            embedded_targets = self.context_field_embedder(targets)
+            if 'elmo' in targets:
+                embedded_targets = self.context_field_embedder(elmo_temp_targets)
+            else:
+                embedded_targets = self.context_field_embedder(targets)
+        # Convert the targets back into the normal shape of 
+        # (Batch Size, Number Targets, Target Length, dim) from
+        # (Batch Size * Number Targets, Target Length, dim)
+        if 'elmo' in targets:
+            embedded_targets = embedded_targets.view(batch_size, number_targets, 
+                                                     *embedded_targets.shape[1:])
+
         # Size (batch size, num targets, target sequence length, embedding dim)
         embedded_targets = self._time_variational_dropout(embedded_targets)
-        targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
+        
 
         batch_size, number_targets, target_sequence_length, target_embed_dim = embedded_targets.shape
-        batch_size_num_targets = batch_size * number_targets
         encoded_targets_mask = targets_mask.view(batch_size_num_targets, target_sequence_length)
         reshaped_embedding_targets = embedded_targets.view(batch_size_num_targets, 
                                                            target_sequence_length, 
@@ -314,8 +340,6 @@ class ATAEClassifier(Model):
         feature_vector = context_final_states + weighted_encoded_context_vec
         feature_vector = self._naive_dropout(feature_vector)
 
-        # Mask for targets (Batch Size, Number targets)
-        label_mask = util.get_text_field_mask(targets)
         if self.inter_target_encoding is not None:
             # Reshape the vector into (Batch Size, Number Targets, number labels)
             # So that we can perform an LSTM over the target feature representations
@@ -335,7 +359,6 @@ class ATAEClassifier(Model):
         # Reshape the logits from (Batch Size * Number target, number labels)
         # to (Batch Size, Number Targets, number labels)
         logits = logits.view(batch_size, number_targets, self.num_classes)
-        #label_mask = util.get_text_field_mask(targets)
         masked_class_probabilities = util.masked_softmax(logits, label_mask.unsqueeze(-1))
         output_dict = {"class_probabilities": masked_class_probabilities, 
                        "targets_mask": label_mask}

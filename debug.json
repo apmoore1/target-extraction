@@ -16,7 +16,7 @@
     "model": {
       "type": "target_tagger",
       "label_encoding": "BIO",
-      "crf": false,
+      "crf": true,
       "constrain_crf_decoding": true,
       "calculate_span_f1": true,
       "dropout": 0.5,
