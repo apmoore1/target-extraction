@@ -13,50 +13,7 @@ import torch
 from torch.nn.modules import Dropout, Linear
 
 from target_extraction.allen.models import target_sentiment
-
-def elmo_input_reshape(inputs: Dict[str, torch.Tensor], batch_size: int,
-                       number_targets: int, batch_size_num_targets: int
-                       ) -> Dict[str, torch.Tensor]:
-    '''
-    :param inputs: The token indexer dictionary where the keys state the token 
-                   indexer and the values are the Tensors that are of shape 
-                   (Batch Size, Number Targets, Sequence Length)
-    :param batch_size: The Batch Size
-    :param number_targets: The max number of targets in the batch
-    :param batch_size_num_targets: Batch Size * number of targets
-    :returns: If the inputs contains a `elmo` key it will reshape all the keys 
-              values into shape (Batch Size * Number Targets, Sequence Length)
-              so that it can be processed by the ELMO embedder. 
-    '''
-    if 'elmo' not in inputs:
-        return inputs
-    temp_inputs: Dict[str, torch.Tensor] = {}
-    for key, value in inputs.items():
-        temp_value = value.view(batch_size_num_targets, *value.shape[2:])
-        temp_inputs[key] = temp_value
-    return temp_inputs
-
-def elmo_input_reverse(embedded_input: torch.Tensor, 
-                       inputs: Dict[str, torch.Tensor], batch_size: int,
-                       number_targets: int, batch_size_num_targets: int
-                       ) -> torch.Tensor:
-    '''
-    :param embedded_input: The embedding generated after the embedder has been 
-                           forwarded over the `inputs`
-    :param inputs: The token indexer dictionary where the keys state the token 
-                   indexer and the values are the Tensors that are of shape 
-                   (Batch Size, Number Targets, Sequence Length)
-    :param batch_size: The Batch Size
-    :param number_targets: The max number of targets in the batch
-    :param batch_size_num_targets: Batch Size * number of targets
-    :returns: If the inputs contains a `elmo` key it will reshape the 
-              `embedded_input` into the original shape of 
-              (Batch Size, Number Targets, Sequence Length, embedding dim)
-    '''
-    if 'elmo' not in inputs:
-        return embedded_input
-    return embedded_input.view(batch_size, number_targets,
-                               *embedded_input.shape[1:])
+from target_extraction.allen.models.target_sentiment.util import elmo_input_reshape, elmo_input_reverse
     
 @Model.register("split_contexts_classifier")
 class SplitContextsClassifier(Model):

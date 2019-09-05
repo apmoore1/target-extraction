@@ -15,6 +15,7 @@ from torch.nn.modules import Dropout, Linear
 import numpy
 
 from target_extraction.allen.models import target_sentiment
+from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
 
 @Model.register("interactive_attention_network_classifier")
 class InteractivateAttentionNetworkClassifier(Model):
@@ -182,18 +183,27 @@ class InteractivateAttentionNetworkClassifier(Model):
         encoded_context_seq = self._variational_dropout(encoded_context_seq)
         _, context_sequence_length, context_dim = encoded_context_seq.shape
 
+        label_mask = util.get_text_field_mask(targets)
+        batch_size, number_targets = label_mask.shape
+        batch_size_num_targets = batch_size * number_targets
         # Embed and encode target as a sequence
+        temp_targets = elmo_input_reshape(targets, batch_size, 
+                                          number_targets, batch_size_num_targets)
         if self.target_field_embedder:
-            embedded_targets = self.target_field_embedder(targets)
+            embedded_targets = self.target_field_embedder(temp_targets)
         else:
-            embedded_targets = self.context_field_embedder(targets)
+            embedded_targets = self.context_field_embedder(temp_targets)
+        embedded_targets = elmo_input_reverse(embedded_targets, targets, 
+                                              batch_size, number_targets, 
+                                              batch_size_num_targets)
+
         # Size (batch size, num targets, sequence length, embedding dim)
         embedded_targets = self._time_variational_dropout(embedded_targets)
         targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
 
         encoded_targets_seq = self.target_encoder(embedded_targets, targets_mask)
         encoded_targets_seq = self._time_variational_dropout(encoded_targets_seq)
-        batch_size, number_targets, target_sequence_length, encoded_target_dim = encoded_targets_seq.shape
+        _, _, target_sequence_length, encoded_target_dim = encoded_targets_seq.shape
 
         #
         # Attention layers
@@ -202,7 +212,6 @@ class InteractivateAttentionNetworkClassifier(Model):
         # Get average of the target hidden states as the query vector for the 
         # context attention. Need to reshape the context so there are enough 
         # contexts per target so that attention can be applied
-        batch_size_num_targets = batch_size * number_targets
         # Batch Size * Number targets, sequence length, dim
         repeated_context_seq = encoded_context_seq.unsqueeze(1).repeat(1, number_targets, 1, 1)
         repeated_context_seq = repeated_context_seq.view(batch_size_num_targets, context_sequence_length, context_dim)
@@ -267,7 +276,6 @@ class InteractivateAttentionNetworkClassifier(Model):
         # Putting it through a tanh first and then a softmax
         logits = self.label_projection(weighted_text_target)
         logits = torch.tanh(logits)
-        label_mask = util.get_text_field_mask(targets)
         masked_class_probabilities = util.masked_softmax(logits, label_mask.unsqueeze(-1))
 
         output_dict = {"class_probabilities": masked_class_probabilities, 

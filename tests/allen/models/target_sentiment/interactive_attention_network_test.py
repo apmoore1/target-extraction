@@ -54,13 +54,23 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         test_dir = Path(__file__, '..', '..', '..', '..','data', 'allen',  
                         'models', 'target_sentiment').resolve()
         test_data = str(Path(test_dir, 'multi_target_category_sentiments.json'))
-        self.ian_config = str(Path(test_dir, 'ian_config.jsonnet'))
+        config_dir = Path(test_dir, 'IAN')
+        self.ian_config = str(Path(config_dir, 'ian_config.jsonnet'))
+        self.ian_elmo_config = str(Path(config_dir, 'ian_elmo_config.jsonnet'))
 
         self.set_up_model(self.ian_config,
                           test_data)
 
     def test_model_can_train_save_and_load(self):
         self.ensure_model_can_train_save_and_load(self.param_file)
+
+    def test_ian_elmo_train_save(self):
+        params = Params.from_file(self.ian_elmo_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
 
     @flaky
     def test_batch_predictions_are_consistent(self):

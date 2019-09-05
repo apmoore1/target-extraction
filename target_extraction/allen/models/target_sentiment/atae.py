@@ -17,6 +17,7 @@ from torch.nn.modules import Dropout, Linear
 import numpy
 
 from target_extraction.allen.models import target_sentiment
+from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
 
 @Model.register("atae_classifier")
 class ATAEClassifier(Model):
@@ -248,32 +249,17 @@ class ATAEClassifier(Model):
         targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
         batch_size, number_targets = label_mask.shape
         batch_size_num_targets = batch_size * number_targets
+        
         # Embed and encode target as a sequence
-        elmo_temp_targets = {}
-        if 'elmo' in targets:
-            elmo_temp_targets = {}
-            for key, value in targets.items():
-                # change all of the targets from (Batch Size, Number Targets, *)
-                # to (Batch Size * Number Targets, *)
-                temp_value = value.view(batch_size_num_targets, *value.shape[2:])
-                elmo_temp_targets[key] = temp_value
-
+        temp_targets = elmo_input_reshape(targets, batch_size, 
+                                          number_targets, batch_size_num_targets)
         if self.target_field_embedder:
-            if 'elmo' in targets:
-                embedded_targets = self.context_field_embedder(elmo_temp_targets)
-            else:
-                embedded_targets = self.target_field_embedder(targets)
+            embedded_targets = self.target_field_embedder(temp_targets)
         else:
-            if 'elmo' in targets:
-                embedded_targets = self.context_field_embedder(elmo_temp_targets)
-            else:
-                embedded_targets = self.context_field_embedder(targets)
-        # Convert the targets back into the normal shape of 
-        # (Batch Size, Number Targets, Target Length, dim) from
-        # (Batch Size * Number Targets, Target Length, dim)
-        if 'elmo' in targets:
-            embedded_targets = embedded_targets.view(batch_size, number_targets, 
-                                                     *embedded_targets.shape[1:])
+            embedded_targets = self.context_field_embedder(temp_targets)
+        embedded_targets = elmo_input_reverse(embedded_targets, targets, 
+                                              batch_size, number_targets, 
+                                              batch_size_num_targets)
 
         # Size (batch size, num targets, target sequence length, embedding dim)
         embedded_targets = self._time_variational_dropout(embedded_targets)

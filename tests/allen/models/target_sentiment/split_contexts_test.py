@@ -58,6 +58,7 @@ class SplitContextsClassifierTest(ModelTestCase):
         self.tdlstm_config = str(Path(config_dir, 'tdlstm_config.jsonnet'))
         self.tdlstm_elmo_config = str(Path(config_dir, 'tdlstm_elmo_config.jsonnet'))
         self.tclstm_config = str(Path(config_dir, 'tclstm_config.jsonnet'))
+        self.tclstm_elmo_config = str(Path(config_dir, 'tclstm_elmo_config.jsonnet'))
 
         self.set_up_model(self.tdlstm_config, test_data)
 
@@ -66,6 +67,14 @@ class SplitContextsClassifierTest(ModelTestCase):
 
     def test_elmo_tdlstm_train_save(self):
         params = Params.from_file(self.tdlstm_elmo_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+    
+    def test_elmo_tclstm_train_save(self):
+        params = Params.from_file(self.tclstm_elmo_config).duplicate()
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
