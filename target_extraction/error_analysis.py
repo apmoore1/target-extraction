@@ -1,13 +1,13 @@
 '''
-This module is dedictaed to creating new TargetTextCollections that are 
+This module is dedicated to creating new TargetTextCollections that are 
 subsamples of the original(s) that will allow the user to analysis the 
 data with respect to some certain property.
 '''
-from typing import List, Callable, Dict, Union
+from typing import List, Callable, Dict, Union, Optional, Any
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 
-def count_error_key_occurence(dataset: TargetTextCollection, 
+def count_error_key_occurrence(dataset: TargetTextCollection, 
                               error_key: str) -> int:
     '''
     :param dataset: The dataset that contains error analysis key which are 
@@ -32,12 +32,18 @@ def _pre_post_subsampling(test_dataset: TargetTextCollection,
                           lower: bool, error_key: str,
                           error_func: Callable[[TargetText, Dict[str, List[str]], 
                                                 Dict[str, List[str]], 
-                                                Union[int, str]], bool]
+                                                Union[int, str]], bool],
+                          train_dict: Optional[Dict[str, Any]] = None,
+                          test_dict: Optional[Dict[str, Any]] = None
                           ) -> TargetTextCollection:
     train_target_sentiments = train_dataset.target_sentiments(lower=lower, 
                                                               unique_sentiment=True)
     test_target_sentiments = test_dataset.target_sentiments(lower=lower, 
                                                             unique_sentiment=True)
+    if train_dict is not None:
+        train_target_sentiments = train_dict
+    if test_dict is not None:
+        test_target_sentiments = test_dict
 
     for target_data in test_dataset.values():
         test_targets = target_data['targets']
@@ -348,3 +354,67 @@ def distinct_sentiment(dataset: TargetTextCollection) -> TargetTextCollection:
                                    for _ in range(num_targets)]
         target_data['distinct_sentiment'] = distinct_sentiments
     return dataset
+
+def n_shot_targets(test_dataset: TargetTextCollection, 
+                   train_dataset: TargetTextCollection, 
+                   n_condition: Callable[[int], bool], error_name: str,
+                   lower: bool = True) -> TargetTextCollection:
+    '''
+    Given a test and train dataset will return the same test dataset but 
+    with an additional key denoted by `error_name` argument for each 
+    TargetText object in the test collection. This 
+    `error_name` key will contain a list 
+    the same length as the number of targets in that TargetText object with 
+    0's and 1's where a 1 represents a target that has meet the `n_condition`.
+    This allows you to find the performance of n shot target learning where 
+    the `n_condition` can allow you to find zero shot target (targets not seen
+    in training but in test (also known as unknown targets)) or find >K shot 
+    targets where targets have been seen K or more times.
+
+    :Note: If the TargetText object `targets` is None as in there are no
+           targets in that sample then the `error_name` argument key
+           will be represented as an empty list
+
+    :param test_dataset: Test dataset to sub-sample
+    :param train_dataset: Train dataset to reference
+    :param n_condition: A callable that denotes the number of times the target 
+                        has to be seen in the training dataset to represent a 
+                        1 in the error key. Example n_condition `lambda x: x>5` this 
+                        means that a target has to be seen more than 5 times in
+                        the training set.
+    :param error_name: The name of the error key
+    :param lower: Whether to lower case the target words
+    :returns: The test dataset but with each TargetText object containing a 
+              `unknown_sentiment_known_target` key and associated list of values.
+    '''
+    def error_func(target: TargetText, 
+                   ignore: Dict[str, int],
+                   filtered_test: Dict[str, int],
+                   target_sentiment: Union[str, int]) -> bool:
+        if target in filtered_test:
+            return True
+        return False
+    
+    # Get Target and associated count for both train and test datasets
+    train_target_sentiments = train_dataset.target_sentiments(lower=lower, 
+                                                              unique_sentiment=False)
+    train_target_counts = {target: len(occurrences) 
+                           for target, occurrences in train_target_sentiments.items()}
+    test_target_sentiments = test_dataset.target_sentiments(lower=lower, 
+                                                            unique_sentiment=False)
+    test_target_counts = {target: len(occurrences) 
+                          for target, occurrences in test_target_sentiments.items()}
+    test_target_n_relation = {}
+    for target in test_target_counts.keys():
+        if target not in train_target_counts:
+            test_target_n_relation[target] = 0
+        else:
+            number_times_in_train = train_target_counts[target]
+            test_target_n_relation[target] = number_times_in_train
+    # filter by the n_condition
+    filter_test_target_n_relation = {target: train_occurrences 
+                                     for target, train_occurrences in test_target_n_relation.items() 
+                                     if n_condition(train_occurrences)}
+    return _pre_post_subsampling(test_dataset, train_dataset, lower, 
+                                 error_name, error_func, train_dict={},
+                                 test_dict=filter_test_target_n_relation)

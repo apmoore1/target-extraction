@@ -12,7 +12,8 @@ from target_extraction.error_analysis import unknown_targets
 from target_extraction.error_analysis import known_sentiment_known_target
 from target_extraction.error_analysis import unknown_sentiment_known_target
 from target_extraction.error_analysis import distinct_sentiment
-from target_extraction.error_analysis import count_error_key_occurence
+from target_extraction.error_analysis import count_error_key_occurrence
+from target_extraction.error_analysis import n_shot_targets
 
 
 def target_text_examples(target_sentiment_values: List[List[str]]
@@ -440,7 +441,7 @@ def test_unknown_targets(lower: bool):
     test = unknown_targets(test, train, lower)
     assert [[]] == get_error_counts(test, 'unknown_targets')
         
-def test_count_error_key_occurence():
+def test_count_error_key_occurrence():
     # The zero case
     pos, neg, neu = 'positive', 'negative', 'neutral'
     train_sentiments = [[pos], [neg], [neg, pos]]
@@ -448,7 +449,7 @@ def test_count_error_key_occurence():
     train = TargetTextCollection(target_text_examples(train_sentiments))
     test = TargetTextCollection(target_text_examples(test_sentiments))
     test = same_one_sentiment(test, train, True)
-    assert 0 == count_error_key_occurence(test, 'same_one_sentiment')
+    assert 0 == count_error_key_occurrence(test, 'same_one_sentiment')
     # One where that one comes from a sample that only has one target
     train_sentiments = [[pos], [neg], [pos, pos]]
     test_sentiments = [[neu], [neu], [pos, neu]]
@@ -458,7 +459,7 @@ def test_count_error_key_occurence():
     test['2']._storage['targets'] = ['Laptop case', 'cover']
     test['2']._storage['text'] = 'The Laptop case was great and cover was rubbish'
     test = same_one_sentiment(test, train, False)
-    assert 1 == count_error_key_occurence(test, 'same_one_sentiment')
+    assert 1 == count_error_key_occurrence(test, 'same_one_sentiment')
     # Two case where the two come from two different samples
     pos, neg, neu = 'positive', 'negative', 'neutral'
     train_sentiments = [[pos], [neg], [pos, pos]]
@@ -466,7 +467,7 @@ def test_count_error_key_occurence():
     train = TargetTextCollection(target_text_examples(train_sentiments))
     test = TargetTextCollection(target_text_examples(test_sentiments))
     test = same_one_sentiment(test, train, True)
-    assert 2 == count_error_key_occurence(test, 'same_one_sentiment')
+    assert 2 == count_error_key_occurrence(test, 'same_one_sentiment')
     # All case where all of the samples are errors
     pos, neg, neu = 'positive', 'negative', 'neutral'
     train_sentiments = [[neu], [neu], [neu, neu]]
@@ -474,14 +475,14 @@ def test_count_error_key_occurence():
     train = TargetTextCollection(target_text_examples(train_sentiments))
     test = TargetTextCollection(target_text_examples(test_sentiments))
     test = same_one_sentiment(test, train, True)
-    assert 4 == count_error_key_occurence(test, 'same_one_sentiment')
+    assert 4 == count_error_key_occurrence(test, 'same_one_sentiment')
     # Case where there are no targets
     empty_target = TargetText(text='something', text_id='1', targets=[], 
                               spans=[], target_sentiments=[])
     train = TargetTextCollection([empty_target])
     test = TargetTextCollection([empty_target])
     test = same_one_sentiment(test, train, True)
-    assert 0 == count_error_key_occurence(test, 'same_one_sentiment')
+    assert 0 == count_error_key_occurrence(test, 'same_one_sentiment')
 
 
 def larger_target_text_examples(target_sentiment_values: List[List[str]]
@@ -536,3 +537,59 @@ def test_distinct_sentiment():
     dataset = TargetTextCollection([empty_target])
     dataset = distinct_sentiment(dataset)
     assert [[]] == get_error_counts(dataset, 'distinct_sentiment')
+
+@pytest.mark.parametrize("lower", (False, True))
+@pytest.mark.parametrize("error_name", ('error', 'anything'))
+def test_n_shot_targets(lower: bool, error_name: str):
+    # this testing function does not care about sentiment just the targets
+    pos, neg, neu = 'positive', 'negative', 'neutral'
+    train_sentiments = [[pos], [neg], [neg, pos], [neg, neu, neg, neg]]
+    target_text_obj = larger_target_text_examples(train_sentiments)
+    all_targets = TargetTextCollection([target_text_obj[-1]])
+    laptop_target = TargetTextCollection([target_text_obj[0]])
+    cover_target = TargetTextCollection([target_text_obj[1]])
+    laptop_2_cover_2 = TargetTextCollection([target_text_obj[0], target_text_obj[1], 
+                                             target_text_obj[2]])
+    # Case where zero shot target
+    counts = get_error_counts(n_shot_targets(laptop_target, cover_target, 
+                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
+    assert [[1]] == counts
+    assert [[0]] != counts
+    # Case zero shot target for one of the two targets
+    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
+                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
+    assert [[1],[0],[1,0]] == counts
+    # Case where one shot target
+    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
+                              lambda x: x==1, lower=lower, error_name=error_name), error_name)
+    assert [[0],[1],[0,1]] == counts
+    # Case where we do >0
+    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
+                              lambda x: x>0, lower=lower, error_name=error_name), error_name)
+    assert [[0],[1],[0,1]] == counts
+    # Case where all are not equal to 0
+    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, laptop_2_cover_2, 
+                              lambda x: x!=0, lower=lower, error_name=error_name), error_name)
+    assert [[1],[1],[1,1]] == counts
+    # Case where exists more than once in the train but only once in the test
+    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
+                              lambda x: x>1, lower=lower, error_name=error_name), error_name)
+    assert [[0,1,0,1]] == counts
+    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
+                              lambda x: x==2, lower=lower, error_name=error_name), error_name)
+    assert [[0,1,0,1]] == counts
+    # Case of the rest being zero
+    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
+                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
+    assert [[1,0,1,0]] == counts
+
+    # Test the case for lower
+    target_text_obj[-1]._storage['targets'] = ['The', 'Laptop case', 'great', 'Cover']
+    target_text_obj[-1]._storage['text'] = 'The Laptop case was great and Cover was rubbish'
+    all_targets = TargetTextCollection([target_text_obj[-1]])
+    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
+                                lambda x: x==0, lower=lower, error_name=error_name), error_name)
+    if lower:
+        assert [[1,0,1,0]] == counts
+    else:
+        assert [[1,1,1,1]] == counts
