@@ -2,6 +2,10 @@
     "dataset_reader": {
       "type": "target_sentiment",
       "token_indexers": {
+        "tokens": {
+          "type": "single_id",
+          "lowercase_tokens": true
+        },
       "elmo": {
         "type": "elmo_characters"
       }
@@ -15,6 +19,11 @@
       "type": "split_contexts_classifier",
       "dropout": 0.5,
       "text_field_embedder": {
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 10,
+          "trainable": false
+        },
       "elmo": {
         "type": "language_model_token_embedder",
         "archive_file": "./tests/data/elmo_test_model/elmo_lm_test_model.tar.gz",
@@ -26,21 +35,21 @@
       },
       "left_text_encoder": {
         "type": "gru",
-        "input_size": 64,
+        "input_size": 84,
         "hidden_size": 20,
         "bidirectional": true,
         "num_layers": 1
       },
       "right_text_encoder": {
         "type": "gru",
-        "input_size": 64,
+        "input_size": 84,
         "hidden_size": 20,
         "bidirectional": true,
         "num_layers": 1
       },
       "target_encoder": {
         "type": "boe",
-        "embedding_dim": 32,
+        "embedding_dim": 42,
         "averaged": true
       }
     },

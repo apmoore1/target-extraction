@@ -245,8 +245,11 @@ class ATAEClassifier(Model):
         {'words': words_tensor_ids, 'chars': char_tensor_ids}
         '''
         # Get masks for the targets before they get manipulated 
-        label_mask = util.get_text_field_mask(targets)
         targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
+        # This is required if the input is of shape greater than 3 dim e.g. 
+        # character input where it is 
+        # (batch size, number targets, token length, char length)
+        label_mask = (targets_mask.sum(dim=-1) >= 1).type(torch.int64)
         batch_size, number_targets = label_mask.shape
         batch_size_num_targets = batch_size * number_targets
         

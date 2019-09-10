@@ -183,7 +183,11 @@ class InteractivateAttentionNetworkClassifier(Model):
         encoded_context_seq = self._variational_dropout(encoded_context_seq)
         _, context_sequence_length, context_dim = encoded_context_seq.shape
 
-        label_mask = util.get_text_field_mask(targets)
+        targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
+        # This is required if the input is of shape greater than 3 dim e.g. 
+        # character input where it is 
+        # (batch size, number targets, token length, char length)
+        label_mask = (targets_mask.sum(dim=-1) >= 1).type(torch.int64)
         batch_size, number_targets = label_mask.shape
         batch_size_num_targets = batch_size * number_targets
         # Embed and encode target as a sequence
@@ -199,8 +203,7 @@ class InteractivateAttentionNetworkClassifier(Model):
 
         # Size (batch size, num targets, sequence length, embedding dim)
         embedded_targets = self._time_variational_dropout(embedded_targets)
-        targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
-
+        # Encoded
         encoded_targets_seq = self.target_encoder(embedded_targets, targets_mask)
         encoded_targets_seq = self._time_variational_dropout(encoded_targets_seq)
         _, _, target_sequence_length, encoded_target_dim = encoded_targets_seq.shape
