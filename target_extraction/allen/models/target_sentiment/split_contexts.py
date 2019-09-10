@@ -19,7 +19,7 @@ from target_extraction.allen.models.target_sentiment.util import elmo_input_resh
 class SplitContextsClassifier(Model):
     def __init__(self,
                  vocab: Vocabulary,
-                 text_field_embedder: TextFieldEmbedder,
+                 context_field_embedder: TextFieldEmbedder,
                  left_text_encoder: Seq2VecEncoder,
                  right_text_encoder: Seq2VecEncoder,
                  feedforward: Optional[FeedForward] = None,
@@ -34,9 +34,9 @@ class SplitContextsClassifier(Model):
         '''
         :param vocab: A Vocabulary, required in order to compute sizes 
                       for input/output projections.
-        :param text_field_embedder: Used to embed the text and target text if
-                                    target_field_embedder is None but the 
-                                    target_encoder is NOT None.
+        :param context_field_embedder: Used to embed the text and target text if
+                                       target_field_embedder is None but the 
+                                       target_encoder is NOT None.
         :param left_text_encoder: Encoder that will create the representation 
                                   of the tokens left of the target and  
                                   the target itself if included from the 
@@ -79,7 +79,7 @@ class SplitContextsClassifier(Model):
         '''
 
         self.label_name = label_name
-        self.text_field_embedder = text_field_embedder
+        self.context_field_embedder = context_field_embedder
         self.target_field_embedder = target_field_embedder
         self.num_classes = self.vocab.get_vocab_size(self.label_name)
         self.left_text_encoder = left_text_encoder
@@ -121,7 +121,7 @@ class SplitContextsClassifier(Model):
             left_in_dim = self.left_text_encoder.get_input_dim()
 
             target_dim = self.target_encoder.get_output_dim()
-            text_dim = self.text_field_embedder.get_output_dim()
+            text_dim = self.context_field_embedder.get_output_dim()
             total_out_dim = target_dim + text_dim
             config_err_msg = ("As the target is being encoded the output of the" 
                               " target encoder is concatenated onto each word "
@@ -179,7 +179,7 @@ class SplitContextsClassifier(Model):
 
         temp_left_contexts = elmo_input_reshape(left_contexts, batch_size, 
                                                 number_targets, batch_size_num_targets)
-        left_embedded_text = self.text_field_embedder(temp_left_contexts)
+        left_embedded_text = self.context_field_embedder(temp_left_contexts)
         left_embedded_text = elmo_input_reverse(left_embedded_text, left_contexts, 
                                                 batch_size, number_targets, 
                                                 batch_size_num_targets)
@@ -188,7 +188,7 @@ class SplitContextsClassifier(Model):
 
         temp_right_contexts = elmo_input_reshape(right_contexts, batch_size, 
                                                  number_targets, batch_size_num_targets)
-        right_embedded_text = self.text_field_embedder(temp_right_contexts)
+        right_embedded_text = self.context_field_embedder(temp_right_contexts)
         right_embedded_text = elmo_input_reverse(right_embedded_text, right_contexts, 
                                                  batch_size, number_targets, 
                                                  batch_size_num_targets)
@@ -200,7 +200,7 @@ class SplitContextsClassifier(Model):
             if self.target_field_embedder:
                 embedded_target = self.target_field_embedder(temp_target)
             else:
-                embedded_target = self.text_field_embedder(temp_target)
+                embedded_target = self.context_field_embedder(temp_target)
             embedded_target = elmo_input_reverse(embedded_target, targets, 
                                                  batch_size, number_targets, 
                                                  batch_size_num_targets)

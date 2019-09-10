@@ -14,7 +14,7 @@
     "model": {
       "type": "split_contexts_classifier",
       "dropout": 0.5,
-      "text_field_embedder": {
+      "context_field_embedder": {
       "elmo": {
         "type": "language_model_token_embedder",
         "archive_file": "./tests/data/elmo_test_model/elmo_lm_test_model.tar.gz",

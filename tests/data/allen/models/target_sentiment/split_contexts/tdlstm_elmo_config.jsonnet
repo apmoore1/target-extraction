@@ -18,7 +18,7 @@
     "model": {
       "type": "split_contexts_classifier",
       "dropout": 0.5,
-      "text_field_embedder": {
+      "context_field_embedder": {
         "tokens": {
           "type": "embedding",
           "embedding_dim": 10,
