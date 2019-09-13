@@ -225,6 +225,34 @@ def all_diff_label_pred_values(true_sentiment_key: str,
                    ['pos', 'neg', 'neg', 'neg', 'poss']]
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
+def no_pred_values(true_sentiment_key: str, predicted_sentiment_key: str
+                   ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
+    example_1 = TargetText(text_id='1', text='some text')
+    example_1[true_sentiment_key] = []
+    example_1[predicted_sentiment_key] = []
+    example_2 = TargetText(text_id='2', text='some text')
+    example_2[true_sentiment_key] = []
+    example_2[predicted_sentiment_key] = []
+
+    true_labels = []
+    pred_labels = []
+    return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
+
+def diff_num_preds(true_sentiment_key: str, 
+                   predicted_sentiment_key: str
+                   ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
+    example_1 = TargetText(text_id='1', text='some text')
+    example_1[true_sentiment_key] = ['pos', 'neg']
+    example_1[predicted_sentiment_key] = [['pos', 'neg']]
+    example_2 = TargetText(text_id='2', text='some text')
+    example_2[true_sentiment_key] = ['pos', 'neg', 'neu']
+    example_2[predicted_sentiment_key] = [['neu', 'neg', 'pos'], ['neg', 'neg', 'poss']]
+
+    true_labels = ['pos', 'neg', 'pos', 'neg', 'neu']
+    pred_labels = [['neu', 'neg', 'pos'], 
+                   ['pos', 'neg', 'neg', 'neg', 'poss']]
+    return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
+
 @pytest.mark.parametrize("true_sentiment_key", ('target_sentiments', 'true values'))
 @pytest.mark.parametrize("predicted_sentiment_key", ('predictions', 'another'))
 def test_get_labels(true_sentiment_key: str, predicted_sentiment_key: str):
@@ -379,6 +407,16 @@ def test_metric_error_checks_and_accuracy(true_sentiment_key: str,
     score = accuracy(example, true_sentiment_key, predicted_sentiment_key, 
                      False, False, 3)
     assert 0.0 == score
+    # Test when there are no predicted scores
+    example, _, _ = no_pred_values(true_sentiment_key, predicted_sentiment_key)
+    with pytest.raises(ValueError):
+        accuracy(example, true_sentiment_key, predicted_sentiment_key, 
+                 False, False, None)
+    # Test when there are different number of predictions per target
+    example, _, _ = diff_num_preds(true_sentiment_key, predicted_sentiment_key)
+    with pytest.raises(ValueError):
+        accuracy(example, true_sentiment_key, predicted_sentiment_key, 
+                 False, False, None)
 
     
 
