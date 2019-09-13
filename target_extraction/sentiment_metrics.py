@@ -37,7 +37,7 @@ from typing import Union, Optional, Callable, Tuple, List, Any
 import statistics
 
 import numpy as np
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 
@@ -192,6 +192,29 @@ def accuracy(target_collection: TargetTextCollection,
     scores: List[float] = []
     for predicted_values in predicted_values_list:
         scores.append(accuracy_score(true_values, predicted_values))
+    if average:
+        return statistics.mean(scores)
+    elif array_scores:
+        return scores
+    else:
+        assert 1 == len(scores)
+        return scores[0]
+
+@metric_error_checks
+def macro_f1(target_collection: TargetTextCollection, 
+             true_sentiment_key: str, predicted_sentiment_key: str, 
+             average: bool, array_scores: bool, 
+             assert_number_labels: Optional[int] = None
+             ) -> Union[float, List[float]]:
+    '''
+    Macro F1 score. Description at top of module explains arguments.
+    '''
+    true_values, predicted_values_list = get_labels(target_collection, 
+                                                    true_sentiment_key, 
+                                                    predicted_sentiment_key)
+    scores: List[float] = []
+    for predicted_values in predicted_values_list:
+        scores.append(f1_score(true_values, predicted_values, average='macro'))
     if average:
         return statistics.mean(scores)
     elif array_scores:

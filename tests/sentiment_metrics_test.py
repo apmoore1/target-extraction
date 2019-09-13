@@ -4,6 +4,7 @@ import pytest
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.sentiment_metrics import get_labels, accuracy, LabelError
+from target_extraction.sentiment_metrics import macro_f1
 
 def passable_example(true_sentiment_key: str, 
                      predicted_sentiment_key: str
@@ -417,6 +418,26 @@ def test_metric_error_checks_and_accuracy(true_sentiment_key: str,
     with pytest.raises(ValueError):
         accuracy(example, true_sentiment_key, predicted_sentiment_key, 
                  False, False, None)
+
+@pytest.mark.parametrize("true_sentiment_key", ('target_sentiments', 'true values'))
+@pytest.mark.parametrize("predicted_sentiment_key", ('predictions', 'another'))
+def test_macro_f1(true_sentiment_key: str, predicted_sentiment_key: str):
+    # Test macro F1 works as should on one set of predictions
+    example, _, _ = passable_example(true_sentiment_key, predicted_sentiment_key)
+    score = macro_f1(example, true_sentiment_key, predicted_sentiment_key, 
+                     False, False, None)
+    assert 0.5 / 3.0 == score
+    # Test it works on multiple predictions
+    example, _, _ = passable_example_multiple_preds(true_sentiment_key, predicted_sentiment_key)
+    score = macro_f1(example, true_sentiment_key, predicted_sentiment_key, 
+                     True, False, None)
+    assert ((0.5 / 3.0) + (1.3 / 3)) / 2 == score
+    # Test it works on multiple predictions
+    example, _, _ = passable_example_multiple_preds(true_sentiment_key, predicted_sentiment_key)
+    score = macro_f1(example, true_sentiment_key, predicted_sentiment_key, 
+                     False, True, None)
+    assert [(0.5 / 3.0), (1.3 / 3)] == score
+    
 
     
 
