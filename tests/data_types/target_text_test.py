@@ -384,8 +384,39 @@ class TestTargetText:
         assert simple_example['text'] == 'The laptop case was great and awful cover'
         assert simple_example['spans'] == [Span(4, 15), Span(36, 41)]
         assert simple_example['targets'] == targets
-
-
+        # Edge case where two targets are within the same span and changes the 
+        # targets based on the changed spans
+        text = 'Thelaptop casewas great and awfulcover'
+        spans = [Span(3, 14), Span(10, 23)]
+        targets = ['laptop case', 'casewas great']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and awfulcover'
+        assert simple_example['spans'] == [Span(4, 15), Span(11, 25)]
+        assert simple_example['targets'] == ['laptop case', 'case was great']
+        # Edge case where two targets are within the same span and changes the 
+        # targets based on the changed spans
+        text = 'Thelaptop casewas great and awfulcover'
+        spans = [Span(10, 23), Span(3, 14)]
+        targets = ['casewas great', 'laptop case']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and awfulcover'
+        assert simple_example['spans'] == [Span(11, 25), Span(4, 15)]
+        assert simple_example['targets'] == ['case was great', 'laptop case']
+        # Another example
+        text = 'Thelaptopcasewas great and awfulcover'
+        spans = [Span(3, 13), Span(9, 22)]
+        targets = ['laptopcase', 'casewas great']
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets)
+        simple_example.force_targets()
+        assert simple_example['text'] == 'The laptop case was great and awfulcover'
+        assert simple_example['spans'] == [Span(4, 15), Span(11, 25)]
+        assert simple_example['targets'] == ['laptop case', 'case was great']
+        
     def test_eq(self):
         '''
         Check that the equality between two TargetText is correct

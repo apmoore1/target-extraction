@@ -318,33 +318,36 @@ class TargetText(MutableMapping):
         '''
         return json.dumps(self._storage)
 
-    def _shift_spans(self, num_shifts: int, target_span: Span) -> None:
+    def _shift_spans(self, target_span: Span, prefix: bool, 
+                     suffix: bool) -> None:
         '''
         This only affects the current state of the TargetText attributes. 
         The attributes this affects is the `spans` attribute.
 
         NOTE: This is only used within self.force_targets method.
 
-        :param num_shifts: The number of whitespaces that the target at 
-                            span_index is going to be added. 1 if it is 
-                            just prefix or suffix space added, 2 if both or 
-                            0 if none.
+        :param prefix: Whether it affects the prefix of the target_span
+        :param suffix: Whether it affects the suffix of the target_span
         :param spans: The current target span indexs that are having extra 
                         whitespace added either prefix or suffix.
         '''
-        relevant_span_indexs: List[int] = []
+        target_span_start = target_span.start
         target_span_end = target_span.end
         for span_index, other_target_span in enumerate(self['spans']):
             if other_target_span == target_span:
                 continue
-            elif other_target_span.start > target_span_end:
-                relevant_span_indexs.append(span_index)
-
-        for relevant_span_index in relevant_span_indexs:
-            start, end = self['spans'][relevant_span_index]
-            start += num_shifts
-            end += num_shifts
-            self._storage['spans'][relevant_span_index] = Span(start, end)
+            start, end = self['spans'][span_index]
+            if prefix:
+                if other_target_span.start >= target_span_start:
+                    start += 1
+                if other_target_span.end >= target_span_start:
+                    end += 1
+            if suffix:
+                if other_target_span.start >= target_span_end:
+                    start += 1
+                if other_target_span.end >= target_span_end:
+                    end += 1
+            self._storage['spans'][span_index] = Span(start, end)
 
     def force_targets(self) -> None:
         '''
@@ -364,12 +367,12 @@ class TargetText(MutableMapping):
         whitespace around the target word e.g. `the laptop; priced`. This was 
         mainly added for the TargetText.sequence_tags method.
         '''
-    
+
         for span_index in range(len(self['spans'])):
-            text = self['text']
+            text = self._storage['text']
             last_token_index = len(text) - 1
 
-            span = self['spans'][span_index]
+            span = self._storage['spans'][span_index]
             prefix = False
             suffix = False
 
@@ -386,15 +389,22 @@ class TargetText(MutableMapping):
             target = text[start:end]
             if prefix and suffix:
                 self._storage['text'] = f'{text_before} {target} {text_after}'
-                self._shift_spans(2, span)
+                self._shift_spans(span, prefix=True, suffix=True)
                 self._storage['spans'][span_index] = Span(start + 1, end + 1)
             elif prefix:
                 self._storage['text'] = f'{text_before} {target}{text_after}'
-                self._shift_spans(1, span)
+                self._shift_spans(span, prefix=True, suffix=False)
                 self._storage['spans'][span_index] = Span(start + 1, end + 1)
             elif suffix:
                 self._storage['text'] = f'{text_before}{target} {text_after}'
-                self._shift_spans(1, span)
+                self._shift_spans(span, prefix=False, suffix=True)
+        # Get the targets from the re-aligned spans
+        updated_targets = []
+        text = self._storage['text']
+        for span in self._storage['spans']:
+            target = text[span.start: span.end]
+            updated_targets.append(target)
+        self._storage['targets'] = updated_targets
 
     def tokenize(self, tokenizer: Callable[[str], List[str]],
                  perform_type_checks: bool = False) -> None:
