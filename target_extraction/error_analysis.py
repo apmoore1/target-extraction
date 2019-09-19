@@ -472,3 +472,37 @@ def n_shot_targets(test_dataset: TargetTextCollection,
     return _pre_post_subsampling(test_dataset, train_dataset, lower, 
                                  error_name, error_func, train_dict={},
                                  test_dict=filter_test_target_n_relation)
+
+def swap_list_dimensions(collection: TargetTextCollection, key: str
+                                  ) -> TargetTextCollection:
+    '''
+    :param collection: The TargetTextCollection to change
+    :param key: The key within the TargetText objects in the collection that 
+                contain a List Value of shape (dim 1, dim 2)
+    :returns: The collection but with the `key` values shape changed from 
+              (dim 1, dim 2) to (dim 2, dim 1)
+
+    :Note: This is a useful function when you need to change the predicted 
+           values from shape (number runs, number targets) to 
+           (number target, number runs) before using the following 
+           function `reduce_collection_by_key_occurrence` where one of the 
+           `associated_keys` are predicted values. It is required that the 
+           sentiment predictions are of shape (number runs, number targets) 
+           for the `sentiment_metrics` functions.
+    '''
+    new_target_objects = []
+    for target_object in collection.values():
+        target_object: TargetText
+        new_target_object_dict = copy.deepcopy(dict(target_object))
+        value_to_change = new_target_object_dict[key]
+        new_value = []
+        dim_1 = len(value_to_change)
+        dim_2 = len(value_to_change[0])
+        for index_1 in range(dim_1):
+            for index_2 in range(dim_2):
+                if index_1 == 0:
+                    new_value.append([])
+                new_value[index_2].append(value_to_change[index_1][index_2])
+        new_target_object_dict[key] = new_value
+        new_target_objects.append(TargetText(**new_target_object_dict))
+    return TargetTextCollection(new_target_objects)

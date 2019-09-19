@@ -15,6 +15,7 @@ from target_extraction.error_analysis import distinct_sentiment
 from target_extraction.error_analysis import count_error_key_occurrence
 from target_extraction.error_analysis import n_shot_targets
 from target_extraction.error_analysis import reduce_collection_by_key_occurrence
+from target_extraction.error_analysis import swap_list_dimensions
 
 
 def target_text_examples(target_sentiment_values: List[List[str]]
@@ -694,3 +695,73 @@ def test_n_shot_targets(lower: bool, error_name: str):
         assert [[1,0,1,0]] == counts
     else:
         assert [[1,1,1,1]] == counts
+
+def example_collections_runs_first() -> TargetTextCollection:
+    text = 'The laptop case was great and cover was rubbish'
+    text_ids = ['0', 'another_id', '2']
+    spans = [[Span(4, 15)], [Span(4, 15), Span(30, 35)], 
+             [Span(4, 15), Span(30, 35), Span(40, 47)]]
+    targets = [['laptop case'], ['laptop case', 'cover'], 
+               ['laptop case', 'cover', 'rubbish']]
+    target_sentiments = [[0], [1, 0], [2, 1, 0]]
+    predicted_sentiments = [[[1], [2], [0], [1]], 
+                            [[1, 0], [2, 0], [1, 0], [2, 1]], 
+                            [[1, 0, 2], [1, 2, 0], [0, 1, 0], [1, 2, 1]]]
+    target_text_examples = []
+    for i in range(3):
+        example = TargetText(text, text_ids[i], targets=targets[i],
+                             spans=spans[i], 
+                             target_sentiments=target_sentiments[i],
+                             predicted_sentiments=predicted_sentiments[i])
+        target_text_examples.append(example)
+    return TargetTextCollection(target_text_examples)
+
+
+def test_swap_list_dimensions():
+    normal_case_collection = example_collections_runs_first()
+    test_case_collection = swap_list_dimensions(normal_case_collection, 
+                                                'predicted_sentiments')
+    zero_preds = test_case_collection['0']['predicted_sentiments']
+    assert 1 == len(zero_preds)
+    assert 4 == len(zero_preds[0])
+    assert [[1,2,0,1]] == zero_preds
+
+    another_preds = test_case_collection['another_id']['predicted_sentiments']
+    assert 2 == len(another_preds)
+    assert 4 == len(another_preds[0])
+    assert [[1,2,1,2], [0,0,0,1]] == another_preds
+
+    two_preds = test_case_collection['2']['predicted_sentiments']
+    assert 3 == len(two_preds)
+    assert 4 == len(two_preds[0])
+    assert [[1,1,0,1], [0,2,1,2], [2,0,0,1]] == two_preds
+    
+    # Checks that the copy works and it does not modify the original Collection
+    zero_normal_preds = normal_case_collection['0']['predicted_sentiments']
+    assert 4 == len(zero_normal_preds)
+    assert 1 == len(zero_normal_preds[0])
+    assert [[1],[2],[0],[1]] == zero_normal_preds
+
+    # When you run the swap list dimensions twice it should revet back to 
+    # the original version
+    invert_test = swap_list_dimensions(test_case_collection, 
+                                       'predicted_sentiments')
+    zero_preds = invert_test['0']['predicted_sentiments']
+    assert 4 == len(zero_preds)
+    assert 1 == len(zero_preds[0])
+    assert [[1],[2],[0],[1]] == zero_preds
+
+    another_preds = invert_test['another_id']['predicted_sentiments']
+    assert 4 == len(another_preds)
+    assert 2 == len(another_preds[0])
+    assert [[1, 0], [2, 0], [1, 0],[2, 1]] == another_preds
+
+    two_preds = invert_test['2']['predicted_sentiments']
+    assert 4 == len(two_preds)
+    assert 3 == len(two_preds[0])
+    assert [[1, 0, 2], [1, 2, 0], [0, 1, 0], [1, 2, 1]] == two_preds
+
+    # Test Key Raises
+    with pytest.raises(KeyError):
+        del test_case_collection['0']['predicted_sentiments']
+        swap_list_dimensions(test_case_collection, 'predicted_sentiments')
