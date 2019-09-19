@@ -21,8 +21,8 @@ class Span(NamedTuple):
     end: int = 0
 
 class OverLappingTargetsError(Exception):
-   '''
-   If two targets within the same sentence overlap with each other when they 
-   shouldn't.
-   '''
-   pass
+    '''
+    If two targets within the same sentence overlap with each other when they 
+    shouldn't.
+    '''
+    pass
