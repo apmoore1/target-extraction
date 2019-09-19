@@ -14,6 +14,7 @@ from target_extraction.error_analysis import unknown_sentiment_known_target
 from target_extraction.error_analysis import distinct_sentiment
 from target_extraction.error_analysis import count_error_key_occurrence
 from target_extraction.error_analysis import n_shot_targets
+from target_extraction.error_analysis import reduce_collection_by_key_occurrence
 
 
 def target_text_examples(target_sentiment_values: List[List[str]]
@@ -484,6 +485,106 @@ def test_count_error_key_occurrence():
     test = same_one_sentiment(test, train, True)
     assert 0 == count_error_key_occurrence(test, 'same_one_sentiment')
 
+def test_reduce_collection_by_key_occurrence():
+    normal_associated_keys = ['targets', 'spans', 'target_sentiments']
+    # The zero case
+    pos, neg, neu = 'positive', 'negative', 'neutral'
+    train_sentiments = [[pos], [neg], [neg, pos]]
+    test_sentiments = [[neu], [neu], [neu, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = same_one_sentiment(test, train, True)
+    zero_case =  reduce_collection_by_key_occurrence(test, 'same_one_sentiment', 
+                                                     normal_associated_keys)
+    assert 0 == len(zero_case)
+    # Contains at least one target
+    train_sentiments = [[pos], [neg], [pos, pos]]
+    test_sentiments = [[neu], [neu], [pos, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    train['2']._storage['targets'] = ['Laptop case', 'cover']
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test['2']._storage['targets'] = ['Laptop case', 'cover']
+    test['2']._storage['text'] = 'The Laptop case was great and cover was rubbish'
+    test = same_one_sentiment(test, train, False)
+    one_case = reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                                   normal_associated_keys)
+    assert 1 == len(one_case)
+    assert ['Laptop case'] == one_case['2']['targets']
+    assert [pos] == one_case['2']['target_sentiments']
+    assert [Span(4,15)] == one_case['2']['spans']
+
+    # Two case where the two come from two different samples
+    train_sentiments = [[pos], [neg], [pos, pos]]
+    test_sentiments = [[pos], [neu], [pos, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = same_one_sentiment(test, train, True)
+    two_case = reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                                   normal_associated_keys)
+    assert 2 == len(two_case)
+    assert 2 == two_case.number_targets()
+    assert ['laptop case'] == two_case['0']['targets']
+    
+    # All case where all of the samples are errors
+    train_sentiments = [[neu], [neu], [neu, neu]]
+    test_sentiments = [[neu], [neu], [neu, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test = same_one_sentiment(test, train, True)
+    four_case = reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                                    normal_associated_keys)
+    assert 3 == len(four_case)
+    assert 4 == four_case.number_targets()
+    assert ['laptop case', 'cover'] == four_case['2']['targets']
+    assert [neu, neu] == four_case['2']['target_sentiments']
+    assert [Span(4, 15), Span(30, 35)] == four_case['2']['spans']
+    # Case where there are no targets
+    empty_target = TargetText(text='something', text_id='1', targets=[], 
+                              spans=[], target_sentiments=[])
+    train = TargetTextCollection([empty_target])
+    test = TargetTextCollection([empty_target])
+    test = same_one_sentiment(test, train, True)
+    zero_case = reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                                    normal_associated_keys)
+    assert 0 == len(zero_case)
+    # Test that Key Errors
+    train_sentiments = [[pos], [neg], [pos, pos]]
+    test_sentiments = [[neu], [neu], [pos, neu]]
+    train = TargetTextCollection(target_text_examples(train_sentiments))
+    train['2']._storage['targets'] = ['Laptop case', 'cover']
+    test = TargetTextCollection(target_text_examples(test_sentiments))
+    test['2']._storage['targets'] = ['Laptop case', 'cover']
+    test['2']._storage['another'] = [3, 4]
+    test['another_id']._storage['another'] = [2]
+    test['0']._storage['another'] = [1]
+    test['2']._storage['text'] = 'The Laptop case was great and cover was rubbish'
+    test = same_one_sentiment(test, train, False)
+    with pytest.raises(KeyError):
+        reduce_collection_by_key_occurrence(test, 'same_multi_sentiment',
+                                            normal_associated_keys)
+    with pytest.raises(KeyError):
+        abnormal_keys = ['other_key', *normal_associated_keys]
+        reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                            abnormal_keys)
+    # Ensure ValueError occurs when not all associated keys required are stated
+    with pytest.raises(ValueError):
+        reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                            ['targets', 'spans'])
+    with pytest.raises(ValueError):
+        reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                            ['targets', 'target_sentiments'])
+    with pytest.raises(ValueError):
+        reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                            ['target_sentiments', 'spans'])
+    # Ensure that when there are extra associated keys that the correct values 
+    # are removed
+    one_value = reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                                    normal_associated_keys)
+    assert [3, 4] == one_value['2']['another'] 
+    extra_keys = ['another', *normal_associated_keys]
+    one_value = reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
+                                                    extra_keys)
+    assert [3] == one_value['2']['another']  
 
 def larger_target_text_examples(target_sentiment_values: List[List[str]]
                                 ) -> List[TargetText]:

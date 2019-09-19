@@ -3,6 +3,7 @@ This module is dedicated to creating new TargetTextCollections that are
 subsamples of the original(s) that will allow the user to analysis the 
 data with respect to some certain property.
 '''
+import copy
 from typing import List, Callable, Dict, Union, Optional, Any
 
 from target_extraction.data_types import TargetTextCollection, TargetText
@@ -18,6 +19,8 @@ def count_error_key_occurrence(dataset: TargetTextCollection,
     :param error_key: Name of the error key e.g. `same_one_sentiment`
     :returns: The number of targets within the dataset that are in that error
               class.
+    :raises KeyError: If the `error_key` does not exist in one or more of the 
+                      TargetText objects within the `dataset`
     '''
     count = 0
     for target_data in dataset.values():
@@ -26,6 +29,57 @@ def count_error_key_occurrence(dataset: TargetTextCollection,
         target_data._key_error(error_key)
         count += sum(target_data[error_key])
     return count
+
+def reduce_collection_by_key_occurrence(dataset: TargetTextCollection, 
+                                        error_key: str, 
+                                        associated_keys: List[str]
+                                        ) -> TargetTextCollection:
+    '''
+    :param dataset: The dataset that contains error analysis key which are 
+                    one hot encoding of whether a target is in that 
+                    error analysis class or not. Example function that 
+                    produces these error keys are 
+                    :func:`target_extraction.error_analysis.same_one_sentiment`
+    :param error_key: Name of the error key e.g. `same_one_sentiment`
+    :param associated_keys: The keys that are associated to the target that 
+                            must be kept and are linked to that target. E.g. 
+                            `target_sentiments`, `targets`, and `spans`.
+    :returns: A new TargetTextCollection that contains only those targets and 
+              relevant `associated_keys` within the TargetText's that the
+              error analysis key were `True` (1 in the one hot encoding). 
+              This could mean that some TargetText's will no longer exist.
+    :raises KeyError: If the `error_key` or one or more of the `associated_keys` 
+                      does not exist in one or more of the TargetText objects 
+                      within the `dataset`
+    '''
+    reduced_collection = TargetTextCollection()
+    key_check_list = [error_key, *associated_keys]
+    for target_data in dataset.values():
+        # Will raise a key error if the TargetText object does not have that 
+        # error_key or any of the associated_keys
+        for _key in key_check_list:
+            target_data._key_error(_key)
+        
+        new_target_object = copy.deepcopy(dict(target_data))
+        # remove the associated values
+        for associated_key in associated_keys:
+            del new_target_object[associated_key]
+
+        skip_target = True
+        for index, value in enumerate(target_data[error_key]):
+            if value:
+                skip_target = False
+                for associated_key in associated_keys:
+                    associated_value = target_data[associated_key][index]
+                    if associated_key in new_target_object:
+                        new_target_object[associated_key].append(associated_value)
+                    else:
+                        new_target_object[associated_key] = [associated_value]
+        if skip_target:
+            continue
+        new_target_object = TargetText(**new_target_object)
+        reduced_collection.add(new_target_object)
+    return reduced_collection
 
 def _pre_post_subsampling(test_dataset: TargetTextCollection, 
                           train_dataset: TargetTextCollection, 
