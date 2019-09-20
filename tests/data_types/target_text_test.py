@@ -709,7 +709,8 @@ class TestTargetText:
         test_target_text.pos_text(pos_tagger, perform_type_checks=type_checks)
         assert test_target_text['tokenized_text'] == tok_answer
 
-    def test_sequence_labels(self):
+    @pytest.mark.parametrize("per_target", (True, False))
+    def test_sequence_labels(self, per_target: bool):
         # Test that it will raise a KeyError if it has not been tokenized
         text = 'The laptop case was great and cover was rubbish'
         text_id = '2'
@@ -718,12 +719,15 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans, 
                           targets=targets)
         with pytest.raises(KeyError):
-            test.sequence_labels()
+            test.sequence_labels(per_target)
         # Test the case where there are no spans or targets
         test = TargetText(text=text, text_id=text_id)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+        test.sequence_labels(per_target)
+        answer = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+        if per_target:
+            answer = [answer]
+        assert answer == test['sequence_labels']
         # Test the basic case where we have only one target of one word
         text = 'The laptop'
         spans = [Span(4, 10)]
@@ -731,8 +735,11 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans,
                           targets=targets)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'B']
+        test.sequence_labels(per_target)
+        answer = ['O', 'B']
+        if per_target:
+            answer = [answer]
+        assert answer == test['sequence_labels']
         # Test the case where the sequence is greater more than one word
         text = 'The laptop case'
         spans = [Span(4, 15)]
@@ -740,8 +747,11 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans,
                           targets=targets)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'B', 'I']
+        test.sequence_labels(per_target)
+        answer = ['O', 'B', 'I']
+        if per_target:
+            answer = [answer]
+        assert answer == test['sequence_labels']
         # Test the case where the target is the first word
         text = 'laptop case is great'
         spans = [Span(0, 11)]
@@ -749,8 +759,11 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans,
                           targets=targets)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['B', 'I', 'O', 'O']
+        test.sequence_labels(per_target)
+        answer = ['B', 'I', 'O', 'O']
+        if per_target:
+            answer = [answer]
+        assert answer == test['sequence_labels']
         # Test the case where there is more than one target
         text = 'The laptop case was great and cover was rubbish'
         text_id = '2'
@@ -759,9 +772,12 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans,
                           targets=targets)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'B', 'I', 'O', 'O', 'O', 
-                                           'B', 'O', 'O']
+        test.sequence_labels(per_target)
+        answer = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
+        if per_target:
+            answer = [['O', 'B', 'I', 'O', 'O', 'O', 'O', 'O', 'O'], 
+                      ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O']]
+        assert answer == test['sequence_labels']
         # Test the case where the tokens do not perfectly align the target text 
         # spans and therefore only match on one of the perfectly aligned tokens
         text = 'The laptop;priced was high and the laptop cover-ed was based'
@@ -771,28 +787,38 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans,
                           targets=targets)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'O', 'O', 'O', 'O', 'O',
-                                           'B', 'O', 'O', 'O']
+        test.sequence_labels(per_target)
+        answer = ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O', 'O']
+        if per_target:
+            answer = [['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], 
+                      ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O', 'O']]
+        assert answer == test['sequence_labels']
         # Different tokenizer would get a different result
         test.tokenize(spacy_tokenizer())
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'O', 'O', 'O', 'O', 'O',
-                                           'B', 'I', 'O', 'O', 'O', 'O']
+        test.sequence_labels(per_target)
+        answer = ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O']
+        if per_target:
+            answer = [['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], 
+                      ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O']]
+        assert answer == test['sequence_labels']
         test.tokenize(stanford())
-        test.sequence_labels()
-        ['The', 'laptop', ';', 'priced', 'was', 'high', 'and',
-            'the', 'laptop', 'cover', '-', 'ed', 'was', 'based']
-        assert test['sequence_labels'] == ['O', 'O', 'O', 'B', 'O', 'O',
-                                           'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O']
+        test.sequence_labels(per_target)
+        answer = ['O', 'O', 'O', 'B', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O']
+        if per_target:
+            answer = [['O', 'O', 'O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], 
+                      ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O']]
+        assert answer == test['sequence_labels']
         # Test if using force targets will correct the above mistakes which it
         # should
         test.force_targets()
         assert test['text'] == 'The laptop; priced was high and the laptop cover -ed was based'
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'O', 'B', 'O', 'O', 'O', 'O',
-                                           'B', 'I', 'O', 'O', 'O']
+        test.sequence_labels(per_target)
+        answer = ['O', 'O', 'B', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O']
+        if per_target:
+            answer = [['O', 'O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], 
+                      ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O']]
+        assert answer == test['sequence_labels']
         
         # Case where two targets are next to each other.
         text = 'The laptop case price was great and bad'
@@ -801,9 +827,12 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans, 
                           targets=targets)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'B', 'I', 'B', 'O', 'O', 'O',
-                                           'O']
+        test.sequence_labels(per_target)
+        answer = ['O', 'B', 'I', 'B', 'O', 'O', 'O', 'O']
+        if per_target:
+            answer = [['O', 'B', 'I', 'O', 'O', 'O', 'O', 'O'], 
+                      ['O', 'O', 'O', 'B', 'O', 'O', 'O', 'O']]
+        assert answer == test['sequence_labels']
 
         # Case where the targets are at the start and end and contain no `O`
         # Handle cases at the extreme of the sentence (beginning and end)
@@ -813,8 +842,11 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans, 
                           targets=targets)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['B', 'B']
+        test.sequence_labels(per_target)
+        answer = ['B', 'B']
+        if per_target:
+            answer = [['B', 'O'], ['O', 'B']]
+        assert answer == test['sequence_labels']
         
         # Handle the case where the targets are next to each other where one 
         # ends with an I tag and the other starts with a B tag.
@@ -824,14 +856,34 @@ class TestTargetText:
         test = TargetText(text=text, text_id=text_id, spans=spans, 
                           targets=targets)
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['B', 'I', 'B']
+        test.sequence_labels(per_target)
+        answer = ['B', 'I', 'B']
+        if per_target:
+            answer = [['B', 'I', 'O'], ['O', 'O', 'B']]
+        assert answer == test['sequence_labels']
+
+        # Handle the case where the spans order is the same as target but if 
+        # sorted by span index it would not.
+        text = 'Laptop cover priced'
+        spans = [Span(13, 19), Span(0, 12)]
+        targets = ['priced', 'Laptop cover']
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets)
+        test.tokenize(str.split)
+        test.sequence_labels(per_target)
+        answer = ['B', 'I', 'B']
+        if per_target:
+            answer = [['O', 'O', 'B'], ['B', 'I', 'O']]
+        assert answer == test['sequence_labels']
 
         # Handle the case where there are no sequence labels
         test = TargetText(text=text, text_id='1')
         test.tokenize(str.split)
-        test.sequence_labels()
-        assert test['sequence_labels'] == ['O', 'O', 'O']
+        test.sequence_labels(per_target)
+        answer = ['O', 'O', 'O']
+        if per_target:
+            answer = [['O', 'O', 'O']]
+        assert answer == test['sequence_labels']
 
     def test_key_error(self):
         # Simple example that should pass

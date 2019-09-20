@@ -519,10 +519,12 @@ class TargetText(MutableMapping):
         self['pos_tags'] = pos_tags
         self['tokenized_text'] = tokens
 
-    def sequence_labels(self) -> None:
+    def sequence_labels(self, per_target: bool = False) -> None:
         '''
         Adds the `sequence_labels` key to this TargetText instance which can 
-        be used to train a machine learning algorthim to detect targets.
+        be used to train a machine learning algorthim to detect targets. The 
+        value associated to the `sequence_labels` key will be a list of 
+        `B`, `I`, or `O` labels, where each label is associated to a token.
 
         The `force_targets` method might come in useful here for training 
         and validation data to ensure that more of the targets are not 
@@ -535,11 +537,16 @@ class TargetText(MutableMapping):
         two sequence, of which there are more sequence again.
         https://en.wikipedia.org/wiki/Inside%E2%80%93outside%E2%80%93beginning_(tagging)
 
+        :param per_target: Whether the the value of associated to the 
+                           `sequence_labels` key should be one list for all 
+                           of the targets False. Or if True should be a list 
+                           of a labels per target where the labels will only 
+                           be associated to the represented target.
         :raises KeyError: If the current TargetText has not been tokenized.
         :raises ValueError: If two targets overlap the same token(s) e.g 
                             `Laptop cover was great` if `Laptop` and 
-                            `Laptop cover` are two seperate targets this should 
-                            riase a ValueError as a token should only be 
+                            `Laptop cover` are two separate targets this should 
+                            raise a ValueError as a token should only be 
                             associated to one target.
         '''
         text = self['text']
@@ -549,33 +556,43 @@ class TargetText(MutableMapping):
         self.sanitize()
         tokens = self['tokenized_text']
         sequence_labels = ['O' for _ in range(len(tokens))]
+        if per_target:
+            sequence_labels = [sequence_labels]
         # This is the case where there are no targets thus all sequence labels 
         # are `O`
         if self['spans'] is None or self['targets'] is None:
             self['sequence_labels'] = sequence_labels
             return
+
+        if per_target:
+            sequence_labels = []
+            for _ in self['targets']:
+                sequence_labels.append(['O' for _ in range(len(tokens))])
         
         target_spans: List[Span] = self['spans']
         tokens_index = token_index_alignment(text, tokens)
 
-        for target_span in target_spans:
+        for target_index, target_span in enumerate(target_spans):
             target_span_range = list(range(*target_span))
             same_target = False
+            current_sequence_labels = sequence_labels
+            if per_target:
+                current_sequence_labels = sequence_labels[target_index]
             for sequence_index, token_index in enumerate(tokens_index):
                 token_start, token_end = token_index
                 token_end = token_end - 1
                 if (token_start in target_span_range and
                         token_end in target_span_range):
-                    if sequence_labels[sequence_index] != 'O':
+                    if current_sequence_labels[sequence_index] != 'O':
                         err_msg = ('Cannot have two sequence labels for one '
                                     f'token, text {text}\ntokens {tokens}\n'
                                     f'token indexs {tokens_index}\nTarget '
                                     f'spans {target_spans}')
                         raise ValueError(err_msg)
                     if same_target:
-                        sequence_labels[sequence_index] = 'I'
+                        current_sequence_labels[sequence_index] = 'I'
                     else:
-                        sequence_labels[sequence_index] = 'B'
+                        current_sequence_labels[sequence_index] = 'B'
                     same_target = True
         self['sequence_labels'] = sequence_labels
 
