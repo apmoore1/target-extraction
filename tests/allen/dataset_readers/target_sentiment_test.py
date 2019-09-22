@@ -8,12 +8,14 @@ from target_extraction.allen.dataset_readers import TargetSentimentDatasetReader
 from target_extraction.tokenizers import spacy_tokenizer
 
 class TestTargetSentimentDatasetReader():
+    @pytest.mark.parametrize("target_sequences", (True, False))
     @pytest.mark.parametrize("left_right_contexts", (True, False))
     @pytest.mark.parametrize("incl_target", (True, False))
     @pytest.mark.parametrize("reverse_right_context", (True, False))
     @pytest.mark.parametrize("lazy", (True, False))
     def test_read_from_file(self, lazy: bool, left_right_contexts: bool,
-                            reverse_right_context: bool, incl_target: bool):
+                            reverse_right_context: bool, incl_target: bool,
+                            target_sequences: bool):
         # Test that a ValueError is raised if left_right_contexts is False 
         # and incl_target is True
         with pytest.raises(ValueError):
@@ -219,3 +221,74 @@ class TestTargetSentimentDatasetReader():
                                               use_categories=True)
         with pytest.raises(ValueError):
             instances = ensure_list(reader.read(str(text_fp)))
+
+        # Test the target_sequences argument
+        if left_right_contexts == True:
+            pass
+        else:
+            # Tests raises an error if the left_right_contexts is True
+            with pytest.raises(ValueError):
+                reader = TargetSentimentDatasetReader(lazy=lazy, 
+                                                      left_right_contexts=True,
+                                                      target_sequences=True)
+            text1 = 'The laptop case was great and awfulcover'
+            targets1 = ['laptop case', 'case was great']
+            spans1 = [[4, 15], [11, 25]]
+            if not target_sequences:
+                text1 = "Thelaptopcasewas great and awfulcover"
+                targets1 = ["laptopcase", "casewas great"]
+                spans1 = [[3, 13], [9, 22]]
+
+            tokens1 = tokenizer(text1)
+            target_words1 = [tokenizer(target) for target in targets1]
+            target_sequences1 = [[0,1,1,0,0,0,0], [0,0,1,1,1,0,0]]
+            
+            
+            instance1 = {'text': text1, 'text words': tokens1, 
+                        'targets': targets1, 'target words': target_words1,
+                        'spans': spans1, 'target_sequences': target_sequences1,
+                        'target_sentiments': ["neutral", "positive"]}
+
+            text2 = "it is of high quality , has a killer GUI"
+            targets2 = ["quality", "GUI"]
+            spans2 = [[14,21], [37,40]]
+            if not target_sequences:
+                text2 = "it is of high quality, has a killer GUI"
+                spans2 = [[14, 21], [36, 39]]
+            
+            tokens2 = tokenizer(text2)
+            target_words2 = [tokenizer(target) for target in targets2]
+            target_sequences2 = [[0,0,0,0,1,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,1]]
+            
+            instance2 = {'text': text2, 'text words': tokens2, 
+                        'targets': targets2, 'target words': target_words2,
+                        'spans': spans2, 'target_sequences': target_sequences2,
+                        'target_sentiments': ["positive", "positive"]}
+            if not target_sequences:
+                del instance1['target_sequences']
+                del instance2['target_sequences']
+
+            reader = TargetSentimentDatasetReader(lazy=lazy, 
+                                                  target_sequences=target_sequences)
+            test_target_fp = Path(data_dir, 'target_sentiment_target_sequences.json').resolve()
+            instances = ensure_list(reader.read(str(test_target_fp)))
+
+            assert len(instances) == 2
+            true_instances = [instance1, instance2]
+            for i, instance in enumerate(instances):
+                fields = instance.fields
+                true_instance = true_instances[i]
+                assert true_instance["text words"] == [x.text for x in fields['tokens']]
+                for index, target_field in enumerate(fields['targets']):
+                    assert true_instance["target words"][index] == [x.text for x in target_field]
+                assert true_instance['target_sentiments'] == fields['target_sentiments'].labels
+                assert true_instance["text"] == fields['metadata']["text"] 
+                assert true_instance["text words"] == fields['metadata']["text words"]
+                assert true_instance["targets"] == fields['metadata']["targets"] 
+                assert true_instance["target words"] == fields['metadata']["target words"] 
+                if not target_sequences:
+                    assert 4 == len(fields)
+                else:
+                    for index, target_sequence in enumerate(fields['target_sequences']):
+                        assert true_instance["target_sequences"][index] == target_sequence.array
+                    assert 5 == len(fields)

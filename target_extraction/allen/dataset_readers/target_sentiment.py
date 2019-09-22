@@ -8,8 +8,9 @@ from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data.instance import Instance
 from allennlp.data.tokenizers import Token, Tokenizer, WordTokenizer
 from allennlp.data.fields import TextField, ListField, MetadataField, Field
-from allennlp.data.fields import SequenceLabelField
+from allennlp.data.fields import SequenceLabelField, ArrayField
 from overrides import overrides
+import numpy as np
 
 from target_extraction.data_types import TargetText
 from target_extraction.data_types_util import Span
@@ -45,11 +46,6 @@ class TargetSentimentDatasetReader(DatasetReader):
      `targets`: [`Camera`],
      `target_sentiments`: [`positive`],
      `spans`: [[5,11]]}
-    {`text`: `This Camera lens is great`, 
-     `targets`: [`Camera`],
-     `target_sentiments`: [`positive`],
-     `categories`: [`CAMERA`],
-     `spans`: [[5,11]]}
 
     This type of JSON can be created from exporting a 
     `target_extraction.data_types.TargetTextCollection` using the 
@@ -83,9 +79,25 @@ class TargetSentimentDatasetReader(DatasetReader):
                            instances even if they do occur in the dataset. 
                            This is a temporary solution to the following 
                            `issue <https://github.com/apmoore1/target-extraction/issues/5>`_ 
+    :param target_sequences: Whether or not to generate `target_sequences` 
+                             which are a sequence of masks per target for all 
+                             target texts. This will allow the model to know 
+                             which tokens in the context relate to the target.
+                             Example of this is shown below (for this to work 
+                             does require the `span` of each target):
     :raises ValueError: If the `left_right_contexts` is not True while either the 
                         `incl_targets` or `reverse_right_context` arguments are 
                         True.
+    :raises ValueError: If the `left_right_contexts` and `target_sequences` are 
+                        True at the same time.
+
+    :Example of target_sequences: {`text`: `This Camera lens is great but the 
+                                            screen is rubbish`, 
+                                   `targets`: [`Camera`, `screen`],
+                                   `target_sentiments`: [`positive`, `negative`],
+                                   `target_sequences`: [[0,1,0,0,0,0,0,0,0,0], 
+                                                        [0,0,0,0,0,0,0,1,0,0]],
+                                   `spans`: [[5,11], [34:40]]}
     '''
     def __init__(self, lazy: bool = False,
                  token_indexers: Dict[str, TokenIndexer] = None,
@@ -93,7 +105,8 @@ class TargetSentimentDatasetReader(DatasetReader):
                  left_right_contexts: bool = False,
                  reverse_right_context: bool = False,
                  incl_target: bool = False,
-                 use_categories: bool = False) -> None:
+                 use_categories: bool = False,
+                 target_sequences: bool = False) -> None:
         super().__init__(lazy)
         self._tokenizer = tokenizer or WordTokenizer()
         self._token_indexers = token_indexers or \
@@ -108,6 +121,12 @@ class TargetSentimentDatasetReader(DatasetReader):
         self._reverse_right_context = reverse_right_context
         self._left_right_contexts = left_right_contexts
         self._use_categories = use_categories
+        self._target_sequences = target_sequences
+
+        if self._left_right_contexts and self._target_sequences:
+            raise ValueError('Cannot have both `left_right_contexts` and '
+                             '`target_sequences` True at the same time either'
+                             ' one or the other or None.')
 
     @overrides
     def _read(self, file_path: str):
@@ -146,7 +165,7 @@ class TargetSentimentDatasetReader(DatasetReader):
                          target_sentiments: Optional[List[Union[str, int]]] = None,
                          spans: Optional[List[List[int]]] = None,
                          categories: Optional[List[str]] = None,
-                         category_sentiments: Optional[List[Union[str, int]]]= None,
+                         category_sentiments: Optional[List[Union[str, int]]] = None,
                          **kwargs) -> Instance:
         '''
         The original text, text tokens as well as the targets and target 
@@ -164,9 +183,13 @@ class TargetSentimentDatasetReader(DatasetReader):
                       of the targets given in the targets list.
         :param categories: The categories that are within the text
         :param category_sentiments: The sentiment of the categories
-        :returns: An Instance object with all of the above enocded for a
+        :returns: An Instance object with all of the above encoded for a
                   PyTorch model.
         :raises ValueError: If either targets and categories are both None
+        :raises ValueError: If `self._target_sequences` is True and the passed 
+                            `spans` argument is None.
+        :raises ValueError: If `self._left_right_contexts` is True and the 
+                            passed `spans` argument is None.
         '''
         if targets is None and categories is None:
             raise ValueError('Either targets or categories must be given if you '
@@ -175,31 +198,60 @@ class TargetSentimentDatasetReader(DatasetReader):
 
         instance_fields: Dict[str, Field] = {}
         
-        tokens = self._tokenizer.tokenize(text)
-        instance_fields['tokens'] = TextField(tokens, self._token_indexers)
 
         # Metadata field
         metadata_dict = {}
-        metadata_dict['text words'] = [x.text for x in tokens]
-        metadata_dict['text'] = text
 
         if targets is not None:
+            if self._target_sequences:
+                if spans is None:
+                    raise ValueError('To create target sequences requires `spans`')
+                spans = [Span(span[0], span[1]) for span in spans]
+                target_text_object = TargetText(text=text, spans=spans, 
+                                                targets=targets, text_id='anything')
+                target_text_object.force_targets()
+                text = target_text_object['text']
+                allen_tokens = self._tokenizer.tokenize(text)
+                tokens = [x.text for x in allen_tokens]
+                target_text_object['tokenized_text'] = tokens
+                target_text_object.sequence_labels(per_target=True)
+                target_sequences = target_text_object['sequence_labels']
+                # Need to add the target sequences to the instances
+                target_sequence_fields = []
+                for target_sequence in target_sequences:
+                    in_label = {'B', 'I'}
+                    temp_target_sequence = []
+                    for sequence_label in target_sequence:
+                        sequence_label = 1 if sequence_label in in_label else 0
+                        temp_target_sequence.append(sequence_label)
+                    target_sequence_fields.append(ArrayField(temp_target_sequence, dtype=np.int32))
+                instance_fields['target_sequences'] = ListField(target_sequence_fields)
+
+                instance_fields['tokens'] = TextField(allen_tokens, self._token_indexers)
+                metadata_dict['text words'] = tokens
+                metadata_dict['text'] = text
+                # update target variable as the targets could have changed due 
+                # to the force_targets function
+                targets = target_text_object['targets']
+
             all_target_tokens = [self._tokenizer.tokenize(target) 
                                  for target in targets]
             target_fields = [TextField(target_tokens, self._token_indexers)  
                              for target_tokens in all_target_tokens]
             target_fields = ListField(target_fields)
             instance_fields['targets'] = target_fields
+            # Add the targets and the tokenised targets to the metadata
+            metadata_dict['targets'] = [target for target in targets]
+            metadata_dict['target words'] = [[x.text for x in target_tokens] 
+                                             for target_tokens in all_target_tokens]
+
             # Target sentiment if it exists
             if target_sentiments is not None:
                 target_sentiments_field = SequenceLabelField(target_sentiments, 
                                                              target_fields,
                                                              label_namespace='target-sentiment-labels')
                 instance_fields['target_sentiments'] = target_sentiments_field
-            # Add the targets and the tokenised targets to the metadata
-            metadata_dict['targets'] = [target for target in targets]
-            metadata_dict['target words'] = [[x.text for x in target_tokens] 
-                                             for target_tokens in all_target_tokens]
+
         if categories is not None and self._use_categories:
             category_fields = TextField([Token(category) for category in categories], 
                                         self._token_indexers)
@@ -212,6 +264,12 @@ class TargetSentimentDatasetReader(DatasetReader):
                 instance_fields['category_sentiments'] = category_sentiments_field
             # Add the categories to the metadata
             metadata_dict['categories'] = [category for category in categories]
+
+        if 'tokens' not in instance_fields:
+            tokens = self._tokenizer.tokenize(text)
+            instance_fields['tokens'] = TextField(tokens, self._token_indexers)
+            metadata_dict['text'] = text
+            metadata_dict['text words'] = [x.text for x in tokens]
 
         # If required processes the left and right contexts
         left_contexts = None
@@ -229,7 +287,7 @@ class TargetSentimentDatasetReader(DatasetReader):
             left_contexts: List[str] = []
             right_contexts: List[str] = []
             for left_right_target in left_right_targets:
-                left, right, target = left_right_target
+                left, right, _ = left_right_target
                 left_contexts.append(left)
                 if self._reverse_right_context:
                     right_tokens = self._tokenizer.tokenize(right)

@@ -1,0 +1,2 @@
+{"text": "Thelaptopcasewas great and awfulcover", "text_id": "2339", "targets": ["laptopcase", "casewas great"], "spans": [[3, 13], [9, 22]], "target_sentiments": ["neutral", "positive"], "categories": null, "category_sentiments": null}
+{"text": "it is of high quality, has a killer GUI", "text_id": "2005", "targets": ["quality", "GUI"], "spans": [[14, 21], [36, 39]], "target_sentiments": ["positive", "positive"], "categories": null, "category_sentiments": null}
