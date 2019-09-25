@@ -3,6 +3,7 @@ from pathlib import Path
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.util import ensure_list
 import pytest
+import numpy as np
 
 from target_extraction.allen.dataset_readers import TargetSentimentDatasetReader
 from target_extraction.tokenizers import spacy_tokenizer
@@ -290,5 +291,7 @@ class TestTargetSentimentDatasetReader():
                     assert 4 == len(fields)
                 else:
                     for index, target_sequence in enumerate(fields['target_sequences']):
-                        assert true_instance["target_sequences"][index] == target_sequence.array
+                        true_array = true_instance["target_sequences"][index]
+                        true_array = np.array(true_array)
+                        assert np.array_equal(true_array, target_sequence.array)
                     assert 5 == len(fields)

@@ -224,6 +224,7 @@ class TargetSentimentDatasetReader(DatasetReader):
                     for sequence_label in target_sequence:
                         sequence_label = 1 if sequence_label in in_label else 0
                         temp_target_sequence.append(sequence_label)
+                    temp_target_sequence = np.array(temp_target_sequence)
                     target_sequence_fields.append(ArrayField(temp_target_sequence, dtype=np.int32))
                 instance_fields['target_sequences'] = ListField(target_sequence_fields)
 
