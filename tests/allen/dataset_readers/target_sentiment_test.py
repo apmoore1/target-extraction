@@ -242,7 +242,8 @@ class TestTargetSentimentDatasetReader():
 
             tokens1 = tokenizer(text1)
             target_words1 = [tokenizer(target) for target in targets1]
-            target_sequences1 = [[0,1,1,0,0,0,0], [0,0,1,1,1,0,0]]
+            target_sequences1 = [[[0,1,0,0,0,0,0], [0,0,1,0,0,0,0]], 
+                                 [[0,0,1,0,0,0,0], [0,0,0,1,0,0,0], [0,0,0,0,1,0,0]]]
             
             
             instance1 = {'text': text1, 'text words': tokens1, 
@@ -259,7 +260,7 @@ class TestTargetSentimentDatasetReader():
             
             tokens2 = tokenizer(text2)
             target_words2 = [tokenizer(target) for target in targets2]
-            target_sequences2 = [[0,0,0,0,1,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,1]]
+            target_sequences2 = [[[0,0,0,0,1,0,0,0,0,0]], [[0,0,0,0,0,0,0,0,0,1]]]
             
             instance2 = {'text': text2, 'text words': tokens2, 
                         'targets': targets2, 'target words': target_words2,
@@ -293,5 +294,7 @@ class TestTargetSentimentDatasetReader():
                     for index, target_sequence in enumerate(fields['target_sequences']):
                         true_array = true_instance["target_sequences"][index]
                         true_array = np.array(true_array)
+                        print(true_array)
+                        print(target_sequence.array)
                         assert np.array_equal(true_array, target_sequence.array)
                     assert 5 == len(fields)

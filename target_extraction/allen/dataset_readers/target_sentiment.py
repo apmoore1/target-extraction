@@ -220,11 +220,16 @@ class TargetSentimentDatasetReader(DatasetReader):
                 target_sequence_fields = []
                 for target_sequence in target_sequences:
                     in_label = {'B', 'I'}
-                    temp_target_sequence = []
-                    for sequence_label in target_sequence:
+                    ones_indexes = []
+                    for one_index, sequence_label in enumerate(target_sequence):
                         sequence_label = 1 if sequence_label in in_label else 0
-                        temp_target_sequence.append(sequence_label)
-                    temp_target_sequence = np.array(temp_target_sequence)
+                        if sequence_label:
+                            ones_indexes.append(one_index)
+                    individual_target_sequences = [[0] * len(target_sequence) 
+                                                   for _ in ones_indexes]
+                    for array_index, one_index in enumerate(ones_indexes):
+                        individual_target_sequences[array_index][one_index] = 1
+                    temp_target_sequence = np.array(individual_target_sequences)
                     target_sequence_fields.append(ArrayField(temp_target_sequence, dtype=np.int32))
                 instance_fields['target_sequences'] = ListField(target_sequence_fields)
 
