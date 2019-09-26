@@ -32,7 +32,8 @@ class InteractivateAttentionNetworkClassifier(Model):
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
                  label_name: str = 'target-sentiment-labels',
-                 loss_weights: Optional[List[float]] = None) -> None:
+                 loss_weights: Optional[List[float]] = None,
+                 use_target_sequences: bool = False) -> None:
         super().__init__(vocab, regularizer)
         '''
         :param vocab: A Vocabulary, required in order to compute sizes 
@@ -70,6 +71,14 @@ class InteractivateAttentionNetworkClassifier(Model):
                              0.2, neutral by 0.5 and positive by 0.3. NOTE It 
                              assumes the sentiment labels are the following:
                              [negative, neutral, positive].
+        :param use_target_sequences: Whether or not to use target tokens within 
+                                     the context as the targets contextualized 
+                                     word representation. This would only make
+                                     sense to use if the word representation 
+                                     i.e. field embedder is a contextualized 
+                                     embedder e.g. ELMO etc. This also requires 
+                                     that the dataset reader has the following 
+                                     argument set to True `target_sequences`.
         
         This is based on the `Interactive Attention Networks for Aspect-Level 
         Sentiment Classification 
@@ -87,6 +96,12 @@ class InteractivateAttentionNetworkClassifier(Model):
         self.target_encoder = target_encoder
         self.context_encoder = context_encoder
         self.feedforward = feedforward
+        self._use_target_sequences = use_target_sequences
+        if self._use_target_sequences and self.target_field_embedder:
+            raise ConfigurationError('`use_target_sequences` cannot be True at'
+                                     ' the same time as a value for '
+                                     '`target_field_embedder` as the embeddings'
+                                     ' come from the context and not a separate embedder')
 
         context_attention_activation_function = Activation.by_name(f'{context_attention_activation_function}')()
         target_attention_activation_function = Activation.by_name(f'{target_attention_activation_function}')()
@@ -151,11 +166,9 @@ class InteractivateAttentionNetworkClassifier(Model):
                                target_field_error, "target encoder input dim")
         
         # TimeDistributed anything that is related to the targets.
-        self.target_encoder = TimeDistributed(self.target_encoder)
         if self.feedforward is not None:
             self.feedforward = TimeDistributed(self.feedforward)
         self.label_projection = TimeDistributed(self.label_projection)
-        self._time_variational_dropout = TimeDistributed(self._variational_dropout)
         self._time_naive_dropout = TimeDistributed(self._naive_dropout)
 
         initializer(self)
@@ -164,6 +177,7 @@ class InteractivateAttentionNetworkClassifier(Model):
                 tokens: Dict[str, torch.LongTensor],
                 targets: Dict[str, torch.LongTensor],
                 target_sentiments: torch.LongTensor = None,
+                target_sequences: Optional[torch.LongTensor] = None,
                 metadata: torch.LongTensor = None, 
                 **kwargs
                 ) -> Dict[str, torch.Tensor]:
@@ -182,32 +196,57 @@ class InteractivateAttentionNetworkClassifier(Model):
         encoded_context_seq = self.context_encoder(embedded_context, context_mask)
         encoded_context_seq = self._variational_dropout(encoded_context_seq)
         _, context_sequence_length, context_dim = encoded_context_seq.shape
-
+        # The if statement determines if True should use contextualized targets
         targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
-        # This is required if the input is of shape greater than 3 dim e.g. 
-        # character input where it is 
-        # (batch size, number targets, token length, char length)
         label_mask = (targets_mask.sum(dim=-1) >= 1).type(torch.int64)
-        batch_size, number_targets = label_mask.shape
-        batch_size_num_targets = batch_size * number_targets
-        # Embed and encode target as a sequence
-        temp_targets = elmo_input_reshape(targets, batch_size, 
-                                          number_targets, batch_size_num_targets)
-        if self.target_field_embedder:
-            embedded_targets = self.target_field_embedder(temp_targets)
+        if self._use_target_sequences:
+            # Need to make the target_sequences the mask for the embedded contexts
+            # therefore need to make the embedded context the same size by 
+            # expanding by the number of targets.
+            batch_size, number_targets, target_sequence_length, target_index_length = target_sequences.shape
+            batch_size_num_targets = batch_size * number_targets
+            target_index_len_err = ('The size of the context sequence '
+                                    f'{context_sequence_length} is not the same'
+                                    ' as the target index sequence '
+                                    f'{target_index_length}. This is to get '
+                                    'the contextualized target through the context')
+            assert context_sequence_length == target_index_length, target_index_len_err
+            _, _, context_embeded_dim = embedded_context.shape
+            repeated_embeded_context_seq = embedded_context.unsqueeze(1).repeat(1, number_targets, 1, 1)
+            repeated_embeded_context_seq = repeated_embeded_context_seq.view(batch_size_num_targets, 
+                                                                             context_sequence_length, 
+                                                                             context_embeded_dim)
+            seq_targets_mask = target_sequences.view(batch_size_num_targets, 
+                                                     target_sequence_length, 
+                                                     target_index_length)
+            embedded_targets = torch.matmul(seq_targets_mask.type(torch.float32), 
+                                            repeated_embeded_context_seq)
         else:
-            embedded_targets = self.context_field_embedder(temp_targets)
-        embedded_targets = elmo_input_reverse(embedded_targets, targets, 
-                                              batch_size, number_targets, 
-                                              batch_size_num_targets)
-
-        # Size (batch size, num targets, sequence length, embedding dim)
-        embedded_targets = self._time_variational_dropout(embedded_targets)
-        # Encoded
-        encoded_targets_seq = self.target_encoder(embedded_targets, targets_mask)
-        encoded_targets_seq = self._time_variational_dropout(encoded_targets_seq)
-        _, _, target_sequence_length, encoded_target_dim = encoded_targets_seq.shape
-
+            # This is required if the input is of shape greater than 3 dim e.g. 
+            # character input where it is 
+            # (batch size, number targets, token length, char length)
+            batch_size, number_targets = label_mask.shape
+            batch_size_num_targets = batch_size * number_targets
+            # Embed and encode target as a sequence
+            temp_targets = elmo_input_reshape(targets, batch_size, 
+                                              number_targets, batch_size_num_targets)
+            if self.target_field_embedder:
+                embedded_targets = self.target_field_embedder(temp_targets)
+            else:
+                embedded_targets = self.context_field_embedder(temp_targets)
+            # Size (batch size, num targets, sequence length, embedding dim)
+            embedded_targets = elmo_input_reverse(embedded_targets, targets, 
+                                                batch_size, number_targets, 
+                                                batch_size_num_targets)
+            # Batch size * number targets, target length, dim
+            _, _, target_sequence_length, embeded_target_dim = embedded_targets.shape
+            embedded_targets = embedded_targets.view(batch_size_num_targets, target_sequence_length,
+                                                               embeded_target_dim)
+            embedded_targets = self._variational_dropout(embedded_targets)
+        # Encoding sequences
+        seq_targets_mask = targets_mask.view(batch_size_num_targets, target_sequence_length)
+        seq_encoded_targets_seq = self.target_encoder(embedded_targets, seq_targets_mask)
+        seq_encoded_targets_dim = seq_encoded_targets_seq.shape[-1]
         #
         # Attention layers
         #
@@ -221,12 +260,6 @@ class InteractivateAttentionNetworkClassifier(Model):
         # Batch size * Number targets, sequence length
         repeated_context_mask = context_mask.unsqueeze(1).repeat(1, number_targets, 1)
         repeated_context_mask = repeated_context_mask.view(batch_size_num_targets, context_sequence_length)
-        # Need to reshape the enocded target sequences so that they are 
-        # Batch size * number targets, target length, dim
-        seq_encoded_targets_seq = encoded_targets_seq.view(batch_size_num_targets, 
-                                                           target_sequence_length,
-                                                           encoded_target_dim)
-        seq_targets_mask = targets_mask.view(batch_size_num_targets, target_sequence_length)
         # Batch size * number targets, number targets, dim
         avg_targets_vec = self._target_averager(seq_encoded_targets_seq, seq_targets_mask)
         # Batch size * number targets, sequence length
@@ -252,20 +285,19 @@ class InteractivateAttentionNetworkClassifier(Model):
         avg_context_vec = self._context_averager(encoded_context_seq, context_mask)
         repeated_avg_context_vec = avg_context_vec.unsqueeze(1).repeat(1,number_targets,1)
         repeated_avg_context_vec = repeated_avg_context_vec.view(batch_size_num_targets, context_dim)
-        # Need to reshape the enocded target sequences so that they are 
-        # Batch size * number targets, target length, dim
-        seq_encoded_targets_seq = encoded_targets_seq.view(batch_size_num_targets, 
-                                                           target_sequence_length,
-                                                           encoded_target_dim)
-        seq_targets_mask = targets_mask.view(batch_size_num_targets, target_sequence_length)
         # batch size * number targets, target length
         target_attention_weights = self.target_attention_layer(repeated_avg_context_vec,
                                                                seq_encoded_targets_seq,
                                                                seq_targets_mask)
         # batch size, number targets, target length
-        target_attention_weights = target_attention_weights.view(batch_size, number_targets, target_sequence_length)
+        target_attention_weights = target_attention_weights.view(batch_size, number_targets, 
+                                                                 target_sequence_length)
         target_attention_weights = target_attention_weights.unsqueeze(-1)
-        weighted_encoded_target_seq = encoded_targets_seq * target_attention_weights
+        weighted_encoded_target_seq = seq_encoded_targets_seq.view(batch_size, number_targets, 
+                                                                   target_sequence_length, 
+                                                                   seq_encoded_targets_dim)
+        weighted_encoded_target_seq = weighted_encoded_target_seq * target_attention_weights
+        
         # batch size, number targets, dim
         weighted_encoded_target_vec = weighted_encoded_target_seq.sum(2)
         

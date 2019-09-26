@@ -14,6 +14,13 @@ class TestInteractiveAttentionNetworkPredictor():
     ian_archive = load_archive(str(Path(archive_dir, 'ian', 'model.tar.gz')))
     ian_predictor = Predictor.from_archive(ian_archive, 'target-sentiment')
 
+    ian_sequences_archive = load_archive(str(Path(archive_dir, 'ian_target_sequences', 
+                                                  'model.tar.gz')))
+    ian_sequences_predictor = Predictor.from_archive(ian_sequences_archive, 'target-sentiment')
+
+    name_predictors = [('ian', ian_predictor), 
+                       ('ian_target_sequences', ian_sequences_predictor)]
+
     def test_outputs(self):
         '''
         This also in affect tests the :meth:`decode` method within 
@@ -30,27 +37,27 @@ class TestInteractiveAttentionNetworkPredictor():
                        'word_attention', 'targets_attention', 'targets_word_mask',
                        'context_mask']
 
-        
-        result = self.ian_predictor.predict_json(example_input)
-        for output_key in output_keys:
-            assert output_key in result
-        assert len(output_keys) == len(result)
-        assert tokens == result['words']
-        assert text == result['text']
-        assert ['food was lousy'] == result['targets']
-        assert [['food', 'was', 'lousy']] == result['target words']
-        assert 1 == len(result['sentiments'])
-        assert result['sentiments'][0] in ['positive', 'negative', 'neutral']
-        assert 1 == len(result['class_probabilities'])
-        assert len(result['class_probabilities']) == len(result['sentiments'])
-        assert 3 == len(result['class_probabilities'][0])
-        for class_probability in result['class_probabilities']:
-            for probability in class_probability:
-                assert probability > 0 and probability < 1
-        assert 3 == len(result['targets_attention'][0])
-        for word_attention in result['word_attention'][0]:
-            assert word_attention > 0.0
-        assert 15 == len(result['word_attention'][0])
+        for name, predictor in self.name_predictors:
+            result = predictor.predict_json(example_input)
+            for output_key in output_keys:
+                assert output_key in result
+            assert len(output_keys) == len(result)
+            assert tokens == result['words']
+            assert text == result['text']
+            assert ['food was lousy'] == result['targets']
+            assert [['food', 'was', 'lousy']] == result['target words']
+            assert 1 == len(result['sentiments'])
+            assert result['sentiments'][0] in ['positive', 'negative', 'neutral']
+            assert 1 == len(result['class_probabilities'])
+            assert len(result['class_probabilities']) == len(result['sentiments'])
+            assert 3 == len(result['class_probabilities'][0])
+            for class_probability in result['class_probabilities']:
+                for probability in class_probability:
+                    assert probability > 0 and probability < 1
+            assert 3 == len(result['targets_attention'][0])
+            for word_attention in result['word_attention'][0]:
+                assert word_attention > 0.0
+            assert 15 == len(result['word_attention'][0])
     
     def test_batch_inputs(self):
         '''
@@ -88,32 +95,32 @@ class TestInteractiveAttentionNetworkPredictor():
 
         number_sentiments = [2, 1]
 
-        
-        results = self.ian_predictor.predict_batch_json(example_input)
-        for i, result in enumerate(results):
-            assert tokens[i] == result['words']
-            assert texts[i] == result['text']
-            assert targets[i] == result['targets']
-            assert target_words[i] == result['target words']
-            assert number_sentiments[i] == len(result['sentiments'])
-            assert len(result['sentiments']) == len(result['class_probabilities'])
-            assert 3 == len(result['class_probabilities'][0])
+        for name, predictor in self.name_predictors:
+            results = predictor.predict_batch_json(example_input)
+            for i, result in enumerate(results):
+                assert tokens[i] == result['words']
+                assert texts[i] == result['text']
+                assert targets[i] == result['targets']
+                assert target_words[i] == result['target words']
+                assert number_sentiments[i] == len(result['sentiments'])
+                assert len(result['sentiments']) == len(result['class_probabilities'])
+                assert 3 == len(result['class_probabilities'][0])
 
-            for class_probability in result['class_probabilities']:
-                for probability in class_probability:
-                    assert probability > 0 and probability < 1
-            for sentiment in result['sentiments']:
-                assert sentiment in ['positive', 'negative', 'neutral']
+                for class_probability in result['class_probabilities']:
+                    for probability in class_probability:
+                        assert probability > 0 and probability < 1
+                for sentiment in result['sentiments']:
+                    assert sentiment in ['positive', 'negative', 'neutral']
 
-            if i != 0:
-                assert target_attention_input[i] == result['targets_attention']
-            for target_attention_index, target_attention in enumerate(target_attention_input[i]):
-                assert len(target_attention) == len(result['targets_attention'][target_attention_index])
+                if i != 0:
+                    assert target_attention_input[i] == result['targets_attention']
+                for target_attention_index, target_attention in enumerate(target_attention_input[i]):
+                    assert len(target_attention) == len(result['targets_attention'][target_attention_index])
 
-            assert len(word_attention_input[i]) == len(result["word_attention"])
-            for w_i in range(len(word_attention_input[i])):
-                assert len(word_attention_input[i][w_i]) == len(result["word_attention"][w_i])
-        # ensure that the attention weights for the sentences are not the same 
-        # for the same sentence
-        first_result = results[0]
-        assert first_result["word_attention"][0] != first_result["word_attention"][1]
+                assert len(word_attention_input[i]) == len(result["word_attention"])
+                for w_i in range(len(word_attention_input[i])):
+                    assert len(word_attention_input[i][w_i]) == len(result["word_attention"][w_i])
+            # ensure that the attention weights for the sentences are not the same 
+            # for the same sentence
+            first_result = results[0]
+            assert first_result["word_attention"][0] != first_result["word_attention"][1]

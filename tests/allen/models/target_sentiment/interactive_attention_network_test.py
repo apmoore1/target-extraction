@@ -58,6 +58,7 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         self.ian_config = str(Path(config_dir, 'ian_config.jsonnet'))
         self.ian_elmo_wordvector_config = str(Path(config_dir, 'ian_elmo_wordvector_config.jsonnet'))
         self.ian_elmo_config = str(Path(config_dir, 'ian_elmo_config.jsonnet'))
+        self.ian_elmo_target_sequences_config = str(Path(config_dir, 'ian_elmo_target_sequences_config.jsonnet'))
 
         self.set_up_model(self.ian_config,
                           test_data)
@@ -75,6 +76,14 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
     
     def test_ian_elmo_wordvector_train_save(self):
         params = Params.from_file(self.ian_elmo_wordvector_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_ian_elmo_target_sequences_train_save(self):
+        params = Params.from_file(self.ian_elmo_target_sequences_config).duplicate()
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
@@ -104,6 +113,18 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
             params.to_file(temp_file.name)
             self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_target_field_embedder_with_target_sequences(self):
+        # Test that the target field embedder cannot be used with the 
+        # Target Embedder.
+        params = Params.from_file(self.ian_elmo_target_sequences_config).duplicate()
+        target_embedder = {"token_embedders": {"tokens": {"type": "embedding",
+                                                          "embedding_dim": 4,
+                                                          "trainable": False}}}
+        params['model']['target_field_embedder'] = target_embedder
+        params_copy = copy.deepcopy(params)
+        with pytest.raises(ConfigurationError):
+            Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
     
     def test_target_encoder(self):
         # Ensure raise a configuration error if the target encoder input dim 
