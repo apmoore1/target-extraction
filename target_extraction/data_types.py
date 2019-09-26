@@ -352,18 +352,18 @@ class TargetText(MutableMapping):
     def force_targets(self) -> None:
         '''
         :NOTE: As this affects the following attributes `spans` and `text` it 
-        therefore has to modify these through self._storage as both of these 
-        attributes are within self._protected_keys.
+               therefore has to modify these through self._storage as both of  
+               these attributes are within self._protected_keys.
 
         Does not return anything but modifies the `spans` and `text` values 
         as whitespace is prefixed and suffixed the target unless the prefix 
         or suffix is whitespace.
 
         Motivation:
-        Ensure that the target tokens are not within another seperate String 
+        Ensure that the target tokens are not within another separate String 
         e.g. target = `priced` but the sentence is `the laptop;priced is high` 
         and the tokenizer is on whitespace it will not have `priced` seperated 
-        therefore the BIO tagging is not determinstric thus force will add 
+        therefore the BIO tagging is not deterministic thus force will add 
         whitespace around the target word e.g. `the laptop; priced`. This was 
         mainly added for the TargetText.sequence_tags method.
         '''
@@ -413,7 +413,7 @@ class TargetText(MutableMapping):
         that will store the tokens of the text that is associated to this 
         TargetText instance.
 
-        For a set of tokenizers that are definetly comptable see 
+        For a set of tokenizers that are definitely comptable see 
         target_extraction.tokenizers module.
 
         Ensures that the tokenization is character preserving.
