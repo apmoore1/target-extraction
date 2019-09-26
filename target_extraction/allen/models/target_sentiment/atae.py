@@ -35,7 +35,8 @@ class ATAEClassifier(Model):
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
                  label_name: str = 'target-sentiment-labels',
-                 loss_weights: Optional[List[float]] = None) -> None:
+                 loss_weights: Optional[List[float]] = None,
+                 use_target_sequences: bool = False) -> None:
         super().__init__(vocab, regularizer)
         '''
         :param vocab: A Vocabulary, required in order to compute sizes 
@@ -85,6 +86,14 @@ class ATAEClassifier(Model):
                              0.2, neutral by 0.5 and positive by 0.3. NOTE It 
                              assumes the sentiment labels are the following:
                              [negative, neutral, positive].
+        :param use_target_sequences: Whether or not to use target tokens within 
+                                     the context as the targets contextualized 
+                                     word representation. This would only make
+                                     sense to use if the word representation 
+                                     i.e. field embedder is a contextualized 
+                                     embedder e.g. ELMO etc. This also requires 
+                                     that the dataset reader has the following 
+                                     argument set to True `target_sequences`.
         
         This is based around the models in `Attention-based LSTM for Aspect-level 
         Sentiment Classification <https://aclweb.org/anthology/D16-1058>`_. 
@@ -120,6 +129,12 @@ class ATAEClassifier(Model):
         self.context_encoder = context_encoder
         self.target_encoder = target_encoder
         self.feedforward = feedforward
+        self._use_target_sequences = use_target_sequences
+        if self._use_target_sequences and self.target_field_embedder:
+            raise ConfigurationError('`use_target_sequences` cannot be True at'
+                                     ' the same time as a value for '
+                                     '`target_field_embedder` as the embeddings'
+                                     ' come from the context and not a separate embedder')
         
         target_encoder_out = self.target_encoder.get_output_dim()
         context_encoder_out = self.context_encoder.get_output_dim()
@@ -235,6 +250,7 @@ class ATAEClassifier(Model):
                 tokens: Dict[str, torch.LongTensor],
                 targets: Dict[str, torch.LongTensor],
                 target_sentiments: torch.LongTensor = None,
+                target_sequences: Optional[torch.LongTensor] = None,
                 metadata: torch.LongTensor = None, 
                 **kwargs
                 ) -> Dict[str, torch.Tensor]:
@@ -252,30 +268,6 @@ class ATAEClassifier(Model):
         label_mask = (targets_mask.sum(dim=-1) >= 1).type(torch.int64)
         batch_size, number_targets = label_mask.shape
         batch_size_num_targets = batch_size * number_targets
-        
-        # Embed and encode target as a sequence
-        temp_targets = elmo_input_reshape(targets, batch_size, 
-                                          number_targets, batch_size_num_targets)
-        if self.target_field_embedder:
-            embedded_targets = self.target_field_embedder(temp_targets)
-        else:
-            embedded_targets = self.context_field_embedder(temp_targets)
-        embedded_targets = elmo_input_reverse(embedded_targets, targets, 
-                                              batch_size, number_targets, 
-                                              batch_size_num_targets)
-
-        # Size (batch size, num targets, target sequence length, embedding dim)
-        embedded_targets = self._time_variational_dropout(embedded_targets)
-        
-
-        batch_size, number_targets, target_sequence_length, target_embed_dim = embedded_targets.shape
-        encoded_targets_mask = targets_mask.view(batch_size_num_targets, target_sequence_length)
-        reshaped_embedding_targets = embedded_targets.view(batch_size_num_targets, 
-                                                           target_sequence_length, 
-                                                           target_embed_dim)
-        # Shape (Batch Size * Number targets), encoded dim
-        encoded_targets_seq = self.target_encoder(reshaped_embedding_targets, encoded_targets_mask)
-        encoded_targets_seq = self._naive_dropout(encoded_targets_seq)
 
         # Embed and encode text as a sequence
         embedded_context = self.context_field_embedder(tokens)
@@ -289,6 +281,45 @@ class ATAEClassifier(Model):
         reshaped_embedding_context = reshaped_embedding_context.view(batch_size_num_targets, 
                                                                      context_sequence_length, 
                                                                      context_embed_dim)
+        # Embed and encode target as a sequence. If True here the target 
+        # embeddings come from the context.
+        if self._use_target_sequences:
+            _, _, target_sequence_length, target_index_length = target_sequences.shape
+            target_index_len_err = ('The size of the context sequence '
+                                    f'{context_sequence_length} is not the same'
+                                    ' as the target index sequence '
+                                    f'{target_index_length}. This is to get '
+                                    'the contextualized target through the context')
+            assert context_sequence_length == target_index_length, target_index_len_err
+            seq_targets_mask = target_sequences.view(batch_size_num_targets, 
+                                                     target_sequence_length, 
+                                                     target_index_length)
+            reshaped_embedding_targets = torch.matmul(seq_targets_mask.type(torch.float32), 
+                                                      reshaped_embedding_context)
+        else:
+            temp_targets = elmo_input_reshape(targets, batch_size, 
+                                            number_targets, batch_size_num_targets)
+            if self.target_field_embedder:
+                embedded_targets = self.target_field_embedder(temp_targets)
+            else:
+                embedded_targets = self.context_field_embedder(temp_targets)
+                embedded_targets = elmo_input_reverse(embedded_targets, targets, 
+                                                    batch_size, number_targets, 
+                                                    batch_size_num_targets)
+
+            # Size (batch size, num targets, target sequence length, embedding dim)
+            embedded_targets = self._time_variational_dropout(embedded_targets)
+            batch_size, number_targets, target_sequence_length, target_embed_dim = embedded_targets.shape
+            reshaped_embedding_targets = embedded_targets.view(batch_size_num_targets, 
+                                                               target_sequence_length, 
+                                                               target_embed_dim)
+        
+        encoded_targets_mask = targets_mask.view(batch_size_num_targets, target_sequence_length)
+        # Shape (Batch Size * Number targets), encoded dim
+        encoded_targets_seq = self.target_encoder(reshaped_embedding_targets, encoded_targets_mask)
+        encoded_targets_seq = self._naive_dropout(encoded_targets_seq)
+
+        
         repeated_context_mask = context_mask.unsqueeze(1).repeat(1,number_targets,1)
         repeated_context_mask = repeated_context_mask.view(batch_size_num_targets,
                                                            context_sequence_length)

@@ -61,6 +61,7 @@ class ATAEClassifierTest(ModelTestCase):
         self.inter_atae_config = str(Path(config_dir, 'inter_atae_config.jsonnet'))
         self.atae_elmo_config = str(Path(config_dir, 'atae_elmo_config.jsonnet'))
         self.atae_elmo_wordvector_config = str(Path(config_dir, 'atae_elmo_wordvector_config.jsonnet'))
+        self.atae_elmo_target_sequences_config = str(Path(config_dir, 'atae_elmo_target_sequences_config.jsonnet'))
 
         self.set_up_model(self.atae_config, test_data)
 
@@ -131,6 +132,14 @@ class ATAEClassifierTest(ModelTestCase):
             params.to_file(temp_file.name)
             self.ensure_model_can_train_save_and_load(temp_file.name)
 
+    def test_elmo_atae_target_sequences_train_save(self):
+        params = Params.from_file(self.atae_elmo_target_sequences_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+
     @flaky
     def test_batch_predictions_are_consistent(self):
         ignore = ['words', 'text', 'targets', 'target words',
@@ -175,6 +184,18 @@ class ATAEClassifierTest(ModelTestCase):
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
             params.to_file(temp_file.name)
             self.ensure_model_can_train_save_and_load(temp_file.name)
+    
+    def test_target_field_embedder_with_target_sequences(self):
+        # Test that the target field embedder cannot be used with the 
+        # Target Embedder.
+        params = Params.from_file(self.atae_elmo_target_sequences_config).duplicate()
+        target_embedder = {"token_embedders": {"tokens": {"type": "embedding",
+                                                          "embedding_dim": 4,
+                                                          "trainable": False}}}
+        params['model']['target_field_embedder'] = target_embedder
+        params_copy = copy.deepcopy(params)
+        with pytest.raises(ConfigurationError):
+            Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
     
     def test_target_encoder(self):
         # Ensure raise a configuration error if the target encoder input dim 

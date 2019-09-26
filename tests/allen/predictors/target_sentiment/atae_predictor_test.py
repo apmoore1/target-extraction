@@ -18,9 +18,12 @@ class TestATAEPredictor():
     at_predictor = Predictor.from_archive(at_archive, 'target-sentiment')
     inter_atae_archive = load_archive(str(Path(archive_dir, 'InterAspectATAE', 'model.tar.gz')))
     inter_atae_predictor = Predictor.from_archive(inter_atae_archive, 'target-sentiment')
+    atae_ts_archive = load_archive(str(Path(archive_dir, 'ATAETargetSequences', 'model.tar.gz')))
+    atae_ts_predictor = Predictor.from_archive(atae_ts_archive, 'target-sentiment')
 
     name_predictors = [('atae', atae_predictor), ('ae', ae_predictor),
-                       ('at', at_predictor), ('inter_atae', inter_atae_predictor)]
+                       ('at', at_predictor), ('inter_atae', inter_atae_predictor),
+                       ('atae_ts', atae_ts_predictor)]
 
     def test_outputs(self):
         '''
