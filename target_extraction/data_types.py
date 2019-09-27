@@ -370,7 +370,7 @@ class TargetText(MutableMapping):
 
         for span_index in range(len(self['spans'])):
             text = self._storage['text']
-            last_token_index = len(text) - 1
+            last_token_index = len(text)
 
             span = self._storage['spans'][span_index]
             prefix = False

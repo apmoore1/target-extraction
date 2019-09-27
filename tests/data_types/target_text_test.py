@@ -416,6 +416,16 @@ class TestTargetText:
         assert simple_example['text'] == 'The laptop case was great and awfulcover'
         assert simple_example['spans'] == [Span(4, 15), Span(11, 25)]
         assert simple_example['targets'] == ['laptop case', 'case was great']
+        # Test the span that is one from the end case
+        text = 'But the machine is awesome and iLife is great and I love Snow Leopard X.'
+        spans = [Span(start=31, end=36), Span(start=57, end=71)]
+        targets = ['iLife', 'Snow Leopard X']
+        end_case = TargetText(text_id='1', spans=spans, text=text,
+                              targets=targets)
+        end_case.force_targets()
+        assert end_case['text'] == 'But the machine is awesome and iLife is great and I love Snow Leopard X .'
+        assert end_case['spans'] == [Span(start=31, end=36), Span(start=57, end=71)]
+        assert end_case['targets'] == ['iLife', 'Snow Leopard X']
         
     def test_eq(self):
         '''

@@ -88,12 +88,16 @@ class ATAEClassifier(Model):
                              [negative, neutral, positive].
         :param use_target_sequences: Whether or not to use target tokens within 
                                      the context as the targets contextualized 
-                                     word representation. This would only make
-                                     sense to use if the word representation 
+                                     word representation (CWR). This would only
+                                     make sense to use if the word representation 
                                      i.e. field embedder is a contextualized 
                                      embedder e.g. ELMO etc. This also requires 
                                      that the dataset reader has the following 
                                      argument set to True `target_sequences`.
+                                     ANOTHER reason why you would want to use 
+                                     this even when not using CWR is that you 
+                                     want to get contextualised POS/Dep tags 
+                                     etc.
         
         This is based around the models in `Attention-based LSTM for Aspect-level 
         Sentiment Classification <https://aclweb.org/anthology/D16-1058>`_. 

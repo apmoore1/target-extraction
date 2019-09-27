@@ -218,13 +218,19 @@ class TargetSentimentDatasetReader(DatasetReader):
                 target_sequences = target_text_object['sequence_labels']
                 # Need to add the target sequences to the instances
                 target_sequence_fields = []
+                all_target_tokens = []
                 for target_sequence in target_sequences:
                     in_label = {'B', 'I'}
                     ones_indexes = []
+                    target_tokens = []
+                    len_err = 'Should be the same length as they are applied to the same token stream'
+                    assert len(target_sequence) == len(allen_tokens), len_err
                     for one_index, sequence_label in enumerate(target_sequence):
                         sequence_label = 1 if sequence_label in in_label else 0
                         if sequence_label:
                             ones_indexes.append(one_index)
+                            target_tokens.append(allen_tokens[one_index])
+                    all_target_tokens.append(target_tokens)
                     individual_target_sequences = [[0] * len(target_sequence) 
                                                    for _ in ones_indexes]
                     for array_index, one_index in enumerate(ones_indexes):
@@ -239,11 +245,11 @@ class TargetSentimentDatasetReader(DatasetReader):
                 # update target variable as the targets could have changed due 
                 # to the force_targets function
                 targets = target_text_object['targets']
-
-            all_target_tokens = [self._tokenizer.tokenize(target) 
-                                 for target in targets]
+            else:
+                all_target_tokens = [self._tokenizer.tokenize(target) 
+                                     for target in targets]
             target_fields = [TextField(target_tokens, self._token_indexers)  
-                             for target_tokens in all_target_tokens]
+                            for target_tokens in all_target_tokens]
             target_fields = ListField(target_fields)
             instance_fields['targets'] = target_fields
             # Add the targets and the tokenised targets to the metadata
