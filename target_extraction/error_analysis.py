@@ -4,7 +4,8 @@ subsamples of the original(s) that will allow the user to analysis the
 data with respect to some certain property.
 '''
 import copy
-from typing import List, Callable, Dict, Union, Optional, Any
+from collections import defaultdict
+from typing import List, Callable, Dict, Union, Optional, Any, Tuple
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 
@@ -445,6 +446,116 @@ def distinct_sentiment(dataset: TargetTextCollection,
         else:
             target_data['distinct_sentiment'] = distinct_sentiments
     return dataset
+
+def n_shot_subsets(test_dataset: TargetTextCollection, 
+                   train_dataset: TargetTextCollection, 
+                   lower: bool = True, return_n_values: bool = False
+                   ) -> Union[TargetTextCollection, 
+                              Tuple[TargetTextCollection, List[Tuple[int, int]]]]:
+    '''
+    Given a test and train dataset will return the same test dataset but 
+    with 4 additional keys denoted as `zero-shot`, `low-shot`, `med-shot`, and 
+    `high-shot`. Each one of these represents a different set of *n* values 
+    within the *n-shot* setup. The *n-shot* setup is the number of times the 
+    target within the test sample has been seen in the training dataset. The 
+    `zero-shot` subset contains all targets that have *n=0*. The low, med, and 
+    high contain increasing values *n* respectively where each subset will 
+    contain approximately 1/3 of all samples in the test dataset once the 
+    `zero-shot` subset has been removed.
+
+    :param test_dataset: Test dataset to sub-sample
+    :param train_dataset: Train dataset to reference
+    :param lower: Whether to lower case the target words
+    :param return_n_values: If True will return a tuple containing 1. The 
+                            TargetTextCollection with the new error keys and 
+                            2. A list of tuples one for each of the error keys 
+                            stating the values of *n* that the error keys 
+                            are associated too.
+    :returns: The test dataset but with each TargetText object containing a 
+              `zero-shot`, `low-shot`, `med-shot`, and `high-shot` key and 
+              associated list of values.
+    '''
+    def get_third_n(third_sample_count: int, n_relation_target: Dict[int, str],
+                    target_sample_count: Dict[str, int]) -> Tuple[int, int]:
+        start = True
+        start_n = 0
+        end_n = 0
+        count = 0
+        for n_relation, targets in n_relation_target.items():
+            if start:
+                start = False
+                start_n = n_relation
+            for target in targets:
+                count += target_sample_count[target]
+            if count >= third_sample_count:
+                end_n = n_relation
+                break
+        else:
+            end_n = n_relation
+        if start_n == 0 or end_n == 0:
+            raise ValueError('The start nor end can be zero')
+        return (start_n, end_n) 
+
+    def error_func(target: TargetText, 
+                   ignore: Dict[str, int],
+                   filtered_test: Dict[str, int],
+                   target_sentiment: Union[str, int]) -> bool:
+        if target in filtered_test:
+            return True
+        return False
+    
+    # Get Target and associated count for both train and test datasets
+    train_target_sentiments = train_dataset.target_sentiments(lower=lower, 
+                                                              unique_sentiment=False)
+    train_target_counts = {target: len(occurrences) 
+                           for target, occurrences in train_target_sentiments.items()}
+    test_target_sentiments = test_dataset.target_sentiments(lower=lower, 
+                                                            unique_sentiment=False)
+    test_target_counts = {target: len(occurrences) 
+                          for target, occurrences in test_target_sentiments.items()}
+    test_target_n_relation = {}
+    # Does not cover zero shot target in n_relation_test_target
+    n_relation_test_target = defaultdict(list)
+    for target in test_target_counts.keys():
+        if target not in train_target_counts:
+            test_target_n_relation[target] = 0
+        else:
+            number_times_in_train = train_target_counts[target]
+            test_target_n_relation[target] = number_times_in_train
+            n_relation_test_target[number_times_in_train].append(target)
+    zero_filter = {target: n_relation 
+                   for target, n_relation in test_target_n_relation.items() 
+                   if n_relation == 0}
+
+    n_relation_test_target = sorted(n_relation_test_target.items(), key=lambda x: x[0])
+    number_samples_left = sum([test_target_counts[target] for 
+                               target in n_relation_test_target.keys()])
+    third_samples = int(number_samples_left / 3)
+    filter_dict = {0: (zero_filter, (0,0))}
+    for i in range(1, 4):
+        start_n, end_n = get_third_n(third_samples, n_relation_test_target, 
+                                     test_target_counts)
+        n_range = list(range(start_n, end_n + 1))
+        n_filter = {target: n_relation 
+                    for target, n_relation in test_target_n_relation.items() 
+                    if n_relation in n_range}
+        filter_dict[i] = (n_filter, (start_n, end_n))
+        n_relation_test_target = [(n_relation, target) for n_relation, target 
+                                   in n_relation_test_target if n_relation not in n_range]
+    filter_name_dict = {0: 'zero-shot', 1: 'low-shot', 
+                        2: 'med-shot', 3: 'high-shot'}
+    n_ranges = []
+    for i in range(0, 4):
+        filter_con, n_range = filter_dict[i]
+        error_name = filter_name_dict[i]
+        test_dataset = _pre_post_subsampling(test_dataset, train_dataset, lower, 
+                                             error_name, error_func, train_dict={},
+                                             test_dict=filter_con)
+        n_ranges.append(n_range)
+    if return_n_values:
+        return (return_n_values, n_ranges)
+    else:
+        return test_dataset
 
 def n_shot_targets(test_dataset: TargetTextCollection, 
                    train_dataset: TargetTextCollection, 

@@ -720,6 +720,64 @@ def test_n_shot_targets(lower: bool, error_name: str):
     else:
         assert [[1,1,1,1]] == counts
 
+
+def test_n_shot_subsets():
+    # this testing function does not care about sentiment just the targets
+    data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
+    train_fp = Path(data_fp, 'train.json').resolve()
+    test_fp = Path(data_fp, 'test.json').resolve()
+    pos, neg, neu = 'positive', 'negative', 'neutral'
+    train_sentiments = [[pos], [neg], [neg, pos], [neg, neu, neg, neg]]
+    target_text_obj = larger_target_text_examples(train_sentiments)
+    all_targets = TargetTextCollection([target_text_obj[-1]])
+    laptop_target = TargetTextCollection([target_text_obj[0]])
+    cover_target = TargetTextCollection([target_text_obj[1]])
+    laptop_2_cover_2 = TargetTextCollection([target_text_obj[0], target_text_obj[1], 
+                                             target_text_obj[2]])
+    # Case where zero shot target
+    counts = get_error_counts(n_shot_targets(laptop_target, cover_target, 
+                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
+    assert [[1]] == counts
+    assert [[0]] != counts
+    # Case zero shot target for one of the two targets
+    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
+                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
+    assert [[1],[0],[1,0]] == counts
+    # Case where one shot target
+    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
+                              lambda x: x==1, lower=lower, error_name=error_name), error_name)
+    assert [[0],[1],[0,1]] == counts
+    # Case where we do >0
+    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
+                              lambda x: x>0, lower=lower, error_name=error_name), error_name)
+    assert [[0],[1],[0,1]] == counts
+    # Case where all are not equal to 0
+    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, laptop_2_cover_2, 
+                              lambda x: x!=0, lower=lower, error_name=error_name), error_name)
+    assert [[1],[1],[1,1]] == counts
+    # Case where exists more than once in the train but only once in the test
+    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
+                              lambda x: x>1, lower=lower, error_name=error_name), error_name)
+    assert [[0,1,0,1]] == counts
+    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
+                              lambda x: x==2, lower=lower, error_name=error_name), error_name)
+    assert [[0,1,0,1]] == counts
+    # Case of the rest being zero
+    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
+                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
+    assert [[1,0,1,0]] == counts
+
+    # Test the case for lower
+    target_text_obj[-1]._storage['targets'] = ['The', 'Laptop case', 'great', 'Cover']
+    target_text_obj[-1]._storage['text'] = 'The Laptop case was great and Cover was rubbish'
+    all_targets = TargetTextCollection([target_text_obj[-1]])
+    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
+                                lambda x: x==0, lower=lower, error_name=error_name), error_name)
+    if lower:
+        assert [[1,0,1,0]] == counts
+    else:
+        assert [[1,1,1,1]] == counts
+
 def example_collections_runs_first() -> TargetTextCollection:
     text = 'The laptop case was great and cover was rubbish'
     text_ids = ['0', 'another_id', '2']
