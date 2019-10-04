@@ -9,7 +9,7 @@ from typing import List, Callable, Dict, Union, Optional, Any
 from target_extraction.data_types import TargetTextCollection, TargetText
 
 def count_error_key_occurrence(dataset: TargetTextCollection, 
-                              error_key: str) -> int:
+                               error_key: str) -> int:
     '''
     :param dataset: The dataset that contains error analysis key which are 
                     one hot encoding of whether a target is in that 
@@ -169,7 +169,7 @@ def same_multi_sentiment(test_dataset: TargetTextCollection,
     the same length as the number of targets in that TargetText object with 
     0's and 1's where a 1 represents the associated target has the same 
     sentiment labels (more than one sentiment label e.g. positive and negative
-    not just poisitive or not just negative) in the train and test 
+    not just positive or not just negative) in the train and test 
     where as the 0 means it does not.
 
     :Note: If the TargetText object `targets` is None as in there are no
@@ -384,12 +384,29 @@ def unknown_sentiment_known_target(test_dataset: TargetTextCollection,
     return _pre_post_subsampling(test_dataset, train_dataset, lower, 
                                  'unknown_sentiment_known_target', error_func)
 
-def distinct_sentiment(dataset: TargetTextCollection) -> TargetTextCollection:
+def distinct_sentiment(dataset: TargetTextCollection, 
+                       separate_labels: bool = False) -> TargetTextCollection:
     '''
     :param dataset: The dataset to add the distinct sentiment labels to
+    :param separate_labels: If True instead of having one error key 
+                            `distinct_sentiment` which contains a value of 
+                            a list of the number of distinct sentiments. There
+                            will be `n` error keys of the format 
+                            `distinct_sentiment_n` where for each TargetText 
+                            object each one will contain 0's apart from the 
+                            `n` value which is the correct number of 
+                            distinct sentiments. The value `n` is computed 
+                            based on the number of unique distinct sentiments 
+                            in the collection. Example if there are 2 distinct 
+                            sentiment in the collection {2, 4} and the current 
+                            TargetText contain 2 targets with 2 distinct 
+                            sentiments then it will contain the following keys 
+                            and values: `distinct_sentiment_2`: [1,1] and 
+                            `distinct_sentiment_4`: [0,0].
     :returns: The same dataset but with each TargetText object containing a 
-              `distinct_sentiment` key and associated number of distinct 
-              sentiments that are in that TargetText object per target.
+              `distinct_sentiment` or `distinct_sentiment_n` key(s) and 
+              associated number of distinct sentiments that are in that 
+              TargetText object per target.
 
     :Example: Given a TargetTextCollection that contains a single TargetText 
               object that has three targets where the first two have the label 
@@ -397,16 +414,36 @@ def distinct_sentiment(dataset: TargetTextCollection) -> TargetTextCollection:
               `distinct_sentiment` key to the TargetText object with the
               following value [2,2,2] as there are two unique/distinct 
               sentiments in that TargetText object.
+    :raises ValueError: If separate_labels is True and there are no sentiment 
+                        labels in the collection.
     '''
+    # only used in the separate_labels case
+    ds_keys = []
+    if separate_labels:
+        for unique_ds in dataset.unique_distinct_sentiments():
+            ds_keys.append(f'distinct_sentiment_{unique_ds}')
+        if len(ds_keys) == 0:
+            raise ValueError('There are no Distinct sentiments/sentiments '
+                             'in this collection')
+        
     for target_data in dataset.values():
         target_sentiments = target_data['target_sentiments']
         distinct_sentiments = []
         if target_sentiments is not None:
             num_unique_sentiments = len(set(target_sentiments))
             num_targets = len(target_sentiments)
-            distinct_sentiments = [num_unique_sentiments 
-                                   for _ in range(num_targets)]
-        target_data['distinct_sentiment'] = distinct_sentiments
+            if separate_labels:
+                distinct_sentiments = [1] * num_targets
+            else:
+                distinct_sentiments = [num_unique_sentiments 
+                                    for _ in range(num_targets)]
+        if separate_labels:
+            for ds_key in ds_keys:
+                target_data[ds_key] = [0] * len(distinct_sentiments)
+            ds_key = f'distinct_sentiment_{num_unique_sentiments}'
+            target_data[ds_key] = distinct_sentiments
+        else:
+            target_data['distinct_sentiment'] = distinct_sentiments
     return dataset
 
 def n_shot_targets(test_dataset: TargetTextCollection, 

@@ -1121,6 +1121,9 @@ class TargetTextCollection(MutableMapping):
         that target.
     15. dict_iter -- Returns an interator of all of the TargetText objects 
         within the collection as dictionaries.
+    16. unique_distinct_sentiments -- A set of the distinct sentiments within 
+        the collection. The length of the set represents the number of distinct 
+        sentiments within the collection.
     
     Static Functions:
 
@@ -1547,6 +1550,32 @@ class TargetTextCollection(MutableMapping):
         for target_text in self.values():
             target_text: TargetText
             yield dict(target_text)
+    
+    def unique_distinct_sentiments(self, 
+                                   sentiment_key: str = 'target_sentiments'
+                                   ) -> Set[int]:
+        '''
+        :param sentiment_key: The key that represents the sentiment value 
+                              for each TargetText object 
+        :returns: A set of the distinct sentiments within the collection. 
+                  The length of the set represents the number of distinct 
+                  sentiments within the collection.
+        :raises TypeError: If the value in the sentiment_key is not of type list
+        '''
+        unique_ds = set()
+        for target_object in self.values():
+            sentiment_value = target_object[sentiment_key]
+            if not isinstance(sentiment_value, list):
+                raise TypeError(f'The sentiment key {sentiment_key} contains a'
+                                f' value that is not of type List: '
+                                f'{sentiment_value}. TargetText object: '
+                                f'{target_object}')
+            unique_ds.add(len(set(sentiment_value)))
+        # Need to remove 0's which come about because an empty list is of 
+        # length 0
+        if 0 in unique_ds:
+            unique_ds.remove(0)
+        return unique_ds
 
     def sanitize(self) -> None:
         '''

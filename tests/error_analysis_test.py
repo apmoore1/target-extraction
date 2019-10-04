@@ -611,34 +611,58 @@ def larger_target_text_examples(target_sentiment_values: List[List[str]]
                                 categories=categories[i])
         target_text_examples.append(example)
     return target_text_examples
-    
-def test_distinct_sentiment():
+
+@pytest.mark.parametrize("separate_labels", (False, True))
+def test_distinct_sentiment(separate_labels: bool):
     # Test the case with up to 2 distinct sentiments
     pos, neg, neu = 'positive', 'negative', 'neutral'
     train_sentiments = [[pos], [neg], [neg, pos], [neg, neu, neg, neg]]
     dataset = TargetTextCollection(larger_target_text_examples(train_sentiments))
-    dataset = distinct_sentiment(dataset)
-    answer = [[1], [1], [2,2], [2,2,2,2]]
-    assert answer == get_error_counts(dataset, 'distinct_sentiment')
+    dataset = distinct_sentiment(dataset, separate_labels)
+    if separate_labels:
+        true_labels = {'distinct_sentiment_1': [[1], [1], [0,0], [0,0,0,0]],
+                       'distinct_sentiment_2': [[0], [0], [1,1], [1,1,1,1]]}
+        for i in range(1, 3):
+            ds_key = f'distinct_sentiment_{i}'
+            assert true_labels[ds_key] == get_error_counts(dataset, ds_key)
+    else:
+        answer = [[1], [1], [2,2], [2,2,2,2]]
+        assert answer == get_error_counts(dataset, 'distinct_sentiment')
     # Test the case where they can have all three
     train_sentiments = [[pos], [neg], [neu, pos], [neg, neu, neg, pos]]
     dataset = TargetTextCollection(larger_target_text_examples(train_sentiments))
-    dataset = distinct_sentiment(dataset)
-    answer = [[1], [1], [2,2], [3,3,3,3]]
-    assert answer == get_error_counts(dataset, 'distinct_sentiment')
+    dataset = distinct_sentiment(dataset, separate_labels)
+    if separate_labels:
+        true_labels = {'distinct_sentiment_1': [[1], [1], [0,0], [0,0,0,0]],
+                       'distinct_sentiment_2': [[0], [0], [1,1], [0,0,0,0]],
+                       'distinct_sentiment_3': [[0], [0], [0,0], [1,1,1,1]]}
+        for i in range(1, 4):
+            ds_key = f'distinct_sentiment_{i}'
+            assert true_labels[ds_key] == get_error_counts(dataset, ds_key)
+    else:
+        answer = [[1], [1], [2,2], [3,3,3,3]]
+        assert answer == get_error_counts(dataset, 'distinct_sentiment')
     # Case where there are no targets
     empty_target = TargetText(text='something', text_id='1', targets=[], 
                               spans=[], target_sentiments=[])
     dataset = TargetTextCollection([empty_target])
-    dataset = distinct_sentiment(dataset)
-    assert [[]] == get_error_counts(dataset, 'distinct_sentiment')
+    if separate_labels:
+        with pytest.raises(ValueError):
+            distinct_sentiment(dataset, separate_labels)
+    else:
+        dataset = distinct_sentiment(dataset, separate_labels)
+        assert [[]] == get_error_counts(dataset, 'distinct_sentiment')
     # Case where there are no targets where the targets are None values 
     # instead
     empty_target = TargetText(text='something', text_id='1', targets=None, 
                               spans=None, target_sentiments=None)
     dataset = TargetTextCollection([empty_target])
-    dataset = distinct_sentiment(dataset)
-    assert [[]] == get_error_counts(dataset, 'distinct_sentiment')
+    if separate_labels:
+        with pytest.raises(TypeError):
+            distinct_sentiment(dataset, separate_labels)
+    else:
+        dataset = distinct_sentiment(dataset, separate_labels)
+        assert [[]] == get_error_counts(dataset, 'distinct_sentiment')
 
 @pytest.mark.parametrize("lower", (False, True))
 @pytest.mark.parametrize("error_name", ('error', 'anything'))

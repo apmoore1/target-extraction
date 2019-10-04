@@ -927,3 +927,65 @@ class TestTargetTextCollection:
         for key, value in correct.items():
             assert sorted(value) == sorted(target_sentiment[key])
         assert len(correct) == len(target_sentiment)
+
+    @pytest.mark.parametrize("sentiment_key", ('target_sentiments', 'test_name'))
+    def test_unique_distinct_sentiments(self, sentiment_key: str):
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '0'
+        spans = [Span(4, 15), Span(30, 35)]
+        targets = ['laptop case', 'cover']
+        sentiments = {sentiment_key: [1, 2]}
+        target_text_0 = TargetText(text=text, text_id=text_id, spans=spans, 
+                                   targets=targets, **sentiments)
+        text = 'The laptop price was awful'
+        text_id = '1'
+        spans = [Span(4, 16)]
+        targets = ['laptop price']
+        sentiments = {sentiment_key: [1]}
+        target_text_1 = TargetText(text=text, text_id=text_id, spans=spans,
+                                   targets=targets, **sentiments)
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        spans = [Span(4, 15), Span(30, 35)]
+        targets = ['laptop case', 'cover']
+        sentiments = {sentiment_key: [3, 3]}
+        target_text_2 = TargetText(text=text, text_id=text_id, spans=spans, 
+                                   targets=targets, **sentiments)
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '3'
+        spans = []
+        targets = []
+        sentiments = {sentiment_key: []}
+        target_text_3 = TargetText(text=text, text_id=text_id, spans=spans, 
+                                   targets=targets, **sentiments)
+        # 0 DS
+        coll_0 = TargetTextCollection([target_text_3])
+        assert set() == coll_0.unique_distinct_sentiments(sentiment_key)
+        # 1 DS
+        coll_1 = TargetTextCollection([target_text_2])
+        assert set([1]) == coll_1.unique_distinct_sentiments(sentiment_key)
+        coll_1 = TargetTextCollection([target_text_1])
+        assert set([1]) == coll_1.unique_distinct_sentiments(sentiment_key)
+        # 2 DS
+        coll_2 = TargetTextCollection([target_text_0])
+        assert set([2]) == coll_2.unique_distinct_sentiments(sentiment_key)
+        coll_2 = TargetTextCollection([target_text_0, target_text_3])
+        assert set([2]) == coll_2.unique_distinct_sentiments(sentiment_key)
+        # 2 and 1 DS
+        coll_2_1 = TargetTextCollection([target_text_0, target_text_1])
+        assert set([1,2]) == coll_2_1.unique_distinct_sentiments(sentiment_key)
+        coll_2_1 = TargetTextCollection([target_text_0, target_text_2])
+        assert set([1,2]) == coll_2_1.unique_distinct_sentiments(sentiment_key)
+        coll_2_1 = TargetTextCollection([target_text_0, target_text_1])
+        assert set([1,2]) == coll_2_1.unique_distinct_sentiments(sentiment_key)
+        # Raises TypeError if the sentiment value is not of type list
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '4'
+        spans = []
+        targets = []
+        sentiments = {sentiment_key: None}
+        target_text_4 = TargetText(text=text, text_id=text_id, spans=spans, 
+                                   targets=targets, **sentiments)
+        with pytest.raises(TypeError):
+            coll_err = TargetTextCollection([target_text_4])
+            coll_err.unique_distinct_sentiments(sentiment_key)
