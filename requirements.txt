@@ -1,6 +1,6 @@
 pytest==4.4.1
 pylint==2.3.1
-spacy>=2.1
+spacy==2.1
 torch>=0.4.1,<1.2
 stanfordnlp==0.2.0
 pytest-cov==2.7.1
