@@ -85,9 +85,9 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
 def _pre_post_subsampling(test_dataset: TargetTextCollection, 
                           train_dataset: TargetTextCollection, 
                           lower: bool, error_key: str,
-                          error_func: Callable[[TargetText, Dict[str, List[str]], 
+                          error_func: Callable[[str, Dict[str, List[str]], 
                                                 Dict[str, List[str]], 
-                                                Union[int, str]], bool],
+                                                Union[int, str], TargetText], bool],
                           train_dict: Optional[Dict[str, Any]] = None,
                           test_dict: Optional[Dict[str, Any]] = None
                           ) -> TargetTextCollection:
@@ -111,7 +111,8 @@ def _pre_post_subsampling(test_dataset: TargetTextCollection,
             if lower:
                 target = target.lower()
             if error_func(target, train_target_sentiments, 
-                          test_target_sentiments, target_sentiment):
+                          test_target_sentiments, target_sentiment,
+                          target_data):
                 error_values.append(1)
                 continue
             error_values.append(0)
@@ -144,10 +145,11 @@ def same_one_sentiment(test_dataset: TargetTextCollection,
               `same_one_sentiment` key and associated list of values.
     '''
     
-    def error_func(target: TargetText, 
+    def error_func(target: str, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -186,7 +188,8 @@ def same_multi_sentiment(test_dataset: TargetTextCollection,
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -226,7 +229,8 @@ def similar_sentiment(test_dataset: TargetTextCollection,
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -266,7 +270,8 @@ def different_sentiment(test_dataset: TargetTextCollection,
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -302,7 +307,7 @@ def unknown_targets(test_dataset: TargetTextCollection,
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             return False
@@ -337,7 +342,8 @@ def known_sentiment_known_target(test_dataset: TargetTextCollection,
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -374,7 +380,7 @@ def unknown_sentiment_known_target(test_dataset: TargetTextCollection,
     def error_func(target: TargetText, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -491,7 +497,6 @@ def n_shot_subsets(test_dataset: TargetTextCollection,
             if count >= third_sample_count:
                 end_n = n_relation
                 break
-        else:
             end_n = n_relation
         if start_n == 0 or end_n == 0:
             raise ValueError('The start nor end can be zero')
@@ -500,7 +505,8 @@ def n_shot_subsets(test_dataset: TargetTextCollection,
     def error_func(target: TargetText, 
                    ignore: Dict[str, int],
                    filtered_test: Dict[str, int],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if target in filtered_test:
             return True
         return False
@@ -594,7 +600,8 @@ def n_shot_targets(test_dataset: TargetTextCollection,
     def error_func(target: TargetText, 
                    ignore: Dict[str, int],
                    filtered_test: Dict[str, int],
-                   target_sentiment: Union[str, int]) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if target in filtered_test:
             return True
         return False
@@ -622,6 +629,102 @@ def n_shot_targets(test_dataset: TargetTextCollection,
     return _pre_post_subsampling(test_dataset, train_dataset, lower, 
                                  error_name, error_func, train_dict={},
                                  test_dict=filter_test_target_n_relation)
+
+def num_targets_subset(dataset: TargetTextCollection, 
+                       return_n_values: bool = False
+                       ) -> Union[TargetTextCollection, 
+                                  Tuple[TargetTextCollection, List[Tuple[int, int]]]]:
+    '''
+    Given a dataset it will add the following four error keys: `1-target`,
+    `low-targets`, `med-targets`, `high-targets` to each target text object. 
+    where each value associated to the error keys are a list of 1's or 0's 
+    the length of the number of samples where 1 denotes the error key is True 
+    and 0 otherwise. `1-target` is 1 when the target text object contains one 
+    target. The others are based on the frequency of targets with respect to the 
+    number of samples in the dataset where if the target is in the low 1/3 of 
+    most frequent targets based on samples then it is 
+    binned in the `low-targets`, middle 1/3 `med-targets` etc.
+
+    :param dataset: The dataset to add the following four error keys: `1-target`,
+                    `low-targets`, `med-targets`, `high-targets`.
+    :param return_n_values: Whether to return the number of targets in the 
+                            sentence are associated to the 4 error keys as a 
+                            List of Tuples.
+    :returns: The same dataset but with each TargetText object containing those 
+              four stated error keys and associated list of 1's or 0's denoting 
+              if the error key exists or not.
+    '''
+    def get_third_n(third_sample_count: int, 
+                    num_targets_count: List[Tuple[int, int]]) -> Tuple[int, int]:
+        start = True
+        start_n = 0
+        end_n = 0
+        total_count = 0
+        print(num_targets_count)
+        for num_targets, count in num_targets_count:
+            if start:
+                start = False
+                start_n = num_targets
+            total_count += count
+            if total_count >= third_sample_count:
+                end_n = num_targets
+                break
+            end_n = num_targets
+        if start_n == 0 or end_n == 0:
+            raise ValueError('The start nor end can be zero')
+        return (start_n, end_n) 
+
+    def error_func(target: TargetText, 
+                   ignore: Dict[str, int],
+                   filtered_test: Dict[int, int],
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
+        if len(target_data['targets']) in filtered_test:
+            return True
+        return False
+    
+    # Get num targets in sentence and associated counts
+    num_targets_count = defaultdict(lambda: 0)
+    for target in dataset.values():
+        num_targets_in_text = len(target['targets'])
+        num_targets_count[num_targets_in_text] += num_targets_in_text
+    one_filter = {1: 0}
+    number_samples_left = sum([count for num_targets, count in num_targets_count.items() if num_targets != 1])
+    third_samples = int(number_samples_left / 3)
+    filter_dict = {1: (one_filter, (1,1))}
+
+    num_targets_count = sorted(num_targets_count.items(), key=lambda x: x[0])
+    num_targets_count = [(num_target, count) for num_target, count in num_targets_count if num_target != 1]
+
+    for i in range(2, 5):
+        start_num, end_num = get_third_n(third_samples, num_targets_count)
+        n_range = list(range(start_num, end_num + 1))
+        n_filter = {n: 0 for n in n_range}
+        filter_dict[i] = (n_filter, (start_num, end_num))
+        num_targets_count = [(num_target, count) for num_target, count in num_targets_count if num_target not in n_range]
+        number_samples_left = sum([count for num_targets, count in num_targets_count])
+        if i == 2:
+            third_samples = int(number_samples_left / 2)
+            last_target = num_targets_count[-1]
+            if (number_samples_left - last_target[1]) < third_samples:
+                third_samples = number_samples_left - last_target[1]
+        elif i == 3:
+            third_samples = number_samples_left
+    filter_name_dict = {1: '1-target', 2: 'low-targets', 
+                        3: 'med-targets', 4: 'high-targets'}
+
+    n_ranges = []
+    for i in range(1, 5):
+        filter_con, n_range = filter_dict[i]
+        error_name = filter_name_dict[i]
+        dataset = _pre_post_subsampling(dataset, dataset, True, 
+                                        error_name, error_func, train_dict={},
+                                        test_dict=filter_con)
+        n_ranges.append(n_range)
+    if return_n_values:
+        return (dataset, n_ranges)
+    else:
+        return dataset
 
 def swap_list_dimensions(collection: TargetTextCollection, key: str
                                   ) -> TargetTextCollection:

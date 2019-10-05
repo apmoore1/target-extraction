@@ -17,6 +17,7 @@ from target_extraction.error_analysis import count_error_key_occurrence
 from target_extraction.error_analysis import n_shot_targets, n_shot_subsets
 from target_extraction.error_analysis import reduce_collection_by_key_occurrence
 from target_extraction.error_analysis import swap_list_dimensions
+from target_extraction.error_analysis import num_targets_subset
 
 
 def target_text_examples(target_sentiment_values: List[List[str]]
@@ -759,6 +760,44 @@ def test_n_shot_subsets(return_n_values: bool):
     assert 2 == count_error_key_occurrence(collection, 'low-shot')
     assert 2 == count_error_key_occurrence(collection, 'med-shot')
     assert 1 == count_error_key_occurrence(collection, 'high-shot')
+
+@pytest.mark.parametrize("return_n_values", (True, False))
+def test_num_targets_subset(return_n_values: bool):
+    # this testing function does not care about sentiment just the targets
+    data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
+    test_fp = Path(data_fp, 'test.json').resolve()
+    test_collection = TargetTextCollection.load_json(test_fp)
+
+    if return_n_values:
+        collection, n_values = num_targets_subset(test_collection, return_n_values)
+    else:
+        collection = num_targets_subset(test_collection, return_n_values)
+    one_values = get_error_counts(collection, '1-target')
+    correct_one = [[1], [1], [0,0], [1], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+
+    low_values = get_error_counts(collection, 'low-targets')
+    correct_low = [[0], [0], [1,1], [0], [0,0,0,0,0], [1,1,1,1], [0,0,0,0,0,0,0]]
+    assert correct_low == low_values
+
+    med_values = get_error_counts(collection, 'med-targets')
+    correct_med = [[0], [0], [0,0], [0], [1,1,1,1,1], [0,0,0,0], [0,0,0,0,0,0,0]]
+    assert correct_med == med_values
+
+    high_values = get_error_counts(collection, 'high-targets')
+    correct_high = [[0], [0], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [1,1,1,1,1,1,1]]
+    assert correct_high == high_values
+    
+    if return_n_values:
+        correct_n_values = [(1,1), (2,4), (5,5), (7,7)]
+        assert correct_n_values == n_values
+
+    assert 6 == count_error_key_occurrence(collection, 'low-targets')
+    assert 5 == count_error_key_occurrence(collection, 'med-targets')
+    assert 7 == count_error_key_occurrence(collection, 'high-targets')
+    assert 3 == count_error_key_occurrence(collection, '1-target')
+
+
 
 def example_collections_runs_first() -> TargetTextCollection:
     text = 'The laptop case was great and cover was rubbish'
