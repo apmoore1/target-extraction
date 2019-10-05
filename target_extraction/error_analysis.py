@@ -405,11 +405,11 @@ def distinct_sentiment(dataset: TargetTextCollection,
                             distinct sentiments. The value `n` is computed 
                             based on the number of unique distinct sentiments 
                             in the collection. Example if there are 2 distinct 
-                            sentiment in the collection {2, 4} and the current 
+                            sentiment in the collection {2, 3} and the current 
                             TargetText contain 2 targets with 2 distinct 
                             sentiments then it will contain the following keys 
                             and values: `distinct_sentiment_2`: [1,1] and 
-                            `distinct_sentiment_4`: [0,0].
+                            `distinct_sentiment_3`: [0,0].
     :returns: The same dataset but with each TargetText object containing a 
               `distinct_sentiment` or `distinct_sentiment_n` key(s) and 
               associated number of distinct sentiments that are in that 
@@ -660,7 +660,6 @@ def num_targets_subset(dataset: TargetTextCollection,
         start_n = 0
         end_n = 0
         total_count = 0
-        print(num_targets_count)
         for num_targets, count in num_targets_count:
             if start:
                 start = False
