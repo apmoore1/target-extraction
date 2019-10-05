@@ -475,13 +475,14 @@ def n_shot_subsets(test_dataset: TargetTextCollection,
               `zero-shot`, `low-shot`, `med-shot`, and `high-shot` key and 
               associated list of values.
     '''
-    def get_third_n(third_sample_count: int, n_relation_target: Dict[int, str],
+    def get_third_n(third_sample_count: int, 
+                    n_relation_target: List[Tuple[int, List[str]]],
                     target_sample_count: Dict[str, int]) -> Tuple[int, int]:
         start = True
         start_n = 0
         end_n = 0
         count = 0
-        for n_relation, targets in n_relation_target.items():
+        for n_relation, targets in n_relation_target:
             if start:
                 start = False
                 start_n = n_relation
@@ -529,7 +530,8 @@ def n_shot_subsets(test_dataset: TargetTextCollection,
 
     n_relation_test_target = sorted(n_relation_test_target.items(), key=lambda x: x[0])
     number_samples_left = sum([test_target_counts[target] for 
-                               target in n_relation_test_target.keys()])
+                               n_relation, targets in n_relation_test_target 
+                               for target in targets])
     third_samples = int(number_samples_left / 3)
     filter_dict = {0: (zero_filter, (0,0))}
     for i in range(1, 4):
@@ -553,7 +555,7 @@ def n_shot_subsets(test_dataset: TargetTextCollection,
                                              test_dict=filter_con)
         n_ranges.append(n_range)
     if return_n_values:
-        return (return_n_values, n_ranges)
+        return (test_dataset, n_ranges)
     else:
         return test_dataset
 

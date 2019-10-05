@@ -1,4 +1,5 @@
 from typing import List
+from pathlib import Path
 
 import pytest
 
@@ -13,7 +14,7 @@ from target_extraction.error_analysis import known_sentiment_known_target
 from target_extraction.error_analysis import unknown_sentiment_known_target
 from target_extraction.error_analysis import distinct_sentiment
 from target_extraction.error_analysis import count_error_key_occurrence
-from target_extraction.error_analysis import n_shot_targets
+from target_extraction.error_analysis import n_shot_targets, n_shot_subsets
 from target_extraction.error_analysis import reduce_collection_by_key_occurrence
 from target_extraction.error_analysis import swap_list_dimensions
 
@@ -720,63 +721,44 @@ def test_n_shot_targets(lower: bool, error_name: str):
     else:
         assert [[1,1,1,1]] == counts
 
-
-def test_n_shot_subsets():
+@pytest.mark.parametrize("return_n_values", (True, False))
+def test_n_shot_subsets(return_n_values: bool):
     # this testing function does not care about sentiment just the targets
     data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
     train_fp = Path(data_fp, 'train.json').resolve()
     test_fp = Path(data_fp, 'test.json').resolve()
-    pos, neg, neu = 'positive', 'negative', 'neutral'
-    train_sentiments = [[pos], [neg], [neg, pos], [neg, neu, neg, neg]]
-    target_text_obj = larger_target_text_examples(train_sentiments)
-    all_targets = TargetTextCollection([target_text_obj[-1]])
-    laptop_target = TargetTextCollection([target_text_obj[0]])
-    cover_target = TargetTextCollection([target_text_obj[1]])
-    laptop_2_cover_2 = TargetTextCollection([target_text_obj[0], target_text_obj[1], 
-                                             target_text_obj[2]])
-    # Case where zero shot target
-    counts = get_error_counts(n_shot_targets(laptop_target, cover_target, 
-                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
-    assert [[1]] == counts
-    assert [[0]] != counts
-    # Case zero shot target for one of the two targets
-    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
-                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
-    assert [[1],[0],[1,0]] == counts
-    # Case where one shot target
-    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
-                              lambda x: x==1, lower=lower, error_name=error_name), error_name)
-    assert [[0],[1],[0,1]] == counts
-    # Case where we do >0
-    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, cover_target, 
-                              lambda x: x>0, lower=lower, error_name=error_name), error_name)
-    assert [[0],[1],[0,1]] == counts
-    # Case where all are not equal to 0
-    counts = get_error_counts(n_shot_targets(laptop_2_cover_2, laptop_2_cover_2, 
-                              lambda x: x!=0, lower=lower, error_name=error_name), error_name)
-    assert [[1],[1],[1,1]] == counts
-    # Case where exists more than once in the train but only once in the test
-    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
-                              lambda x: x>1, lower=lower, error_name=error_name), error_name)
-    assert [[0,1,0,1]] == counts
-    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
-                              lambda x: x==2, lower=lower, error_name=error_name), error_name)
-    assert [[0,1,0,1]] == counts
-    # Case of the rest being zero
-    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
-                              lambda x: x==0, lower=lower, error_name=error_name), error_name)
-    assert [[1,0,1,0]] == counts
+    train_collection = TargetTextCollection.load_json(train_fp)
+    test_collection = TargetTextCollection.load_json(test_fp)
 
-    # Test the case for lower
-    target_text_obj[-1]._storage['targets'] = ['The', 'Laptop case', 'great', 'Cover']
-    target_text_obj[-1]._storage['text'] = 'The Laptop case was great and Cover was rubbish'
-    all_targets = TargetTextCollection([target_text_obj[-1]])
-    counts = get_error_counts(n_shot_targets(all_targets, laptop_2_cover_2, 
-                                lambda x: x==0, lower=lower, error_name=error_name), error_name)
-    if lower:
-        assert [[1,0,1,0]] == counts
+    if return_n_values:
+        collection, n_values = n_shot_subsets(test_collection, train_collection, 
+                                            True, return_n_values)
     else:
-        assert [[1,1,1,1]] == counts
+        collection = n_shot_subsets(test_collection, train_collection, 
+                                    True, return_n_values)
+    zero_values = get_error_counts(collection, 'zero-shot')
+    correct_zero = [[0], [0], [1,1], [0], [1,1,1,1,1], [1,1,1,1], [0,1,1,1,0,1,1]]
+    assert correct_zero == zero_values
+
+    low_values = get_error_counts(collection, 'low-shot')
+    correct_low = [[1], [1], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+    assert correct_low == low_values
+
+    med_values = get_error_counts(collection, 'med-shot')
+    correct_med = [[0], [0], [0,0], [1], [0,0,0,0,0], [0,0,0,0], [1,0,0,0,0,0,0]]
+    assert correct_med == med_values
+
+    high_values = get_error_counts(collection, 'high-shot')
+    correct_high = [[0], [0], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,1,0,0]]
+    assert correct_high == high_values
+
+    if return_n_values:
+        correct_n_values = [(0,0), (1,1), (2,2), (3,3)]
+        assert correct_n_values == n_values
+
+    assert 2 == count_error_key_occurrence(collection, 'low-shot')
+    assert 2 == count_error_key_occurrence(collection, 'med-shot')
+    assert 1 == count_error_key_occurrence(collection, 'high-shot')
 
 def example_collections_runs_first() -> TargetTextCollection:
     text = 'The laptop case was great and cover was rubbish'
