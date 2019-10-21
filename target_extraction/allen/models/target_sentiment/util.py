@@ -45,13 +45,14 @@ def elmo_input_reshape(inputs: Dict[str, torch.Tensor], batch_size: int,
               values into shape (Batch Size * Number Targets, Sequence Length)
               so that it can be processed by the ELMO embedder. 
     '''
-    if 'elmo' not in inputs:
+    if 'transformer_tokens' in inputs or 'elmo' in inputs:
+        temp_inputs: Dict[str, torch.Tensor] = {}
+        for key, value in inputs.items():
+            temp_value = value.view(batch_size_num_targets, *value.shape[2:])
+            temp_inputs[key] = temp_value
+        return temp_inputs
+    else:
         return inputs
-    temp_inputs: Dict[str, torch.Tensor] = {}
-    for key, value in inputs.items():
-        temp_value = value.view(batch_size_num_targets, *value.shape[2:])
-        temp_inputs[key] = temp_value
-    return temp_inputs
 
 def elmo_input_reverse(embedded_input: torch.Tensor, 
                        inputs: Dict[str, torch.Tensor], batch_size: int,
@@ -70,7 +71,7 @@ def elmo_input_reverse(embedded_input: torch.Tensor,
               `embedded_input` into the original shape of 
               (Batch Size, Number Targets, Sequence Length, embedding dim)
     '''
-    if 'elmo' not in inputs:
-        return embedded_input
-    return embedded_input.view(batch_size, number_targets,
+    if 'elmo' in inputs or 'transformer_tokens' in inputs:
+        return embedded_input.view(batch_size, number_targets,
                                *embedded_input.shape[1:])
+    return embedded_input
