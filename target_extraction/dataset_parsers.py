@@ -11,7 +11,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import ParseError
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Optional
 import tempfile
 import zipfile
 import tarfile
@@ -20,6 +20,8 @@ import requests
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.data_types_util import Span
+
+CACHE_DIRECTORY = Path(Path.home(), '.bella_tdsa')
 
 def _semeval_extract_data(sentence_tree: Element, conflict: bool
                           ) -> TargetTextCollection:
@@ -196,78 +198,92 @@ def semeval_2016(data_fp: Path, conflict: bool) -> TargetTextCollection:
         all_target_texts.extend(review_target_texts)
     return TargetTextCollection(all_target_texts)
 
-def download_election_folder(data_fp: Path) -> None:
+def download_election_folder(cache_dir: Optional[Path] = None) -> Path:
     '''
     Downloads the data for the Election Twitter dataset by 
     `Wang et al, 2017 <https://www.aclweb.org/anthology/E17-1046>` that can be found 
     `here <https://figshare.com/articles/EACL_2017_-_Multi-target_UK_election_Twitter_sentiment_corpus/4479563/1>`_
 
-    This is then further used in the following function 
+    This is then further used in the following functions
     :func:`target_extraction.dataset_parsers.wang_2017_election_twitter_train`
     and 
     :func:`target_extraction.dataset_parsers.wang_2017_election_twitter_test`
     as a way to get the data.
 
-    :param data_fp: File path to the location to store the data. Has to be 
-                    an empty directory. If the directory exists it has to 
-                    contain the correct data or else FileExistsError will be 
-                    raised.
-    :returns: Nothing as it just downloads the data
-    :raises FileExistsError: If the directory you are trying to save the data 
-                             to already exists and does not contain the 
-                             correct data.
+    :param cache_dir: The directory where all of the data is stored for 
+                      this code base. If None then the cache directory is
+                      `dataset_parsers.CACHE_DIRECTORY`
+    :returns: The Path to the `Wang 2017 Election Twitter` folder within the 
+              `cache_dir`.
+    :raises FileNotFoundError: If not all of files where downloaded the first 
+                               time. Will require the user to delete either 
+                               the cache directory or the 
+                               `Wang 2017 Election Twitter` folder within the 
+                               cache directory.
     '''
     def untar_folder(tar_file: Path, folder_to_extract_to: Path) -> None:
         with tarfile.open(tar_file) as _tar_file:
             _tar_file.extractall(folder_to_extract_to)
+    if cache_dir is None:
+        cache_dir = CACHE_DIRECTORY
 
-    annotation_fp = Path(data_fp, 'annotations')
-    tweets_fp = Path(data_fp, 'tweets')
-    test_id_fp = Path(data_fp, 'test_id.txt')
-    train_id_fp = Path(data_fp, 'train_id.txt')
-    if data_fp.exists():
+    dataset_folder_fp = Path(cache_dir, 'Wang 2017 Election Twitter')
+    annotation_fp = Path(dataset_folder_fp, 'annotations')
+    tweets_fp = Path(dataset_folder_fp, 'tweets')
+    test_id_fp = Path(dataset_folder_fp, 'test_id.txt')
+    train_id_fp = Path(dataset_folder_fp, 'train_id.txt')
+    if dataset_folder_fp.exists():
         # The following Paths must exist in the folder for it to be the correct
         # downloaded directory else raises FileExistsError
         path_to_exist = [annotation_fp, tweets_fp, test_id_fp, train_id_fp]
         for _path in path_to_exist:
             if not _path.exists():
-                raise FileExistsError(f'The folder exists and does not contain {_path}')
+                file_not_err = (f'The following file is not found {_path} '
+                                'and should exist as currently in the '
+                                'corresponding data directory to resolve this'
+                                ' problem please either delete this whole '
+                                f'directory {dataset_folder_fp} or use a '
+                                'different cache directory other '
+                                f'than {cache_dir}')        
+                raise FileNotFoundError(file_not_err)
         # As the folder exists and contains all of the data return as we should 
         # not download something for the sake of downloading it
-        return None
-
-    download_url = 'https://ndownloader.figshare.com/articles/4479563/versions/1'
+        return dataset_folder_fp
+    
+    dataset_folder_fp.mkdir(parents=True, exist_ok=True)
+    download_url = 'http://ndownloader.figshare.com/articles/4479563/versions/1'
     response = requests.get(download_url, stream=True)
     with tempfile.NamedTemporaryFile('wb+') as download_file:
         for chunk in response.iter_content(chunk_size=128):
             download_file.write(chunk)
         with zipfile.ZipFile(download_file) as download_zip:
-            download_zip.extractall(data_fp)
+            download_zip.extractall(dataset_folder_fp)
     # Need to un tar annotations and tweet folders
-    annotation_tar_file = Path(data_fp, 'annotations.tar.gz')
-    tweet_tar_file = Path(data_fp, 'tweets.tar.gz')
+    annotation_tar_file = Path(dataset_folder_fp, 'annotations.tar.gz')
+    tweet_tar_file = Path(dataset_folder_fp, 'tweets.tar.gz')
     untar_folder(annotation_tar_file, annotation_fp)
     untar_folder(tweet_tar_file, tweets_fp)
+    return dataset_folder_fp
     
-def _wang_2017_election_parser(data_fp: Path, train: bool
+def _wang_2017_election_parser(train: bool, cache_dir: Optional[Path] = None
                                ) -> TargetTextCollection:
     '''
     Parser for the Election Twitter dataset by 
     `Wang et al, 2017 <https://www.aclweb.org/anthology/E17-1046>` that can be found 
     `here <https://figshare.com/articles/EACL_2017_-_Multi-target_UK_election_Twitter_sentiment_corpus/4479563/1>`_
     
-    :param data_fp: Folder to download the dataset too, this will be the same 
-                    folder for this function as it is for the test function
-                    :func:`target_extraction.dataset_parsers.wang_2017_election_twitter_test`.
-                    Unless the data is already downloaded to this folder, the 
-                    folder is expected to nmot exist.
     :param train: Whether to return the Train data. If False returns the 
                   test data.
+    :param cache_dir: The directory where all of the data is stored for 
+                      this code base. If None then the cache directory is
+                      `dataset_parsers.CACHE_DIRECTORY`
     :returns: Either the training or test dataset of the Election Twitter 
               dataset.
-    :raises FileExistsError: If the directory given exists or it exists but 
-                             the directory was not used previously to store this 
-                             data.
+    :raises FileNotFoundError: If not all of files where downloaded the first 
+                               time. Will require the user to delete either 
+                               the cache directory or the 
+                               `Wang 2017 Election Twitter` folder within the 
+                               cache directory.
     '''
     def get_tweet_data(tweet_folder: Path) -> Dict[str, Dict[str, Any]]:
         '''
@@ -360,7 +376,7 @@ def _wang_2017_election_parser(data_fp: Path, train: bool
                 targets.append(parse_tweet(tweet_data, anno_data, tweet_id))
         return TargetTextCollection(targets)
 
-    download_election_folder(data_fp)
+    data_fp = download_election_folder(cache_dir)
     
     tweets_folder = Path(data_fp, 'tweets', 'tweets')
     annotations_folder = Path(data_fp, 'annotations', 'annotations')
@@ -375,36 +391,44 @@ def _wang_2017_election_parser(data_fp: Path, train: bool
     
 
 
-def wang_2017_election_twitter_train(data_fp: Path) -> TargetTextCollection:
+def wang_2017_election_twitter_train(cache_dir: Optional[Path] = None
+                                     ) -> TargetTextCollection:
     '''
-    :param data_fp: Folder to download the dataset too, this will be the same 
-                    folder for this function as it is for the test function
-                    :func:`target_extraction.dataset_parsers.wang_2017_election_twitter_test`.
-                    Unless the data is already downloaded to this folder, the 
-                    folder is expected to nmot exist.
+    The data for this function when downloaded is stored within: 
+    `Path(cache_dir, 'Wang 2017 Election Twitter')`
+    
+    :param cache_dir: The directory where all of the data is stored for 
+                      this code base. If None then the cache directory is
+                      `dataset_parsers.CACHE_DIRECTORY`
     :returns: The Training dataset of the Election Twitter dataset by 
               `Wang et al, 2017 <https://www.aclweb.org/anthology/E17-1046>` 
               that can be found 
               `here <https://figshare.com/articles/EACL_2017_-_Multi-target_UK_election_Twitter_sentiment_corpus/4479563/1>`_
-    :raises FileExistsError: If the directory given exists or it exists but 
-                             the directory was not used previously to store this 
-                             data.
+    :raises FileNotFoundError: If not all of files where downloaded the first 
+                               time. Will require the user to delete either 
+                               the cache directory or the 
+                               `Wang 2017 Election Twitter` folder within the 
+                               cache directory.
     '''
-    return _wang_2017_election_parser(data_fp, train=True)
+    return _wang_2017_election_parser(train=True, cache_dir=cache_dir)
 
-def wang_2017_election_twitter_test(data_fp: Path) -> TargetTextCollection:
+def wang_2017_election_twitter_test(cache_dir: Optional[Path] = None
+                                    ) -> TargetTextCollection:
     '''
-    :param data_fp: Folder to download the dataset too, this will be the same 
-                    folder for this function as it is for the test function
-                    :func:`target_extraction.dataset_parsers.wang_2017_election_twitter_test`.
-                    Unless the data is already downloaded to this folder, the 
-                    folder is expected to nmot exist.
+    The data for this function when downloaded is stored within: 
+    `Path(cache_dir, 'Wang 2017 Election Twitter')`
+
+    :param cache_dir: The directory where all of the data is stored for 
+                      this code base. If None then the cache directory is
+                      `dataset_parsers.CACHE_DIRECTORY`
     :returns: The Test dataset of the Election Twitter dataset by 
               `Wang et al, 2017 <https://www.aclweb.org/anthology/E17-1046>` 
               that can be found 
               `here <https://figshare.com/articles/EACL_2017_-_Multi-target_UK_election_Twitter_sentiment_corpus/4479563/1>`_
-    :raises FileExistsError: If the directory given exists or it exists but 
-                             the directory was not used previously to store this 
-                             data.
+    :raises FileNotFoundError: If not all of files where downloaded the first 
+                               time. Will require the user to delete either 
+                               the cache directory or the 
+                               `Wang 2017 Election Twitter` folder within the 
+                               cache directory.
     '''
-    return _wang_2017_election_parser(data_fp, train=False)
+    return _wang_2017_election_parser(train=False, cache_dir=cache_dir)

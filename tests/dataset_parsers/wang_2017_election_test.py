@@ -26,7 +26,7 @@ def test_download_election_folder():
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_path = Path(temp_dir, 'data dir')
         download_election_folder(temp_dir_path)
-        test_files_and_folders_downloaded(temp_dir_path)
+        test_files_and_folders_downloaded(Path(temp_dir_path, 'Wang 2017 Election Twitter'))
         
         
     # Test the case where it has already been downloaded
@@ -36,21 +36,24 @@ def test_download_election_folder():
         temp_dir_path_1 = Path(temp_dir, 'first')
         download_election_folder(temp_dir_path_1)
         first_download_time = time() - first_download_time
-        test_files_and_folders_downloaded(temp_dir_path_1)
+        test_files_and_folders_downloaded(Path(temp_dir_path_1, 'Wang 2017 Election Twitter'))
         
 
         second_time = time()
         download_election_folder(temp_dir_path_1)
         second_time = time() - second_time
-        test_files_and_folders_downloaded(temp_dir_path_1)
+        test_files_and_folders_downloaded(Path(temp_dir_path_1, 'Wang 2017 Election Twitter'))
 
         assert second_time < first_download_time
         assert second_time < 0.005
         assert first_download_time > 0.1
     
-    # Test the case that the folder exists raises an error
+    # Test the case where only a certain number of the files have been downloaded.
     with tempfile.TemporaryDirectory() as temp_dir:
-        with pytest.raises(FileExistsError):
+        with pytest.raises(FileNotFoundError):
+            temp_internal_dir = Path(temp_dir, 'Wang 2017 Election Twitter')
+            temp_internal_dir.mkdir(parents=True, exist_ok=True)
+            temp_internal_dir.touch('test_id.txt')
             download_election_folder(Path(temp_dir))
 
 def test_train_and_test_dataset():
