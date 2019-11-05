@@ -509,5 +509,77 @@ def multi_aspect_multi_sentiment_atsa(dataset: str,
         target_text_collection.add(target_text)
     return target_text_collection
 
+def multi_aspect_multi_sentiment_acsa(dataset: str, 
+                                      cache_dir: Optional[Path] = None
+                                      ) -> TargetTextCollection:
+    '''
+    The data for this function when downloaded is stored within: 
+    `Path(cache_dir, 'Jiang 2019 MAMS ACSA')
+
+    :NOTE: That as each sentence/`TargetText` object has to have 
+           a `text_id`, as no ids exist in this dataset the ids are created 
+           based on when the sentence occurs in the dataset e.g. the first 
+           sentence/`TargetText` object id is '0'
+
+    For reference this dataset has 8 different aspect categories.
+
+    :param dataset: Either `train`, `val` or `test`, determines the dataset that 
+                    is returned.
+    :param cache_dir: The directory where all of the data is stored for 
+                      this code base. If None then the cache directory is
+                      `dataset_parsers.CACHE_DIRECTORY`
+    :returns: The `train`, `val`, or `test` dataset from the 
+              Multi-Aspect-Multi-Sentiment dataset (MAMS) ACSA version. 
+              Dataset came from the `A Challenge Dataset and Effective Models  
+              for Aspect-Based Sentiment Analysis, EMNLP 2019 
+              <https://www.aclweb.org/anthology/D19-1654.pdf>`_
+    :raises ValueError: If the `dataset` value is not `train`, `val`, or `test`
+    '''
+    accepted_datasets = {'train', 'val', 'test'}
+    if dataset not in accepted_datasets:
+        raise ValueError('dataset has to be one of these values '
+                         f'{accepted_datasets}, not {dataset}')
+    if cache_dir is None:
+        cache_dir = CACHE_DIRECTORY
+    data_folder = Path(cache_dir, 'Jiang 2019 MAMS ACSA')
+    data_folder.mkdir(parents=True, exist_ok=True)
+
+    dataset_url = {'train': 'https://github.com/siat-nlp/MAMS-for-ABSA/raw/master/data/MAMS-ACSA/raw/train.xml',
+                   'val': 'https://github.com/siat-nlp/MAMS-for-ABSA/raw/master/data/MAMS-ACSA/raw/val.xml',
+                   'test': 'https://github.com/siat-nlp/MAMS-for-ABSA/raw/master/data/MAMS-ACSA/raw/test.xml'}
+    url = dataset_url[dataset]
+    data_fp = Path(cached_path(url, cache_dir=data_folder))
+
+    # Parsing the data
+    category_text_collection = TargetTextCollection()
+    tree = ET.parse(data_fp)
+    sentences = tree.getroot()
+    for sentence_id, sentence in enumerate(sentences):
+        categories: List[str] = []
+        category_sentiments: List[Union[str, int]] = []
+
+        for data in sentence:
+            if data.tag == 'text':
+                text = data.text
+                text = text.replace(u'\xa0', u' ')
+            elif data.tag == 'aspectCategories':
+                for category in data:
+                    category_sentiment = category.attrib['polarity']
+                    category_sentiments.append(category_sentiment)
+                    categories.append(category.attrib['category'].replace(u'\xa0', u' '))
+            else:
+                raise ValueError(f'This tag {data.tag} should not occur '
+                                 'within a sentence tag')
+        category_text_kwargs = {'targets': None, 'spans': None, 
+                                'text_id': str(sentence_id),
+                                'target_sentiments': None,
+                                'categories': categories, 'text': text, 
+                                'category_sentiments': category_sentiments}
+        for key in category_text_kwargs:
+            if not category_text_kwargs[key]:
+                category_text_kwargs[key] = None
+        category_text = TargetText(**category_text_kwargs)
+        category_text_collection.add(category_text)
+    return category_text_collection
 
 
