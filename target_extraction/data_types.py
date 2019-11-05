@@ -1116,12 +1116,15 @@ class TargetTextCollection(MutableMapping):
         that all of the instances follow the specified rules that TargetText 
         instances should follow.
     13. number_targets -- Returns the total number of targets.
-    14. target_sentiments -- A dictionary where the keys are target texts and 
+    14. number_categories -- Returns the total number of categories.
+    15. category_count -- Returns a dictionary of categories as keys and 
+        values as the number of times the category occurs.
+    16. target_sentiments -- A dictionary where the keys are target texts and 
         the values are a List of sentiment values that have been associated to 
         that target.
-    15. dict_iter -- Returns an interator of all of the TargetText objects 
+    17. dict_iter -- Returns an interator of all of the TargetText objects 
         within the collection as dictionaries.
-    16. unique_distinct_sentiments -- A set of the distinct sentiments within 
+    18. unique_distinct_sentiments -- A set of the distinct sentiments within 
         the collection. The length of the set represents the number of distinct 
         sentiments within the collection.
     
@@ -1521,6 +1524,30 @@ class TargetTextCollection(MutableMapping):
                         continue
                     target_count += 1
         return target_count
+
+    def number_categories(self) -> int:
+        '''
+        :returns: The total number of categories in the collection
+        :raises ValueError: If one of the category values in the list is of 
+                            value None
+        '''
+        return sum(self.category_count().values())
+
+    def category_count(self) -> Dict[str, int]:
+        '''
+        :returns: A dictionary of categories as keys and values as the number 
+                  of times the category occurs in this TargetTextCollection
+        :raises ValueError: If any category has the value of None.
+        '''
+        categories_count = Counter()
+        for target_dict in self.values():
+            if target_dict['categories']:
+                for category in target_dict['categories']:
+                    if category is None:
+                        raise ValueError('One of the category value is None, '
+                                         f'within {target_dict}')
+                    categories_count.update([category])
+        return dict(categories_count)
 
     def one_sample_per_span(self, remove_empty: bool = False
                             ) -> 'TargetTextCollection':

@@ -710,6 +710,50 @@ class TestTargetTextCollection:
         else:
             assert test_collection.number_targets(incl_none_targets) == 4
 
+    def test_category_count_and_numbers(self):
+        # Start with an empty collection
+        test_collection = TargetTextCollection()
+        nothing = test_collection.number_categories()
+        assert 0 == nothing
+        assert {} == test_collection.category_count()
+
+        # Collection that contains TargetText instances but with no categories
+        test_collection.add(TargetText(text='some text', text_id='1'))
+        assert len(test_collection) == 1
+        nothing = test_collection.number_categories()
+        assert 0 == nothing
+        assert {} == test_collection.category_count()
+
+        # Collection now contains at least one categories
+        test_collection.add(TargetText(text='another item today', text_id='2', 
+                                       categories=['ITEM']))
+        assert len(test_collection) == 2
+        assert 1 == test_collection.number_categories()
+        correct_categories = {'ITEM': 1}
+        for category, count in test_collection.category_count().items():
+            assert correct_categories[category] == count
+        assert len(correct_categories) == len(test_collection.category_count())
+
+        # Collection now contains 5 categories but 3 are the same
+        test_collection.add(TargetText(text='another item today', text_id='3', 
+                                       categories=['ITEM', 'ITEM']))
+        test_collection.add(TargetText(text='item today', text_id='4',
+                                       categories=['SOMETHING', 'ANOTHER']))
+        assert len(test_collection) == 4
+        assert 5 == test_collection.number_categories()
+        correct_categories = {'ITEM': 3, 'SOMETHING': 1, 'ANOTHER': 1}
+        for category, count in test_collection.category_count().items():
+            assert correct_categories[category] == count
+        assert len(correct_categories) == len(test_collection.category_count())
+
+        # Test the error case that the a category value is None
+        test_collection.add(TargetText(text='item today', text_id='6',
+                                       categories=[None]))
+        with pytest.raises(ValueError):
+            test_collection.number_categories()
+        with pytest.raises(ValueError):
+            test_collection.category_count()
+
     @pytest.mark.parametrize("remove_empty", (False, True))
     def test_one_sample_per_span(self, remove_empty: bool):
         # Case where nothing should change with respect to the number of spans 
