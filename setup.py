@@ -15,8 +15,7 @@ setup(name='target_extraction',
       author_email='andrew.p.moore94@gmail.com',
       license='Apache License 2.0',
       install_requires=[
-          'torch>=0.4.1,<1.2.0',
-          'allennlp>=0.8.3,<=0.8.5',
+          'allennlp>=0.9.0',
           'spacy>=2.1,<2.2',
           'stanfordnlp==0.2.0',
           'twokenize>=1.0.0'
