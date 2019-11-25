@@ -4,7 +4,7 @@ subsamples of the original(s) that will allow the user to analysis the
 data with respect to some certain property.
 '''
 import copy
-from collections import defaultdict
+from collections import defaultdict, Counter
 from typing import List, Callable, Dict, Union, Optional, Any, Tuple
 
 from target_extraction.data_types import TargetTextCollection, TargetText
@@ -185,7 +185,7 @@ def same_multi_sentiment(test_dataset: TargetTextCollection,
     :returns: The test dataset but with each TargetText object containing a 
               `same_multi_sentiment` key and associated list of values.
     '''
-    def error_func(target: TargetText, 
+    def error_func(target: str, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
                    target_sentiment: Union[str, int], 
@@ -226,7 +226,7 @@ def similar_sentiment(test_dataset: TargetTextCollection,
     :returns: The test dataset but with each TargetText object containing a 
               `similar_sentiment` key and associated list of values.
     '''
-    def error_func(target: TargetText, 
+    def error_func(target: str, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
                    target_sentiment: Union[str, int], 
@@ -267,7 +267,7 @@ def different_sentiment(test_dataset: TargetTextCollection,
     :returns: The test dataset but with each TargetText object containing a 
               `different_sentiment` key and associated list of values.
     '''
-    def error_func(target: TargetText, 
+    def error_func(target: str, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
                    target_sentiment: Union[str, int], 
@@ -304,10 +304,11 @@ def unknown_targets(test_dataset: TargetTextCollection,
     :returns: The test dataset but with each TargetText object containing a 
               `unknown_targets` key and associated list of values.
     '''
-    def error_func(target: TargetText, 
+    def error_func(target: str, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int], target_data: TargetText) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             return False
@@ -339,7 +340,7 @@ def known_sentiment_known_target(test_dataset: TargetTextCollection,
     :returns: The test dataset but with each TargetText object containing a 
               `known_sentiment_known_target` key and associated list of values.
     '''
-    def error_func(target: TargetText, 
+    def error_func(target: str, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
                    target_sentiment: Union[str, int], 
@@ -377,10 +378,11 @@ def unknown_sentiment_known_target(test_dataset: TargetTextCollection,
     :returns: The test dataset but with each TargetText object containing a 
               `unknown_sentiment_known_target` key and associated list of values.
     '''
-    def error_func(target: TargetText, 
+    def error_func(target: str, 
                    train_target_sentiments: Dict[str, List[str]],
                    test_target_sentiments: Dict[str, List[str]],
-                   target_sentiment: Union[str, int], target_data: TargetText) -> bool:
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
         if (target in train_target_sentiments and 
             target in test_target_sentiments):
             train_sentiments = train_target_sentiments[target]
@@ -502,9 +504,9 @@ def n_shot_subsets(test_dataset: TargetTextCollection,
             raise ValueError('The start nor end can be zero')
         return (start_n, end_n) 
 
-    def error_func(target: TargetText, 
-                   ignore: Dict[str, int],
-                   filtered_test: Dict[str, int],
+    def error_func(target: str, 
+                   train_target_sentiments: Dict[str, List[str]],
+                   filtered_test: Dict[str, List[str]],
                    target_sentiment: Union[str, int], 
                    target_data: TargetText) -> bool:
         if target in filtered_test:
@@ -597,9 +599,9 @@ def n_shot_targets(test_dataset: TargetTextCollection,
     :returns: The test dataset but with each TargetText object containing a 
               `unknown_sentiment_known_target` key and associated list of values.
     '''
-    def error_func(target: TargetText, 
-                   ignore: Dict[str, int],
-                   filtered_test: Dict[str, int],
+    def error_func(target: str, 
+                   train_target_sentiments: Dict[str, List[str]],
+                   filtered_test: Dict[str, List[str]],
                    target_sentiment: Union[str, int], 
                    target_data: TargetText) -> bool:
         if target in filtered_test:
@@ -673,9 +675,9 @@ def num_targets_subset(dataset: TargetTextCollection,
             raise ValueError('The start nor end can be zero')
         return (start_n, end_n) 
 
-    def error_func(target: TargetText, 
-                   ignore: Dict[str, int],
-                   filtered_test: Dict[int, int],
+    def error_func(target: str, 
+                   train_target_sentiments: Dict[str, List[str]],
+                   filtered_test: Dict[str, List[str]],
                    target_sentiment: Union[str, int], 
                    target_data: TargetText) -> bool:
         if len(target_data['targets']) in filtered_test:
@@ -724,6 +726,160 @@ def num_targets_subset(dataset: TargetTextCollection,
         return (dataset, n_ranges)
     else:
         return dataset
+
+def tssr_target_value(target_data: TargetText, 
+                      current_target_sentiment: Union[str, int]) -> float:
+    '''
+    Need to insert the TSSR value equation below:
+    `
+    `
+
+    :param target_data: The TargetText object that contains the target 
+                        associated to the `current_target_sentiment`
+    :param current_target_sentiment: The sentiment value associated to the 
+                                        target you want the TSSR value for.
+    :returns: The TSSR value for a target within `target_data` with 
+                `current_target_sentiment` sentiment value.
+    '''
+    number_targets = len(target_data['targets'])
+    sentiment_values = [sentiment for sentiment in 
+                        target_data['target_sentiments']]
+    sentiment_counts = Counter(sentiment_values)
+    current_target_senti_count = sentiment_counts[current_target_sentiment]
+    tssr_value = current_target_senti_count / number_targets
+    tssr_value = round(tssr_value, 2)
+    return tssr_value
+
+def tssr_subset(dataset: TargetTextCollection, 
+                return_tssr_boundaries: bool = False
+                ) -> Union[TargetTextCollection,
+                           Tuple[TargetTextCollection, List[Tuple[float, float]]]]:
+    '''
+    Given a dataset it will add either `1-TSSR`, `high-TSSR` or `low-TSSR` 
+    error keys to each target text object. Each value associated to the error 
+    keys are a list of 1's or 0's the length of the number of samples where 1 
+    denotes the error key is True and 0 otherwise. For more information on how 
+    TSSR is calculated see 
+    :py:func`target_extraction.error_analysis.tssr_target_value`. Once you know 
+    what TSSR is `1-TSSR` denotes are all targets with a TSSR value of 1, 
+    `high-TSSR` are targets that are in the top 50% of the TSSR values for this 
+    dataset excluding the `1-TSSR` samples, `low-TSSR` are the bottom 50% of the 
+    TSSR values.
+
+    :param dataset: The dataset to add the continuos TSSR error keys too.
+    :returns: The same dataset but with each TargetText object containing the 
+              continuos TSSR error keys and associated list of 1's or 0's 
+              denoting if the error key exists or not. The dictionary contains 
+              keys which are the TSSR values detected in the dataset and the 
+              values are the number of targets that contain that TSSR value.
+    ''' 
+    def error_func(target: str, 
+                   train_target_sentiments: Dict[str, List[str]],
+                   filtered_values: Dict[float, int],
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
+        tssr_value = tssr_target_value(target_data, target_sentiment)
+        if tssr_value in filtered_values:
+            return True
+        return False
+
+    # Possible values for the given dataset
+    tssr_values_count = Counter()
+    for target_data in dataset.values():
+        tssr_values = []
+        for target_sentiment in target_data['target_sentiments']:
+            tssr_values.append(tssr_target_value(target_data, target_sentiment))
+        tssr_values_count.update(tssr_values)
+    # Split the TSSR values into low and high after removing the one values
+    tssr_error_name_condition = {}
+    tssr_error_name_condition['1-TSSR'] = {1: 1}
+    del tssr_values_count[1]
+    tssr_values_count = sorted(tssr_values_count.items(), key=lambda x: x[0], 
+                               reverse=True)
+    total_samples = sum([count for _, count in tssr_values_count])
+    half_samples = int(total_samples / 2)
+    high_count = 0
+    high_dict = {}
+    temp_tssr_values_count = dict(copy.deepcopy(tssr_values_count))
+    for tssr_value, count in tssr_values_count:
+        high_count += count
+        if high_count > half_samples:
+            break
+        high_dict[tssr_value] = 1
+        del temp_tssr_values_count[tssr_value]
+    tssr_error_name_condition['high-TSSR'] = high_dict
+    tssr_values_count = sorted(temp_tssr_values_count.items(), key=lambda x: x[0], 
+                               reverse=True)
+    low_dict = {tssr_value: 1 for tssr_value, _ in tssr_values_count}
+    tssr_error_name_condition['low-TSSR'] = low_dict
+    
+    # Raise ValueError if not enough samples in any of the subsets.
+    for values in tssr_error_name_condition.values():
+        if len(values) == 0:
+            enough_sample_err = ('Not enough samples in the '
+                                 f'TargetTextCollection {dataset} to generate '
+                                 'low, high or 1 TSSR subsets. The subsets '
+                                 'within TSSR that were generated '
+                                 f'{tssr_error_name_condition}')
+            raise ValueError(enough_sample_err)
+    
+    for error_name, tssr_values in tssr_error_name_condition.items():
+        dataset = _pre_post_subsampling(dataset, dataset, True, 
+                                        error_name, error_func, 
+                                        train_dict={}, test_dict=tssr_values)
+    
+    if return_tssr_boundaries:
+        high_tssr_values = sorted(high_dict.items(), key=lambda x: x[0], 
+                                  reverse=True)
+        high_values = (high_tssr_values[0][0], high_tssr_values[-1][0])
+        low_tssr_values = sorted(low_dict.items(), key=lambda x: x[0], 
+                                 reverse=True)
+        low_values = (low_tssr_values[0][0], low_tssr_values[-1][0])
+        return dataset, [(1.0, 1.0), high_values, low_values]
+    return dataset
+
+def tssr_raw(dataset: TargetTextCollection
+             ) -> Tuple[TargetTextCollection, Dict[str, int]]:
+    '''
+    Given a dataset it will add a continuos number of error keys to each target text 
+    object, where each key represents the TSSR value that the associated target 
+    is within. Each value associated to the error keys are a list of 1's or 0's 
+    the length of the number of samples where 1 denotes the error key is True 
+    and 0 otherwise. See 
+    :py:func`target_extraction.error_analysis.tssr_target_value` for an 
+    explanation of how the TSSR value is calculated.
+
+    :param dataset: The dataset to add the continuos TSSR error keys too.
+    :returns: The same dataset but with each TargetText object containing the 
+              continuos TSSR error keys and associated list of 1's or 0's 
+              denoting if the error key exists or not. The dictionary contains 
+              keys which are the TSSR values detected in the dataset and the 
+              values are the number of targets that contain that TSSR value.
+    ''' 
+    def error_func(target: str, 
+                   train_target_sentiments: Dict[str, List[str]],
+                   filtered_values: Dict[float, int],
+                   target_sentiment: Union[str, int], 
+                   target_data: TargetText) -> bool:
+        tssr_value = tssr_target_value(target_data, target_sentiment)
+        if tssr_value in filtered_values:
+            return True
+        return False
+
+    # Possible values for the given dataset
+    tssr_values_count = Counter()
+    for target_data in dataset.values():
+        tssr_values = []
+        for target_sentiment in target_data['target_sentiments']:
+            tssr_values.append(tssr_target_value(target_data, target_sentiment))
+        tssr_values_count.update(tssr_values)
+    for tssr_value in tssr_values_count.keys():
+        dataset = _pre_post_subsampling(dataset, dataset, True, 
+                                        str(tssr_value), error_func, 
+                                        train_dict={}, test_dict={tssr_value: 1})
+    tssr_values_count = {str(tssr_value): count 
+                         for tssr_value, count in tssr_values_count.items()}
+    return dataset, tssr_values_count
 
 def swap_list_dimensions(collection: TargetTextCollection, key: str
                                   ) -> TargetTextCollection:

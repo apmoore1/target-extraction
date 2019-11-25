@@ -18,6 +18,8 @@ from target_extraction.error_analysis import n_shot_targets, n_shot_subsets
 from target_extraction.error_analysis import reduce_collection_by_key_occurrence
 from target_extraction.error_analysis import swap_list_dimensions
 from target_extraction.error_analysis import num_targets_subset
+from target_extraction.error_analysis import tssr_raw
+from target_extraction.error_analysis import tssr_subset
 
 
 def target_text_examples(target_sentiment_values: List[List[str]]
@@ -797,7 +799,88 @@ def test_num_targets_subset(return_n_values: bool):
     assert 7 == count_error_key_occurrence(collection, 'high-targets')
     assert 3 == count_error_key_occurrence(collection, '1-target')
 
+def test_tssr_raw():
+    # First see if it works when there are no targets
+    test_collection = TargetTextCollection()
+    collection, tssr_values = tssr_raw(test_collection)
+    assert {} == tssr_values
+    # Test on a collection with various amounts of targets
+    data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
+    test_fp = Path(data_fp, 'test.json').resolve()
+    test_collection = TargetTextCollection.load_json(test_fp)
 
+    collection, tssr_values = tssr_raw(test_collection)
+    # Test that the TSSR values are correct
+    true_tssr_values = {1.0: 5, 0.6: 3, 0.2: 2, 0.75: 3, 0.25: 1,
+                        0.57: 4, 0.14: 1, 0.29: 2}
+    for true_tssr_value, num in true_tssr_values.items():
+        assert num == tssr_values[str(true_tssr_value)]
+    assert len(true_tssr_values) == len(tssr_values)
+    
+    # 1.0 values
+    one_values = get_error_counts(collection, '1.0')
+    correct_one = [[1], [1], [1,1], [1], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+    # 0.6 values
+    one_values = get_error_counts(collection, '0.6')
+    correct_one = [[0], [0], [0,0], [0], [0,1,1,0,1], [0,0,0,0], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+    # 0.2 values
+    one_values = get_error_counts(collection, '0.2')
+    correct_one = [[0], [0], [0,0], [0], [1,0,0,1,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+    # 0.75 values
+    one_values = get_error_counts(collection, '0.75')
+    correct_one = [[0], [0], [0,0], [0], [0,0,0,0,0], [1,0,1,1], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+    # 0.25 value
+    one_values = get_error_counts(collection, '0.25')
+    correct_one = [[0], [0], [0,0], [0], [0,0,0,0,0], [0,1,0,0], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+    # 0.57 value
+    one_values = get_error_counts(collection, '0.57')
+    correct_one = [[0], [0], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [1,1,0,1,1,0,0]]
+    assert correct_one == one_values
+    # 0.14 value
+    one_values = get_error_counts(collection, '0.14')
+    correct_one = [[0], [0], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [0,0,1,0,0,0,0]]
+    assert correct_one == one_values
+    # 0.29 value
+    one_values = get_error_counts(collection, '0.29')
+    correct_one = [[0], [0], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,1,1]]
+    assert correct_one == one_values
+
+@pytest.mark.parametrize("return_tssr_boundaries", (True, False))
+def test_tssr_subset(return_tssr_boundaries: bool):
+    # Test that it raises a ValueError when the TargetTextCollection is empty
+    test_collection = TargetTextCollection()
+    with pytest.raises(ValueError):
+        tssr_subset(test_collection, return_tssr_boundaries)
+    # Test on a collection with various amounts of targets
+    data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
+    test_fp = Path(data_fp, 'test.json').resolve()
+    test_collection = TargetTextCollection.load_json(test_fp)
+
+    
+    if return_tssr_boundaries:
+        collection, tssr_bound = tssr_subset(test_collection, return_tssr_boundaries)
+        true_tssr_bound = [(1.0, 1.0), (0.75, 0.6), (0.57, 0.14)]
+        assert len(true_tssr_bound) == len(tssr_bound)
+        assert true_tssr_bound == tssr_bound
+    else:   
+        collection = tssr_subset(test_collection, return_tssr_boundaries)
+
+    one_values = get_error_counts(collection, '1-TSSR')
+    correct_one = [[1], [1], [1,1], [1], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+
+    one_values = get_error_counts(collection, 'high-TSSR')
+    correct_one = [[0], [0], [0,0], [0], [0,1,1,0,1], [1,0,1,1], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+
+    one_values = get_error_counts(collection, 'low-TSSR')
+    correct_one = [[0], [0], [0,0], [0], [1,0,0,1,0], [0,1,0,0], [1,1,1,1,1,1,1]]
+    assert correct_one == one_values
 
 def example_collections_runs_first() -> TargetTextCollection:
     text = 'The laptop case was great and cover was rubbish'
