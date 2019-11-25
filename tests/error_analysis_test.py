@@ -20,6 +20,7 @@ from target_extraction.error_analysis import swap_list_dimensions
 from target_extraction.error_analysis import num_targets_subset
 from target_extraction.error_analysis import tssr_raw
 from target_extraction.error_analysis import tssr_subset
+from target_extraction.error_analysis import NoSamplesError
 
 
 def target_text_examples(target_sentiment_values: List[List[str]]
@@ -854,7 +855,7 @@ def test_tssr_raw():
 def test_tssr_subset(return_tssr_boundaries: bool):
     # Test that it raises a ValueError when the TargetTextCollection is empty
     test_collection = TargetTextCollection()
-    with pytest.raises(ValueError):
+    with pytest.raises(NoSamplesError):
         tssr_subset(test_collection, return_tssr_boundaries)
     # Test on a collection with various amounts of targets
     data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
@@ -871,7 +872,11 @@ def test_tssr_subset(return_tssr_boundaries: bool):
         collection = tssr_subset(test_collection, return_tssr_boundaries)
 
     one_values = get_error_counts(collection, '1-TSSR')
-    correct_one = [[1], [1], [1,1], [1], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+    correct_one = [[1], [1], [0,0], [1], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+    assert correct_one == one_values
+
+    one_values = get_error_counts(collection, '1-multi-TSSR')
+    correct_one = [[0], [0], [1,1], [0], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
     assert correct_one == one_values
 
     one_values = get_error_counts(collection, 'high-TSSR')

@@ -9,6 +9,16 @@ from typing import List, Callable, Dict, Union, Optional, Any, Tuple
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 
+class NoSamplesError(Exception):
+   '''
+   If there are or will be no samples within a Dataset or subset.
+   '''
+   def __init__(self, error_string: str) -> None:
+        '''
+        :param error_string: Error string to generate on Error
+        '''
+        super().__init__(error_string)
+
 def count_error_key_occurrence(dataset: TargetTextCollection, 
                                error_key: str) -> int:
     '''
@@ -728,7 +738,8 @@ def num_targets_subset(dataset: TargetTextCollection,
         return dataset
 
 def tssr_target_value(target_data: TargetText, 
-                      current_target_sentiment: Union[str, int]) -> float:
+                      current_target_sentiment: Union[str, int],
+                      subset_values: bool = False) -> float:
     '''
     Need to insert the TSSR value equation below:
     `
@@ -738,6 +749,12 @@ def tssr_target_value(target_data: TargetText,
                         associated to the `current_target_sentiment`
     :param current_target_sentiment: The sentiment value associated to the 
                                         target you want the TSSR value for.
+    :param subset_values: If True it produceds to different values for when the
+                          TSSR value is 1.0. It produces just 1.0 when there 
+                          is only one target in the sentence and 
+                          1.1 when there is more than one target in the sentence 
+                          but all of them are 1.0 TSSR value i.e. the sentence 
+                          only contains one sentiment.
     :returns: The TSSR value for a target within `target_data` with 
                 `current_target_sentiment` sentiment value.
     '''
@@ -748,6 +765,9 @@ def tssr_target_value(target_data: TargetText,
     current_target_senti_count = sentiment_counts[current_target_sentiment]
     tssr_value = current_target_senti_count / number_targets
     tssr_value = round(tssr_value, 2)
+    if subset_values and tssr_value == 1.0:
+        if len(target_data['targets']) > 1:
+            tssr_value = 1.1
     return tssr_value
 
 def tssr_subset(dataset: TargetTextCollection, 
@@ -755,30 +775,38 @@ def tssr_subset(dataset: TargetTextCollection,
                 ) -> Union[TargetTextCollection,
                            Tuple[TargetTextCollection, List[Tuple[float, float]]]]:
     '''
-    Given a dataset it will add either `1-TSSR`, `high-TSSR` or `low-TSSR` 
+    Given a dataset it will add either `1-multi-TSSR`, `1-TSSR`, `high-TSSR` or `low-TSSR` 
     error keys to each target text object. Each value associated to the error 
     keys are a list of 1's or 0's the length of the number of samples where 1 
     denotes the error key is True and 0 otherwise. For more information on how 
     TSSR is calculated see 
     :py:func`target_extraction.error_analysis.tssr_target_value`. Once you know 
-    what TSSR is `1-TSSR` denotes are all targets with a TSSR value of 1, 
-    `high-TSSR` are targets that are in the top 50% of the TSSR values for this 
-    dataset excluding the `1-TSSR` samples, `low-TSSR` are the bottom 50% of the 
-    TSSR values.
+    what TSSR is: `1-TSSR` contains all of the targets that have a TSSR value of  
+    1 but each one is the only target in the sentence, `1-multi-TSSR` contains 
+    all of the targets that have a TSSR value of 1 and the sentence it comes 
+    from contain more than one target. `high-TSSR` are targets that are in the 
+    top 50% of the TSSR values for this dataset excluding the `1-TSSR` samples, 
+    `low-TSSR` are the bottom 50% of the TSSR values.
 
     :param dataset: The dataset to add the continuos TSSR error keys too.
+    :param return_tssr_boundaries: If to return the TSSR value boundaries for the 
+                                   `1-TSSR`, `high-TSSR`, and `low-TSSR` 
+                                   subsets. NOTE that `1-multi-TSSR` is not 
+                                   in that list as it would have the same 
+                                   TSSR value boundaries as `1-TSSR`.
     :returns: The same dataset but with each TargetText object containing the 
-              continuos TSSR error keys and associated list of 1's or 0's 
-              denoting if the error key exists or not. The dictionary contains 
-              keys which are the TSSR values detected in the dataset and the 
-              values are the number of targets that contain that TSSR value.
+              TSSR subset error keys and associated list of 1's or 0's 
+              denoting if the error key exists or not. The optional second 
+              Tuple return are a list of the tssr boundaries.
+    :raises NoSamplesError: If there are no samples within a subset.
     ''' 
     def error_func(target: str, 
                    train_target_sentiments: Dict[str, List[str]],
                    filtered_values: Dict[float, int],
                    target_sentiment: Union[str, int], 
                    target_data: TargetText) -> bool:
-        tssr_value = tssr_target_value(target_data, target_sentiment)
+        tssr_value = tssr_target_value(target_data, target_sentiment, 
+                                       subset_values=True)
         if tssr_value in filtered_values:
             return True
         return False
@@ -788,12 +816,16 @@ def tssr_subset(dataset: TargetTextCollection,
     for target_data in dataset.values():
         tssr_values = []
         for target_sentiment in target_data['target_sentiments']:
-            tssr_values.append(tssr_target_value(target_data, target_sentiment))
+            tssr_value = tssr_target_value(target_data, target_sentiment, 
+                                           subset_values=True)
+            tssr_values.append(tssr_value)
         tssr_values_count.update(tssr_values)
     # Split the TSSR values into low and high after removing the one values
     tssr_error_name_condition = {}
     tssr_error_name_condition['1-TSSR'] = {1: 1}
+    tssr_error_name_condition['1-multi-TSSR'] = {1.1: 1}
     del tssr_values_count[1]
+    del tssr_values_count[1.1]
     tssr_values_count = sorted(tssr_values_count.items(), key=lambda x: x[0], 
                                reverse=True)
     total_samples = sum([count for _, count in tssr_values_count])
@@ -818,10 +850,10 @@ def tssr_subset(dataset: TargetTextCollection,
         if len(values) == 0:
             enough_sample_err = ('Not enough samples in the '
                                  f'TargetTextCollection {dataset} to generate '
-                                 'low, high or 1 TSSR subsets. The subsets '
-                                 'within TSSR that were generated '
+                                 'low, high, 1-TSSR, or 1-multi-TSSR subsets. '
+                                 'The subsets within TSSR that were generated '
                                  f'{tssr_error_name_condition}')
-            raise ValueError(enough_sample_err)
+            raise NoSamplesError(enough_sample_err)
     
     for error_name, tssr_values in tssr_error_name_condition.items():
         dataset = _pre_post_subsampling(dataset, dataset, True, 
