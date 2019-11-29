@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Dict, Any
 from pathlib import Path
 import tempfile
 
@@ -192,13 +192,28 @@ class TestTargetTextCollection:
     def test_construction(self):
         new_collection = TargetTextCollection(name='new_name')
         assert new_collection.name == 'new_name'
+        assert new_collection.metadata == {'name': 'new_name'}
 
         new_collection = TargetTextCollection()
-        assert new_collection.name is ''
+        assert new_collection.name == ''
+        assert new_collection.metadata is None
+
+        example_metadata = {'model': 'InterAE'}
+        new_collection = TargetTextCollection(metadata=example_metadata)
+        assert new_collection.name == ''
+        assert new_collection.metadata == example_metadata
+
+        example_metadata = {'model': 'InterAE'}
+        new_collection = TargetTextCollection(metadata=example_metadata,
+                                              name='new_name')
+        assert new_collection.name == 'new_name'
+        assert new_collection.metadata == {**example_metadata, 'name': 'new_name'}
 
         new_collection = TargetTextCollection(target_texts=self._target_text_examples())
         assert len(new_collection) == 3
         assert '2' in new_collection
+        assert new_collection.metadata is None
+        assert new_collection.name == ''
 
     def test_to_json(self):
         # no target text instances in the collection (empty collection)
@@ -228,24 +243,66 @@ class TestTargetTextCollection:
                              '["LAPTOP"], "category_sentiments": null}')
         assert new_collection.to_json() == true_json_version
 
+        # Test that adding the metadata works
+        new_collection = TargetTextCollection(self._target_text_examples()[:2], 
+                                              metadata={'model': 'InterAE'})
+        true_json_version = ('{"text": "The laptop case was great and cover '
+                             'was rubbish", "text_id": "0", "targets": '
+                             '["laptop case"], "spans": [[4, 15]], '
+                             '"target_sentiments": [0], "categories": '
+                             '["LAPTOP#CASE"], "category_sentiments": null}'
+                             '\n{"text": "The laptop case was '
+                             'great and cover was rubbish", "text_id": '
+                             '"another_id", "targets": ["cover"], "spans": '
+                             '[[30, 35]], "target_sentiments": [1], "categories": '
+                             '["LAPTOP"], "category_sentiments": null}\n'
+                             '{"metadata": {"model": "InterAE"}}')
+        assert new_collection.to_json() == true_json_version
+        
+        # Test that adding the name works
+        new_collection = TargetTextCollection(self._target_text_examples()[:2], 
+                                              name='test name')
+        true_json_version = ('{"text": "The laptop case was great and cover '
+                             'was rubbish", "text_id": "0", "targets": '
+                             '["laptop case"], "spans": [[4, 15]], '
+                             '"target_sentiments": [0], "categories": '
+                             '["LAPTOP#CASE"], "category_sentiments": null}'
+                             '\n{"text": "The laptop case was '
+                             'great and cover was rubbish", "text_id": '
+                             '"another_id", "targets": ["cover"], "spans": '
+                             '[[30, 35]], "target_sentiments": [1], "categories": '
+                             '["LAPTOP"], "category_sentiments": null}\n'
+                             '{"metadata": {"name": "test name"}}')
+        assert new_collection.to_json() == true_json_version
+
     @pytest.mark.parametrize("name", (' ', 'test_name'))
-    def test_from_json(self, name):
+    @pytest.mark.parametrize("metadata", (None, {'model': 'InterAE'}))
+    def test_from_json(self, name: str, metadata: Optional[Dict[str, Any]]):
+        if metadata is None:
+            metadata = {}
+            metadata['name'] = name
         # no text given
-        test_collection = TargetTextCollection.from_json('', name=name)
+        test_collection = TargetTextCollection.from_json('', name=name, 
+                                                         metadata=metadata)
         assert TargetTextCollection() == test_collection
         assert test_collection.name == name
+        assert test_collection.metadata == metadata
 
         # One target text instance in the text
         new_collection = TargetTextCollection([self._target_text_example()], 
-                                              name=name)
+                                              name=name, metadata=metadata)
         json_one_collection = new_collection.to_json()
         assert new_collection == TargetTextCollection.from_json(json_one_collection)
         assert new_collection.name == name
+        assert new_collection.metadata == metadata
 
         # Multiple target text instances in the text
-        new_collection = TargetTextCollection(self._target_text_examples()[:2])
+        new_collection = TargetTextCollection(self._target_text_examples()[:2], 
+                                              name=name, metadata=metadata)
         json_multi_collection = new_collection.to_json()
         assert new_collection == TargetTextCollection.from_json(json_multi_collection)
+        assert new_collection.name == name
+        assert new_collection.metadata == metadata
 
     @pytest.mark.parametrize("name", ('', 'test_name'))
     def test_load_json(self, name):
@@ -276,28 +333,77 @@ class TestTargetTextCollection:
         two_target_collection = TargetTextCollection.load_json(two_target_json_fp)
         assert len(two_target_collection) == 2
 
-    def test_to_json_file(self):
-        test_collection = TargetTextCollection()
+        # Ensure that it can load the multiple target text instances with metadata
+        # with and without a name variable
+        for contains_name, metadata_fp in [(True, 'one_target_one_empty_metadata.json'), 
+                                           (False, 'one_target_one_empty_metadata_no_name.json')]:
+            two_target_metadata_json_fp = Path(self._json_data_dir(), metadata_fp)
+            two_target_metadata_collection = TargetTextCollection.load_json(two_target_metadata_json_fp)
+            assert len(two_target_collection) == 2
+            correct_name = ''
+            correct_metadata = {"target sentiment predictions": [{"model": "InterAE"}]}
+            test_metadata = two_target_metadata_collection.metadata
+            if contains_name:
+                correct_name = "multi targets"
+                correct_metadata['name'] = 'multi targets'
+                assert correct_metadata['name'] == test_metadata['name']
+            assert len(correct_metadata) == len(test_metadata)
+            assert len(correct_metadata['target sentiment predictions']) == len(test_metadata['target sentiment predictions'])
+            assert correct_metadata['target sentiment predictions'] == test_metadata['target sentiment predictions']
+            assert two_target_metadata_collection.name == correct_name
+            assert two_target_metadata_collection.metadata == correct_metadata
+
+        # Ensure that when loading the given data is overriden
+        two_target_metadata_json_fp = Path(self._json_data_dir(), 'one_target_one_empty_metadata.json')
+        name = 'different'
+        metadata = {'model': 'TDLSTM'}
+        two_target_metadata_collection = TargetTextCollection.load_json(two_target_metadata_json_fp, name=name, metadata=metadata)
+        assert two_target_metadata_collection.name == name
+        assert two_target_metadata_collection.metadata == metadata
+        assert 2 == len(two_target_metadata_collection)
+
+    @pytest.mark.parametrize("name", (' ', 'test_name'))
+    @pytest.mark.parametrize("metadata", (None, {'model': 'InterAE'}))
+    def test_to_json_file(self, name: str, metadata: Optional[Dict[str, Any]]):
+        if metadata is None:
+            metadata = {}
+        metadata['name'] = name
         with tempfile.NamedTemporaryFile(mode='w+') as temp_fp:
             temp_path = Path(temp_fp.name)
+            test_collection = TargetTextCollection(name=name, metadata=metadata)
             test_collection.to_json_file(temp_path)
-            assert len(TargetTextCollection.load_json(temp_path)) == 0
+            loaded_collection = TargetTextCollection.load_json(temp_path)
+            assert len(loaded_collection) == 0
+            assert name == loaded_collection.name
+            assert metadata == loaded_collection.metadata
 
             # Ensure that it can load more than one Target Text examples
-            test_collection = TargetTextCollection(self._target_text_examples())
+            test_collection = TargetTextCollection(self._target_text_examples(), 
+                                                   name=name, metadata=metadata)
             test_collection.to_json_file(temp_path)
-            assert len(TargetTextCollection.load_json(temp_path)) == 3
+            loaded_collection = TargetTextCollection.load_json(temp_path)
+            assert len(loaded_collection) == 3
+            assert name == loaded_collection.name
+            assert metadata == loaded_collection.metadata
 
             # Ensure that if it saves to the same file that it overwrites that 
             # file
-            test_collection = TargetTextCollection(self._target_text_examples())
+            test_collection = TargetTextCollection(self._target_text_examples(),
+                                                   name=name, metadata=metadata)
             test_collection.to_json_file(temp_path)
-            assert len(TargetTextCollection.load_json(temp_path)) == 3
+            loaded_collection = TargetTextCollection.load_json(temp_path)
+            assert len(loaded_collection) == 3
+            assert name == loaded_collection.name
+            assert metadata == loaded_collection.metadata
 
             # Ensure that it can just load one examples
-            test_collection = TargetTextCollection([self._target_text_example()])
+            test_collection = TargetTextCollection([self._target_text_example()],
+                                                   name=name, metadata=metadata)
             test_collection.to_json_file(temp_path)
-            assert len(TargetTextCollection.load_json(temp_path)) == 1
+            loaded_collection = TargetTextCollection.load_json(temp_path)
+            assert len(loaded_collection) == 1
+            assert name == loaded_collection.name
+            assert metadata == loaded_collection.metadata
     
     def test_tokenize(self):
         # Test the normal case with one TargetText Instance in the collection

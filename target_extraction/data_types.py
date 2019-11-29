@@ -1139,11 +1139,16 @@ class TargetTextCollection(MutableMapping):
        of those given.
     '''
     def __init__(self, target_texts: Optional[List['TargetText']] = None,
-                 name: Optional[str] = None) -> None:
+                 name: Optional[str] = None, 
+                 metadata: Optional[Dict[str, Any]] = None) -> None:
         '''
         :param target_texts: A list of TargetText instances to add to the 
                              collection.
-        :param name: Name to call the collection.
+        :param name: Name to call the collection, this is added to the metadata 
+                     automatically and overrides the name key value in the 
+                     metadata if exists.
+        :param metadata: Any data that you would like to associate to this 
+                         TargetTextCollection.
         '''
         self._storage = OrderedDict()
 
@@ -1151,9 +1156,16 @@ class TargetTextCollection(MutableMapping):
             for target_text in target_texts:
                 self.add(target_text)
         
-        if name is None:
-            name = ''
-        self.name = name
+        self.metadata = None
+        if metadata is not None:
+            self.metadata = metadata
+
+        if name is not None:
+            self.name = name
+            self.metadata = {} if metadata is None else metadata
+            self.metadata['name'] = name
+        else:
+            self.name = ''
 
     def add(self, value: 'TargetText') -> None:
         '''
@@ -1173,8 +1185,9 @@ class TargetTextCollection(MutableMapping):
         Required as TargetTextCollection is not json serlizable due to the 
         'spans' in the TargetText instances.
 
-        :returns: The object as a list of dictionarys where each the TargetText
-                  instances are dictionaries.
+        :returns: The object as a list of dictionaries where each the TargetText
+                  instances are dictionaries. It will also JSON serialize any 
+                  meta data as well.
         '''
         json_text = ''
         for index, target_text_instance in enumerate(self.values()):
@@ -1182,6 +1195,9 @@ class TargetTextCollection(MutableMapping):
                 json_text += '\n'
             target_text_instance: TargetText
             json_text += target_text_instance.to_json()
+        if self.metadata is not None:
+            json_text += '\n'
+            json_text += json.dumps({'metadata': self.metadata})
         return json_text
 
     @staticmethod
@@ -1204,10 +1220,25 @@ class TargetTextCollection(MutableMapping):
             return TargetTextCollection(**target_text_collection_kwargs)
 
         target_text_instances = []
+        metadata = None
+        name = None
         for line in json_text.split('\n'):
-            target_text_instances.append(TargetText.from_json(line))
-        return TargetTextCollection(target_text_instances, 
-                                    **target_text_collection_kwargs)
+            json_line = json.loads(line)
+            if 'metadata' in json_line:
+                metadata = json_line['metadata']
+                if 'name' in metadata:
+                    name = metadata['name']
+            else:
+                target_text_instances.append(TargetText.from_json(line))
+        # Key word arguments over riding meta data
+        if 'name' in target_text_collection_kwargs:
+            name = target_text_collection_kwargs['name']
+        if 'metadata' in target_text_collection_kwargs:
+            metadata = target_text_collection_kwargs['metadata']
+        return TargetTextCollection(target_text_instances, name=name, 
+                                    metadata=metadata)
+        #return TargetTextCollection(target_text_instances, 
+        #                            **target_text_collection_kwargs)
 
     @staticmethod
     def load_json(json_fp: Path, **target_text_collection_kwargs
@@ -1215,24 +1246,42 @@ class TargetTextCollection(MutableMapping):
         '''
         Allows loading a dataset from json. Where the json file is expected to 
         be output from TargetTextCollection.to_json_file as the file will be 
-        a json String on each line generated from TargetText.to_json.
+        a json String on each line generated from TargetText.to_json. This 
+        will also load any meta data that was stored within the TargetTextCollection.
 
         :param json_fp: File that contains json strings generated from 
                         TargetTextCollection.to_json_file
         :param target_text_collection_kwargs: Key word arguments to give to 
                                               the TargetTextCollection 
-                                              constructor.
+                                              constructor. If there was
+                                              any meta data stored within the 
+                                              loaded json then these key word 
+                                              arguments would over ride the 
+                                              meta data stored.
         :returns: A TargetTextCollection based on each new line in the given 
-                  json file.
+                  json file, and the optional meta data on the last line.
         '''
         target_text_instances = []
+        metadata = None
+        name = None
         with json_fp.open('r') as json_file:
             for line in json_file:
                 if line.strip():
-                    target_text_instance = TargetText.from_json(line)
-                    target_text_instances.append(target_text_instance)
-        return TargetTextCollection(target_text_instances, 
-                                    **target_text_collection_kwargs)
+                    json_line = json.loads(line)
+                    if 'metadata' in json_line:
+                        metadata = json_line['metadata']
+                        if 'name' in metadata:
+                            name = metadata['name']
+                    else:
+                        target_text_instance = TargetText.from_json(line)
+                        target_text_instances.append(target_text_instance)
+        # Key word arguments over riding meta data
+        if 'name' in target_text_collection_kwargs:
+            name = target_text_collection_kwargs['name']
+        if 'metadata' in target_text_collection_kwargs:
+            metadata = target_text_collection_kwargs['metadata']
+        return TargetTextCollection(target_text_instances, name=name, 
+                                    metadata=metadata)
 
     def to_json_file(self, json_fp: Path) -> None:
         '''
@@ -1251,6 +1300,9 @@ class TargetTextCollection(MutableMapping):
                 if index != 0:
                     target_text_string = f'\n{target_text_string}'
                 json_file.write(target_text_string)
+            if self.metadata is not None:
+                metadata_to_write = {'metadata': self.metadata}
+                json_file.write(f'\n{json.dumps(metadata_to_write)}')
 
     def tokenize(self, tokenizer: Callable[[str], List[str]]) -> None:
         '''
