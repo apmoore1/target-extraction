@@ -304,6 +304,20 @@ class TestTargetTextCollection:
         assert new_collection.name == name
         assert new_collection.metadata == metadata
 
+        # Test the case where the metadata and name is overridden in the function
+        # call.
+        new_collection = TargetTextCollection(self._target_text_examples()[:2], 
+                                              name=name, metadata=metadata)
+        json_multi_collection = new_collection.to_json()
+        new_name = 'new name'
+        new_metadata = {'model': 'TDLSTM'}
+        from_json_collection = TargetTextCollection.from_json(json_multi_collection, 
+                                                              name=new_name, metadata=new_metadata)
+        assert new_collection == from_json_collection
+        assert from_json_collection.name == new_name
+        assert from_json_collection.metadata['name'] == new_name
+        assert from_json_collection.metadata['model'] == 'TDLSTM'
+
     @pytest.mark.parametrize("name", ('', 'test_name'))
     def test_load_json(self, name):
         empty_json_fp = Path(self._json_data_dir(), 'empty_target_instance.json')
