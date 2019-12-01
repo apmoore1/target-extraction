@@ -13,12 +13,35 @@ from collections.abc import MutableMapping
 from collections import OrderedDict, Counter, defaultdict
 import copy
 import json
+import functools
 from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
 from typing import Union, Dict, Set
+import traceback
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
-from target_extraction.data_types_util import Span, OverLappingTargetsError
+from target_extraction.data_types_util import (Span, OverLappingTargetsError,
+                                               AnonymisedError)
+
+def check_anonymised(func):
+    '''
+    Assumes the first argument in the given function is a TargetText object 
+    defined by self.
+
+    :raises AnonymisedError: If the TargetText object given to `func` 
+                             `anonymised` attribute is True.
+    '''
+    @functools.wraps(func)
+    def wrapper_func(*args, **kwargs):
+        target_text_object = args[0]
+        if target_text_object.anonymised:
+            anonymised_err = (f'Cannot perform this function as the Target '
+                              f'{target_text_object} has been anonymised '
+                              'and therefore has no `text`')
+            raise AnonymisedError(anonymised_err)
+        return func(*args, **kwargs)
+    return wrapper_func
+
 
 class TargetText(MutableMapping):
     '''
@@ -55,6 +78,11 @@ class TargetText(MutableMapping):
     7. category_sentiments -- List of the sentiments associated to the 
        categories. If the categories and targets map to each other then 
        this will be empty and you will only use the target_sentiments.
+
+    Attributes:
+
+    1. anonymised -- If True then the data within the TargetText object has 
+       no text but the rest of the metadata should exist.
 
     Methods:
     
@@ -131,6 +159,8 @@ class TargetText(MutableMapping):
         2. If targets and spans are set that the spans text match the 
            associated target words e.g. if the target is `barry davies` in 
            `today barry davies went` then the spans should be [[6,18]]
+
+        The 2nd check is not performed if `self.anonymised` is False.
     
         :raises ValueError: If any of the above conditions are not True.
         '''
@@ -172,7 +202,6 @@ class TargetText(MutableMapping):
         # respective target words. Edge case is the case of None targets which 
         # should have a Span value of (0, 0)
         if targets is not None:
-            text = self._storage['text'] 
             for target, span in zip(targets, spans):
                 if target is None:
                     target_span_msg = 'As the target value is None the span '\
@@ -181,6 +210,16 @@ class TargetText(MutableMapping):
                     if span != Span(0, 0):
                         raise ValueError(text_id_msg + target_span_msg)
                 else:
+                    if span == Span(0, 0) and target != '':
+                        target_span_msg = (f'The Span is {Span(0, 0)} and the '
+                                           f'target is {target} therefore the '
+                                           'span must be in-correct for this'
+                                           f' target {self}.')
+                        raise ValueError(target_span_msg)
+                    # Cannot check the text value when the data has been anonymised
+                    if self.anonymised:
+                        continue
+                    text = self._storage['text'] 
                     start, end = span.start, span.end
                     text_target = text[start:end]
                     target_span_msg = 'The target the spans reference in the '\
@@ -189,12 +228,13 @@ class TargetText(MutableMapping):
                     if text_target != target:
                         raise ValueError(text_id_msg + target_span_msg)
 
-    def __init__(self, text: str, text_id: str,
+    def __init__(self, text: Union[str, None], text_id: str,
                  targets: Optional[List[str]] = None, 
                  spans: Optional[List[Span]] = None, 
                  target_sentiments: Optional[List[Union[int, str]]] = None, 
                  categories: Optional[List[str]] = None,
                  category_sentiments: Optional[List[Union[int, str]]] = None,
+                 anonymised: bool = False,
                  **additional_data):
         '''
         :param additional_data: Any other data that is to be added to the 
@@ -210,15 +250,60 @@ class TargetText(MutableMapping):
             if list_argument is None:
                 continue
             self._check_is_list(list_argument, argument_name)
-
+        # anonymised data will have no text
         temp_dict = dict(text=text, text_id=text_id, targets=targets,
                          spans=spans, target_sentiments=target_sentiments, 
                          categories=categories, 
                          category_sentiments=category_sentiments)
-        self._protected_keys = set(['text', 'text_id', 'targets', 'spans'])
+        if anonymised:
+            del temp_dict['text']
+            self._protected_keys = set(['text_id', 'targets', 'spans'])
+        else:
+            self._protected_keys = set(['text', 'text_id', 'targets', 'spans'])
         self._storage = temp_dict
         self._storage = {**self._storage, **additional_data}
+        self._anonymised = anonymised
         self.sanitize()
+
+    @property
+    def anonymised(self) -> bool:
+        '''
+        :returns: True if the data within the TargetText has been anonymised.
+                  Anonymised data means that there is no text associated with
+                  the TargetText object but all of the metadata is there.
+        '''
+        return self._anonymised
+
+    @anonymised.setter
+    def anonymised(self, value: bool) -> None:
+        '''
+        Sets whether or not `anonymised` attribute is True or False. Either 
+        which way when set it performs the `sanitize` check to ensure that 
+        the attribute can be set to this value else it is reverted.
+
+        :param value: If True then the `text` key will be deleted. In all 
+                      cases the TargetText object is subjected to the 
+                      :py:meth:`sanitize` to ensure that the anonymised 
+                      process is correct.
+        :raises AnonymisedError: If the TargetText object cannot be set to the 
+                                 `anonymised` value given. If this Error occurs 
+                                 then the object will have kept the original 
+                                 `anonymised` value.
+        '''
+        # If want to anonymise all the 
+        if not self.anonymised and value:
+            del self._storage['text']
+        
+        self._anonymised = value
+        try:
+            self.sanitize()
+        except:
+            self._anonymised = not value
+            sanitize_err = traceback.format_exc()
+            raise AnonymisedError('Cannot de-anonymise this TargetText '
+                                    f'{self} as it cannot pass the `sanitize`'
+                                    ' check of which the following is the '
+                                    f'error from said check {sanitize_err}')
 
     def __getitem__(self, key: str) -> Any:
         '''
@@ -349,6 +434,7 @@ class TargetText(MutableMapping):
                     end += 1
             self._storage['spans'][span_index] = Span(start, end)
 
+    @check_anonymised
     def force_targets(self) -> None:
         '''
         :NOTE: As this affects the following attributes `spans` and `text` it 
@@ -366,8 +452,10 @@ class TargetText(MutableMapping):
         therefore the BIO tagging is not deterministic thus force will add 
         whitespace around the target word e.g. `the laptop; priced`. This was 
         mainly added for the TargetText.sequence_tags method.
-        '''
 
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
+        '''
         for span_index in range(len(self['spans'])):
             text = self._storage['text']
             last_token_index = len(text)
@@ -406,6 +494,7 @@ class TargetText(MutableMapping):
             updated_targets.append(target)
         self._storage['targets'] = updated_targets
 
+    @check_anonymised
     def tokenize(self, tokenizer: Callable[[str], List[str]],
                  perform_type_checks: bool = False) -> None:
         '''
@@ -423,6 +512,8 @@ class TargetText(MutableMapping):
         :param perform_type_checks: Whether or not to perform type checks 
                                     to ensure the tokenizer returns a List of 
                                     Strings
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         :raises TypeError: If the tokenizer given does not return a List of 
                            Strings.
         :raises ValueError: This is raised if the TargetText instance contains
@@ -450,7 +541,8 @@ class TargetText(MutableMapping):
                              f' preserving. Original text `{text}`\n'
                              f'Tokenized text `{tokenized_text}`')
         self['tokenized_text'] = tokenized_text
-    
+
+    @check_anonymised
     def pos_text(self, tagger: Callable[[str], Tuple[List[str], List[str]]], 
                  perform_type_checks: bool = False) -> None:
         '''
@@ -469,6 +561,8 @@ class TargetText(MutableMapping):
                                     to ensure the POS tagger returns a 
                                     tuple containing two lists both containing 
                                     Strings.
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         :raises TypeError: If the POS tagger given does not return a Tuple
         :raises TypeError: If the POS tagger given does not return a List of 
                            Strings for both the tokens and the pos tags.
@@ -519,6 +613,7 @@ class TargetText(MutableMapping):
         self['pos_tags'] = pos_tags
         self['tokenized_text'] = tokens
 
+    @check_anonymised
     def sequence_labels(self, per_target: bool = False) -> None:
         '''
         Adds the `sequence_labels` key to this TargetText instance which can 
@@ -542,6 +637,8 @@ class TargetText(MutableMapping):
                            of the targets False. Or if True should be a list 
                            of a labels per target where the labels will only 
                            be associated to the represented target.
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         :raises KeyError: If the current TargetText has not been tokenized.
         :raises ValueError: If two targets overlap the same token(s) e.g 
                             `Laptop cover was great` if `Laptop` and 
@@ -606,6 +703,7 @@ class TargetText(MutableMapping):
             raise KeyError(f'Requires that this TargetText instance {self}'
                            f'contians the key `{key}`')
 
+    @check_anonymised
     def get_sequence_indexs(self, sequence_key: str) -> List[List[int]]:
         '''
         The following sequence label tags are supported: IOB-2. These are the 
@@ -621,6 +719,8 @@ class TargetText(MutableMapping):
                   sequence label span.
                   :Example: These sequence labels [`O`, `B`, `I`, `O`, `B`] 
                             would return the following integers list [[1, 2], [4]]
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         :raises ValueError: If the sequence labels that are contained in the 
                             sequence key value contain values other than 
                             `B`, `I`, or `O`.
@@ -670,6 +770,7 @@ class TargetText(MutableMapping):
             sequence_indexs.append(sequence_index)
         return sequence_indexs
 
+    @check_anonymised
     def get_sequence_spans(self, sequence_key: str,
                            confidence: Optional[float] = None) -> List[Span]:
         '''
@@ -691,6 +792,8 @@ class TargetText(MutableMapping):
                                   word target word is less than the threshold.
         :returns: The span indexs from the sequence labels given assuming that 
                   the sequence labels are in BIO format.
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         :raises KeyError: If no `confidence` key are found. However `confidence` 
                           is only required if the confidence argument is set.
         :raises ValueError: If the sequence labels that are contained in the 
@@ -733,6 +836,7 @@ class TargetText(MutableMapping):
             sequence_spans.append(Span(start_span, end_span))
         return sequence_spans
 
+    @check_anonymised
     def get_targets_from_sequence_labels(self, sequence_key: str, 
                                          confidence: Optional[float] = None
                                          ) -> List[str]:
@@ -754,6 +858,8 @@ class TargetText(MutableMapping):
                                   returned as one of the words in the multi 
                                   word target word is less than the threshold.
         :returns: The target text's that the sequence labels have predcited.
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         :raises KeyError: If no `tokenized_text` or `confidence` key are found.
                           However `confidence` is only required if the 
                           confidence argument is set.
@@ -791,6 +897,7 @@ class TargetText(MutableMapping):
             targets.append(target)
         return targets
 
+    @check_anonymised
     def one_sample_per_span(self, remove_empty: bool = False) -> 'TargetText':
         '''
         This returns a similar TargetText instance where the new instance 
@@ -818,6 +925,8 @@ class TargetText(MutableMapping):
                              their respective Spans.
         :returns: This returns a similar TargetText instance where the new 
                   instance will only contain one target per span.
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         '''
         text = self['text']
         text_id = self['text_id']
@@ -842,6 +951,7 @@ class TargetText(MutableMapping):
         return TargetText(text=text, text_id=text_id, 
                           targets=targets, spans=spans)
 
+    @check_anonymised
     def left_right_target_contexts(self, incl_target: bool
                                    ) -> List[Tuple[List[str], List[str], List[str]]]:
         '''
@@ -849,6 +959,8 @@ class TargetText(MutableMapping):
                             also include the target word.
         :returns: The sentence that is left and right of the target as well as 
                   the words in the target for each target in the sentence.
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         '''
         left_right_target_list = []
         text = self['text']
@@ -868,6 +980,7 @@ class TargetText(MutableMapping):
                 left_right_target_list.append(contexts)
         return left_right_target_list  
 
+    @check_anonymised
     def replace_target(self, target_index: int, replacement_target_word: str
                        ) -> 'TargetText':
         '''
@@ -887,6 +1000,8 @@ class TargetText(MutableMapping):
                                          it will raise this error if you 
                                          replace either word as each is 
                                          within the other.
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
         :Example: Given the following TargetText Object 
         '''
         self_dict = copy.deepcopy(dict(self))
@@ -946,7 +1061,7 @@ class TargetText(MutableMapping):
         return TargetText(**self_dict)
             
     @staticmethod
-    def from_json(json_text: str) -> 'TargetText':
+    def from_json(json_text: str, anonymised: bool = False) -> 'TargetText':
         '''
         This is required as the 'spans' are Span objects which are not json 
         serlizable and are required for TargetText therefore this handles 
@@ -961,15 +1076,26 @@ class TargetText(MutableMapping):
 
         :param json_text: JSON representation of TargetText 
                           (can be from TargetText.to_json)
+        :param anonymised: Whether or not the TargetText object being loaded 
+                           is an anonymised version.
         :returns: A TargetText object
         :raises KeyError: If within the JSON representation there is no 
-                          `text` or `text_id` key.
+                          `text_id` key. Or if anonymised is False raises a
+                          KeyError if there is no `text` key in the JSON 
+                          representation.
         '''
         json_target_text = json.loads(json_text)
-        if not 'text' in json_target_text or not 'text_id' in json_target_text:
-            raise KeyError('The JSON text given does not contain a `text`'
-                           f' or `text_id` field: {json_target_text}')
-        target_text = TargetText(text=json_target_text['text'], 
+        text = None
+        if not 'text_id' in json_target_text:
+            raise KeyError('The JSON text given does not contain a '
+                           f'`text_id` field: {json_target_text}')
+        if not anonymised:
+            if not 'text' in json_target_text:
+                raise KeyError('The JSON text given does not contain a `text`'
+                               f'field: {json_target_text}')
+            text = json_target_text['text']
+    
+        target_text = TargetText(text=text, anonymised=anonymised,
                                  text_id=json_target_text['text_id'])
         for key, value in json_target_text.items():
             if key == 'text' or key == 'text_id':

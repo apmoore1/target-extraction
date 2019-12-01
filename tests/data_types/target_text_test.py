@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Tuple, Iterable, Callable, Optional
 
 import pytest
 
-from target_extraction.data_types import TargetText, Span, OverLappingTargetsError
+from target_extraction.data_types import TargetText, Span, OverLappingTargetsError, AnonymisedError
 from target_extraction.tokenizers import spacy_tokenizer, stanford
 from target_extraction.pos_taggers import spacy_tagger
 
@@ -44,7 +44,7 @@ class TestTargetText:
         return examples, (text, text_ids, spans, target_sentiments, 
                           targets, categories, category_sentiments)
 
-    def _exception_examples(self) -> Iterable[Dict[str, Any]]:
+    def _exception_examples(self, anonymised: bool = False) -> Iterable[Dict[str, Any]]:
         '''
         :returns: The opposite of _passable_examples this returns a list of
                   key word arguments to give to the constructor of 
@@ -67,25 +67,43 @@ class TestTargetText:
                          [possible_targets[2], possible_spans[0], possibe_target_sentiments[2]],
                          [possible_targets[2], possible_spans[2], possibe_target_sentiments[0]]]
         for target, span, target_sentiment in targets_spans:
-            yield {'text_id': text_ids[0], 'text': texts[0],
-                   'targets': target, 'spans': span, 
-                   'target_sentiments': target_sentiment}
+            if anonymised:
+                yield {'text_id': text_ids[0], 'text': None, 
+                       'targets': target, 'spans': span, 
+                       'target_sentiments': target_sentiment}
+            else:
+                yield {'text_id': text_ids[0], 'text': texts[0],
+                       'targets': target, 'spans': span, 
+                       'target_sentiments': target_sentiment}
+            
         # Category and Category sentiments mismatch
         category_category_sentiments = [[possible_categories[0], possible_category_sentiments[2]],
                                         [possible_categories[2], possible_category_sentiments[0]]]
         for categories, category_sentiment in category_category_sentiments:
-            yield {'text_id': text_ids[0], 'text': texts[0],
-                   'category_sentiments': category_sentiment,
-                   'categories': categories}
+            if anonymised:
+                yield {'text_id': text_ids[0],  'text': None,
+                       'category_sentiments': category_sentiment,
+                       'categories': categories}
+            else:
+                yield {'text_id': text_ids[0], 'text': texts[0],
+                       'category_sentiments': category_sentiment,
+                       'categories': categories}
+            
 
         # Shouldn't work as the target does not have a reference span
         values = zip(text_ids, texts, possible_targets,
                      possibe_target_sentiments, possible_categories,
                      possible_category_sentiments)
         for _id, text, target, target_sentiment, category, category_sentiment in values:
-            yield {'text_id': _id, 'text': text, 'targets': target,
-                   'target_sentiments': target_sentiment, 'categories': category,
-                   'category_sentiments': category_sentiment}
+            if anonymised:
+                yield {'text_id': _id, 'targets': target, 'text': None,
+                       'target_sentiments': target_sentiment, 'categories': category,
+                       'category_sentiments': category_sentiment}
+            else:
+                yield {'text_id': _id, 'text': text, 'targets': target,
+                       'target_sentiments': target_sentiment, 'categories': category,
+                       'category_sentiments': category_sentiment}
+            
         # Shouldn't work as the spans and targets do not align, the impossible
         # Spans are either closer to the target or in-corporate a zero element.
         impossible_spans = [[Span(0, 11)], [Span(31, 35)]]
@@ -100,8 +118,11 @@ class TestTargetText:
         values = zip(new_text_ids, new_texts, span_target_mismatchs)
         for _id, text, span_target in values:
             span, target = span_target
-            yield {'text_id': _id, 'text': text, 'spans': span,
-                   'targets': target}
+            if anonymised:
+                continue
+            else:
+                yield {'text_id': _id, 'text': text, 'spans': span,
+                       'targets': target}
         
         # Shouldn't work when the target is None and the Span is equal to 
         # something, also should not work when the span is (0, 0) and the 
@@ -113,11 +134,18 @@ class TestTargetText:
         values = zip(new_text_ids, new_texts, span_target_none)
         for _id, text, span_target in values:
             span, target = span_target
-            yield {'text_id': _id, 'text': text, 'spans': span,
-                   'targets': target}
+            if anonymised:
+                yield {'text_id': _id, 'spans': span, 'text': None,
+                       'targets': target}
+            else:
+                yield {'text_id': _id, 'text': text, 'spans': span,
+                       'targets': target}
+            
 
-    def _passable_examples(self) -> List[Tuple[str, Dict[str, Any]]]:
+    def _passable_examples(self, anonymised: bool = False) -> List[Tuple[str, Dict[str, Any]]]:
         '''
+        :param anonymised: Whether the examples should be anonymised examples 
+                           which just means removing the text.
         :returns: A list of tuples where the first values is an error messages  
                   the second are key word parameters to give to the constructor 
                   of TargetText. If the TargetText cannot be constructed from
@@ -249,6 +277,12 @@ class TestTargetText:
         multiple_all['targets'] = ['laptop case', 'cover', None]
         multiple_all['spans'] = [Span(4, 15), Span(30, 35), Span(0,0)]
         all_passable_cases.append(('Target that is Null', multiple_all))
+        if anonymised:
+            temp_cases = []
+            for exception_msg, object_params in all_passable_cases:
+                object_params['text'] = None
+                temp_cases.append((exception_msg, object_params))
+            all_passable_cases = temp_cases
         return all_passable_cases
 
     def test_list_only(self):
@@ -280,16 +314,55 @@ class TestTargetText:
             with pytest.raises(TypeError):
                 TargetText(**full_arguments)
 
-    def test_sanitize(self):
-        for passable_err_msg, passable_arguments in self._passable_examples():
+    @pytest.mark.parametrize("anonymised", (True, False))
+    def test_sanitize(self, anonymised: bool):
+        for passable_err_msg, passable_arguments in self._passable_examples(anonymised):
             try:
+                if anonymised:
+                    passable_arguments['anonymised'] = True
                 TargetText(**passable_arguments)
             except:
-                traceback.print_exc()
                 raise Exception(passable_err_msg)
-        for value_error_arguments in self._exception_examples():
+        for value_error_arguments in self._exception_examples(anonymised):
             with pytest.raises(ValueError):
+                if anonymised:
+                    value_error_arguments['anonymised'] = True
+                print(value_error_arguments)
                 TargetText(**value_error_arguments)
+
+    def test_anonymised(self):
+        text = "The laptop case was great and cover was rubbish"
+        true_target_text = TargetText(text=text, text_id='2', 
+                                      targets=["laptop case", "cover", None], 
+                                      target_sentiments=[0,1,0],
+                                      spans=[Span(4, 15), Span(30, 35), Span(0, 0)],
+                                      categories=["LAPTOP#CASE", "LAPTOP"],
+                                      category_sentiments=[0, 1])
+        # Test the normal case where we want to set the anonymised value to 
+        # the same as it was
+        assert False == true_target_text.anonymised
+        true_target_text.anonymised = False
+        assert not true_target_text.anonymised
+        assert 'text' in true_target_text
+        # Test the case where we want to set it to True
+        true_target_text.anonymised = True
+        assert not 'text' in true_target_text
+        assert true_target_text.anonymised
+        
+        # Test the case of going from anonymised to de-anonymised
+        with pytest.raises(AnonymisedError):
+            true_target_text.anonymised = False
+        assert true_target_text.anonymised
+        # Add the wrong text
+        true_target_text._storage['text'] = "The laptop case was great and cove was rubbish"
+        with pytest.raises(AnonymisedError):
+            true_target_text.anonymised = False
+        assert true_target_text.anonymised
+        # Add the correct text 
+        true_target_text._storage['text'] = text
+        true_target_text.anonymised = False
+        assert not true_target_text.anonymised
+        assert 'text' in true_target_text
 
     def test_force_targets(self):
         # Simple example that nothing should change
@@ -346,6 +419,13 @@ class TestTargetText:
         text = 'The laptop case was great andcoverwas rubbish'
         spans = [Span(4, 15), Span(29, 34)]
         targets = ['laptop case', 'cover']
+
+        # Test the anonymised case
+        simple_example = TargetText(text_id='1', spans=spans, text=text,
+                                    targets=targets, anonymised=True)
+        with pytest.raises(AnonymisedError):
+            simple_example.force_targets()
+
         simple_example = TargetText(text_id='1', spans=spans, text=text,
                                     targets=targets)
         simple_example.force_targets()
@@ -540,6 +620,19 @@ class TestTargetText:
                                       category_sentiments=[0, 1])
         assert true_target_text.to_json() == true_json_text
 
+        # anonymised case (The JSON version should not have any text)
+        true_json_anonymised_text = ('{"text_id": "2", "targets": ["laptop case", "cover", null], '
+                          '"spans": [[4, 15], [30, 35], [0, 0]], "target_sentiments": [0, 1, 0], '
+                          '"categories": ["LAPTOP#CASE", "LAPTOP"], "category_sentiments": [0, 1]}')
+        text = "The laptop case was great and cover was rubbish"
+        true_target_text = TargetText(text=text, text_id='2', 
+                                      targets=["laptop case", "cover", None], 
+                                      target_sentiments=[0,1,0],
+                                      spans=[Span(4, 15), Span(30, 35), Span(0, 0)],
+                                      categories=["LAPTOP#CASE", "LAPTOP"],
+                                      category_sentiments=[0, 1], anonymised=True)
+        assert true_target_text.to_json() == true_json_anonymised_text
+
     def test_from_json(self):
         json_text = ('{"text": "The laptop case was great and cover was rubbish", '
                      '"text_id": "2", "targets": ["laptop case", "cover", null], '
@@ -598,6 +691,26 @@ class TestTargetText:
         with pytest.raises(ValueError):
             TargetText.from_json(bad_json_text_3)
         
+        # Test the anonymised cases
+        json_text = ('{"text": "The laptop case was great and cover was rubbish", '
+                     '"text_id": "2", "targets": ["laptop case", "cover", null], '
+                     '"spans": [[4, 15], [30, 35], [0,0]], "target_sentiments": [0, 1, 0], '
+                     '"categories": ["LAPTOP#CASE", "LAPTOP"], "category_sentiments": [0, 1]}')
+        example_from_json = TargetText.from_json(json_text, anonymised=True)
+        example_spans: List[Span] = example_from_json['spans']
+        for span in example_spans:
+            assert isinstance(span, Span), f'{span} should be of type Span'
+        
+        true_target_text = TargetText(text=None, text_id='2', 
+                                      targets=["laptop case", "cover", None], 
+                                      target_sentiments=[0,1,0],
+                                      spans=[Span(4, 15), Span(30, 35), Span(0, 0)],
+                                      categories=["LAPTOP#CASE", "LAPTOP"],
+                                      category_sentiments=[0, 1], anonymised=True)
+        for key, value in true_target_text.items():
+            assert value == example_from_json[key]
+        assert example_from_json.anonymised == True
+        
 
     @pytest.mark.parametrize("tokenizer", (str.split, spacy_tokenizer()))
     @pytest.mark.parametrize("type_checks", (True, False))
@@ -620,6 +733,10 @@ class TestTargetText:
         tokenized_answer = ['The', 'laptop', 'case', 'was', 'great', 'and',
                             'cover', 'was', 'rubbish']
         assert test_target_text['tokenized_text'] == tokenized_answer
+        # Test the anonymised case
+        test_target_text = TargetText(text=text, text_id=text_id, anonymised=True)
+        with pytest.raises(AnonymisedError):
+            test_target_text.tokenize(tokenizer, perform_type_checks=type_checks)
 
         # Test the case where the tokenizer function given does not return a
         # List
@@ -718,6 +835,11 @@ class TestTargetText:
         assert test_target_text['tokenized_text'] == split_tokens
         test_target_text.pos_text(pos_tagger, perform_type_checks=type_checks)
         assert test_target_text['tokenized_text'] == tok_answer
+        
+        # Test the anonymised case
+        test_target_text = TargetText(text=text, text_id=text_id, anonymised=True)
+        with pytest.raises(AnonymisedError):
+            test_target_text.pos_text(pos_tagger, perform_type_checks=type_checks)
 
     @pytest.mark.parametrize("per_target", (True, False))
     def test_sequence_labels(self, per_target: bool):
@@ -895,6 +1017,11 @@ class TestTargetText:
             answer = [['O', 'O', 'O']]
         assert answer == test['sequence_labels']
 
+        # Test the anonymised case
+        test_target_text = TargetText(text=text, text_id='1', anonymised=True)
+        with pytest.raises(AnonymisedError):
+            test_target_text.sequence_labels(per_target)
+
     def test_key_error(self):
         # Simple example that should pass
         example = TargetText(text='some text', text_id='2')
@@ -942,6 +1069,12 @@ class TestTargetText:
         test['sequence_labels'] = ['O', 'B', 'E', 'I', 'O', 'O', 'O', 'B', 'E']
         with pytest.raises(ValueError):
             test.get_sequence_spans('sequence_labels')
+
+        # Test the anonymised case
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets, anonymised=True)
+        with pytest.raises(AnonymisedError):
+            test.get_sequence_indexs('sequence_labels')
 
         #
         # More sophisticated normal cases
@@ -1056,6 +1189,11 @@ class TestTargetText:
         # provided
         with pytest.raises(KeyError):
             test.get_sequence_spans('predicted_sequence_labels')
+        # Test the anonymised case
+        test = TargetText(text=text, text_id=text_id, spans=spans, 
+                          targets=targets, anonymised=True)
+        with pytest.raises(AnonymisedError):
+            test.get_sequence_spans('sequence_labels')
         
         # Case where two targets are next to each other.
         text = 'The laptop case price was great and bad'
@@ -1227,8 +1365,6 @@ class TestTargetText:
                            'category_sentiments']:
                     assert one_span_per_sample[key] == None
                 else:
-                    #print(example)
-                    #print(one_span_per_sample)
                     assert value == one_span_per_sample[key]
         # Case where we have one span twice
         example = examples[0]
@@ -1283,6 +1419,11 @@ class TestTargetText:
         edge_test = edge_example.one_sample_per_span(remove_empty=remove_empty)
         assert edge_test['text'] == 'here is some text'
         assert edge_test['text_id'] == '1'
+
+        # Test the anonymised case
+        test = TargetText(text='here is some text', text_id='1', anonymised=True)
+        with pytest.raises(AnonymisedError):
+            test.one_sample_per_span(remove_empty=remove_empty)
 
     def test_constructior_additional_data(self):
         # Want to test the normal case of just adding unrelevant data
@@ -1350,6 +1491,14 @@ class TestTargetText:
         text_id = '2'
         sequence_labels = ['B', 'B', 'I']
         confidences = [1.0, 0.9, 0.8]
+
+        # Test the anonymised case
+        test = TargetText(text=text, text_id=text_id, sequence_labels=sequence_labels, 
+                          confidence=confidences, anonymised=True)
+        with pytest.raises(AnonymisedError):
+            test.get_targets_from_sequence_labels('predicted_sequence_labels', 
+                                                  confidence)
+
         test = TargetText(text=text, text_id=text_id, sequence_labels=sequence_labels, 
                           confidence=confidences)
         test.tokenize(str.split)
@@ -1567,6 +1716,11 @@ class TestTargetText:
             answer = correct_answers[i]
             test_answer = example.left_right_target_contexts(incl_target=incl_target)
             assert answer == test_answer
+        # Test the anonymised case
+        test = TargetText(text, text_ids[0], targets=targets[0],
+                          spans=spans[0], anonymised=True)
+        with pytest.raises(AnonymisedError):
+            test.left_right_target_contexts(incl_target=incl_target)
 
     def test_target_replacement(self):
         text = 'The laptop case was great and cover was rubbish'
@@ -1623,3 +1777,9 @@ class TestTargetText:
             target_object.replace_target(1, 'hello')
         with pytest.raises(OverLappingTargetsError):
             target_object.replace_target(2, 'hello')
+        # Test the anonymised case
+        target_object = TargetText(text_id='1', text=text, spans=spans, 
+                                   targets=targets, target_sentiments=sentiments, 
+                                   anonymised=True)
+        with pytest.raises(AnonymisedError):
+            target_object.replace_target(3, 'bad day')

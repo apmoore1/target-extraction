@@ -6,6 +6,7 @@ classes:
 
 1. Span
 2. OverLappingTargetsError
+3. AnonymisedError
 '''
 from typing import NamedTuple
 
@@ -26,3 +27,16 @@ class OverLappingTargetsError(Exception):
     shouldn't.
     '''
     pass
+
+class AnonymisedError(Exception):
+   '''
+   If the something cannot be performed because the 
+   :py:class:`target_extraction.data_types.TargetText` 
+   or :py:class:`target_extraction.data_types.TargetTextCollection` 
+   object has been anonymised.
+   '''
+   def __init__(self, error_string: str) -> None:
+        '''
+        :param error_string: The error string to attach to this exception.
+        '''
+        super().__init__(error_string)
