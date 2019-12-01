@@ -78,6 +78,9 @@ class TargetText(MutableMapping):
     7. category_sentiments -- List of the sentiments associated to the 
        categories. If the categories and targets map to each other then 
        this will be empty and you will only use the target_sentiments.
+    8. de_anonymise -- This will set the `anonymised` attribute to False 
+       from True and set the `text` key value to the value in the `text` 
+       key within the `text_dict` argument.
 
     Attributes:
 
@@ -85,7 +88,7 @@ class TargetText(MutableMapping):
        no text but the rest of the metadata should exist.
 
     Methods:
-    
+
     1. to_json -- Returns the object as a dictionary and then encoded using 
        json.dumps
     2. tokenize -- This will add a new key `tokenized_text` to this TargetText 
@@ -1059,6 +1062,40 @@ class TargetText(MutableMapping):
         self_dict['spans'] = spans
         self_dict['text'] = text
         return TargetText(**self_dict)
+
+    def de_anonymise(self, text_dict: Dict[str, str]) -> None:
+        '''
+        This will set the `anonymised` attribute to False from True and 
+        set the `text` key value to the value in the `text` key within the 
+        `text_dict` argument.
+
+        :param text_dict: A dictionary that contain the following two keys: 
+                          1. `text` and 2. `text_id` where the `text_id` has 
+                          to match the curretn TargetText object `text_id` and 
+                          the `text` value will become the new value in the 
+                          `text` key for this TargetText object.
+        :raises ValueError: If the TargetText object `text_id` does not match 
+                            the `text_id` within `text_dict` argument.
+        :raises AnonymisedError: If the `text` given does not pass the 
+                                 :py:meth:`sanitize` test.
+        '''
+        current_text_id = self['text_id']
+        other_text_id = text_dict['text_id']
+        if current_text_id != other_text_id:
+            raise ValueError(f"The current `text_id` {current_text_id} "
+                             "does not match that of the argument's `text_id`"
+                             f" {other_text_id}. For TargetText {self}")
+        text = text_dict['text']
+        self._storage['text'] = text
+        try:
+            self.anonymised = False
+        except AnonymisedError:
+            del self._storage['text']
+            sanitize_err = traceback.format_exc()
+            raise AnonymisedError('Cannot de-anonymise this TargetText '
+                                  f'{self} as it cannot pass the `sanitize`'
+                                  ' check of which the following is the '
+                                  f'error from said check {sanitize_err}')
             
     @staticmethod
     def from_json(json_text: str, anonymised: bool = False) -> 'TargetText':

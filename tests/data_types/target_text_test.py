@@ -364,6 +364,35 @@ class TestTargetText:
         assert not true_target_text.anonymised
         assert 'text' in true_target_text
 
+    def test_de_anonymise(self):
+        true_target_text = TargetText(text='text', text_id='2', 
+                                      targets=["laptop case", "cover", None], 
+                                      target_sentiments=[0,1,0],
+                                      spans=[Span(4, 15), Span(30, 35), Span(0, 0)],
+                                      categories=["LAPTOP#CASE", "LAPTOP"],
+                                      category_sentiments=[0, 1], anonymised=True)
+        # Test the case where the text_id's do not match
+        assert true_target_text.anonymised
+        assert 'text' not in true_target_text
+        text = "The laptop case was great and cover was rubbish"
+        new_text = {'text_id': '3', 'text': text}
+        with pytest.raises(ValueError):
+            true_target_text.de_anonymise(new_text)
+        assert true_target_text.anonymised
+        assert 'text' not in true_target_text
+        # Test the case where it raises an Anonymised Error
+        bad_text = "The laptop case was great and cove was rubbish"
+        bad_text = {'text_id': '2', 'text': bad_text}
+        with pytest.raises(AnonymisedError):
+            true_target_text.de_anonymise(bad_text)
+        assert true_target_text.anonymised
+        assert 'text' not in true_target_text
+        # Test the normal case
+        new_text['text_id'] = '2'
+        true_target_text.de_anonymise(new_text)
+        assert not true_target_text.anonymised
+        assert text == true_target_text['text']
+
     def test_force_targets(self):
         # Simple example that nothing should change
         text = 'The laptop case was great and cover was rubbish'
