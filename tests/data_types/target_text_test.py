@@ -327,8 +327,12 @@ class TestTargetText:
             with pytest.raises(ValueError):
                 if anonymised:
                     value_error_arguments['anonymised'] = True
-                print(value_error_arguments)
                 TargetText(**value_error_arguments)
+        # Special case only for the anonymised version
+        with pytest.raises(ValueError):
+            test = TargetText(text_id='1', text=None, anonymised=True)
+            test['text'] = 'hello how are you'
+            test.sanitize()
 
     def test_anonymised(self):
         text = "The laptop case was great and cover was rubbish"

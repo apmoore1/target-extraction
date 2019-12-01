@@ -162,6 +162,7 @@ class TargetText(MutableMapping):
         2. If targets and spans are set that the spans text match the 
            associated target words e.g. if the target is `barry davies` in 
            `today barry davies went` then the spans should be [[6,18]]
+        3. If anonymised esures that the `text` key does not exist.
 
         The 2nd check is not performed if `self.anonymised` is False.
     
@@ -230,6 +231,9 @@ class TargetText(MutableMapping):
                                       f'the target in the targets list: {target}'
                     if text_target != target:
                         raise ValueError(text_id_msg + target_span_msg)
+        if self.anonymised and 'text' in self._storage:
+            raise ValueError('The TargetText object is anonymised and therefore'
+                             f' should not contain a `text` key. {self}')
 
     def __init__(self, text: Union[str, None], text_id: str,
                  targets: Optional[List[str]] = None, 
@@ -1241,6 +1245,17 @@ class TargetTextCollection(MutableMapping):
 
     This structure only contains TargetText instances.
 
+    Attributes:
+    
+    1. name -- Name associated to the TargetTextCollection.
+    2. metadata -- Any metadata to associate to the object e.g. domain of the 
+       dataset, all metadata is stored in a dictionary. By default the 
+       metadata will always have the `name` attribute within 
+       the metadata under the key `name`. If `anonymised` is also True then 
+       this will also be in the metadata under the key `anonymised`
+    3. anonymised -- If True then the data within the TargetText objects have 
+       no text but the rest of the metadata should exist.
+
     Methods:
     
     1. to_json -- Writes each TargetText instances as a dictionary using it's 
@@ -1303,7 +1318,8 @@ class TargetTextCollection(MutableMapping):
     '''
     def __init__(self, target_texts: Optional[List['TargetText']] = None,
                  name: Optional[str] = None, 
-                 metadata: Optional[Dict[str, Any]] = None) -> None:
+                 metadata: Optional[Dict[str, Any]] = None,
+                 anonymised: bool = False) -> None:
         '''
         :param target_texts: A list of TargetText instances to add to the 
                              collection.
@@ -1312,16 +1328,26 @@ class TargetTextCollection(MutableMapping):
                      metadata if exists.
         :param metadata: Any data that you would like to associate to this 
                          TargetTextCollection.
+        :param anonymised: Wether or not the TargetText objects should be loaded 
+                           in and anonymised, as well as stating whether or not 
+                           the whole collection should be anonymised when 
+                           loading in new TargetText objects.
         '''
         self._storage = OrderedDict()
 
+        self._anonymised = anonymised
         if target_texts is not None:
             for target_text in target_texts:
+                target_text.sanitize()
                 self.add(target_text)
-        
+
         self.metadata = None
         if metadata is not None:
             self.metadata = metadata
+        
+        if anonymised:
+            self.metadata = {} if metadata is None else metadata
+            self.metadata['anonymised'] = anonymised
 
         if name is not None:
             self.name = name
@@ -1329,6 +1355,39 @@ class TargetTextCollection(MutableMapping):
             self.metadata['name'] = name
         else:
             self.name = ''
+
+    @property
+    def anonymised(self) -> bool:
+        '''
+        :returns: True if the data within the TargetTextCollection has been 
+                  anonymised. Anonymised data means that there is no text 
+                  associated with any of the TargetText objects within the 
+                  collection, but all of the metadata is there.
+        '''
+        return self._anonymised
+
+    @anonymised.setter
+    def anonymised(self, value: bool) -> None:
+        '''
+        Sets whether or not `anonymised` attribute is True or False. This in 
+        effect performs the 
+        :py:meth:`target_extraction.data_types.TargetText.anonymised`
+        on each TargetText object within the collection if True. When you 
+        want to set this to False you need to perform 
+        :py:meth:`target_extraction.data_types.TargetTextCollection.de_anonymise`.
+
+        :param value: True for anonymised, else False. If True this will 
+                      enforce that all the TargetText objects do not have a
+                      `text` key/value and the attribute `anonymised` is True.
+        :raises AnonymisedError: If the TargetText object within the collection 
+                                 cannot be set to the 
+                                 `anonymised` value given. If this Error occurs 
+                                 then the object will have kept the original 
+                                 `anonymised` value.
+        '''
+        for target_text in self.values():
+            target_text.anonymised = value
+        self._anonymised = value 
 
     def add(self, value: 'TargetText') -> None:
         '''
@@ -1338,9 +1397,11 @@ class TargetTextCollection(MutableMapping):
 
         e.g. performs self[value['text_id']] = value
 
-        :param value: The TargetText instance to store in the collection
+        :param value: The TargetText instance to store in the collection. Will 
+                      anonymise the TargetText object if the collection's 
+                      anonymised attribute is True.
         '''
-
+        value.anonymised = self.anonymised
         self[value['text_id']] = value
 
     def to_json(self) -> str:
@@ -1853,7 +1914,9 @@ class TargetTextCollection(MutableMapping):
         :param key: Key to be added or changed
         :param value: TargetText instance associated to this key. Where the 
                       key should be the same value as the TargetText instance 
-                      'text_id' value.
+                      'text_id' value. Furthermore if the TargetTextCollection's
+                      `anonymised` attribute is True then the TargetText object 
+                      being added will also be anonymised.
         '''
         if not isinstance(value, TargetText):
             raise TypeError('The value should be of type TargetText and not '
@@ -1865,6 +1928,7 @@ class TargetTextCollection(MutableMapping):
         # We copy it to stop any mutable objects from changing outside of the 
         # collection
         value_copy = copy.deepcopy(value)
+        value_copy.anonymised = self.anonymised
         self._storage[key] = value_copy
 
     def __delitem__(self, key: str) -> None:

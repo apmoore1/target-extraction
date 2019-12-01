@@ -5,7 +5,7 @@ import tempfile
 import pytest
 
 from target_extraction.data_types import TargetTextCollection, TargetText
-from target_extraction.data_types_util import Span
+from target_extraction.data_types_util import Span, AnonymisedError
 from target_extraction.tokenizers import spacy_tokenizer
 from target_extraction.pos_taggers import spacy_tagger
 
@@ -180,6 +180,13 @@ class TestTargetTextCollection:
         assert example_instance['target_sentiments'] is not None
         assert example_collection['2']['target_sentiments'] is None
 
+        # Test the anonymised case
+        assert not example_collection.anonymised
+        example_collection.anonymised = True
+        example_collection['1'] = TargetText(text='something', text_id='1')
+        assert 'text' not in example_collection['2']
+        assert 'text' not in example_collection['1']
+
     def test_add(self):
         new_collection = TargetTextCollection()
 
@@ -188,6 +195,15 @@ class TestTargetTextCollection:
         assert len(new_collection) == 1
 
         assert '2' in new_collection
+        assert not new_collection.anonymised
+
+        # Test the anonymised case
+        new_collection.anonymised = True
+        assert new_collection.anonymised
+        new_collection.add(TargetText(text='something', text_id='1'))
+        assert '1' in new_collection
+        assert 'text' not in new_collection['2']
+        assert 'text' not in new_collection['1']
 
     def test_construction(self):
         new_collection = TargetTextCollection(name='new_name')
@@ -214,6 +230,29 @@ class TestTargetTextCollection:
         assert '2' in new_collection
         assert new_collection.metadata is None
         assert new_collection.name == ''
+        assert new_collection.anonymised == False
+        assert 'text' in new_collection['0']
+
+        # Test anonymised version
+        new_collection = TargetTextCollection(target_texts=self._target_text_examples(), 
+                                              anonymised=True)
+        assert new_collection.anonymised == True
+        assert new_collection.metadata == {'anonymised': True}
+        assert 'text' not in new_collection['0']
+
+    def test_anonymised(self):
+        new_collection = TargetTextCollection(target_texts=self._target_text_examples())
+        assert not new_collection.anonymised
+        for target_text in new_collection.values():
+            assert 'text' in target_text
+        new_collection.anonymised = True
+        assert new_collection.anonymised
+        for target_text in new_collection.values():
+            assert 'text' not in target_text
+        with pytest.raises(AnonymisedError):
+            new_collection.anonymised = False
+        assert new_collection.anonymised
+
 
     def test_to_json(self):
         # no target text instances in the collection (empty collection)
