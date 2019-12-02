@@ -129,11 +129,12 @@ class AllenNLPModel():
         predictor = Predictor.by_name(self._predictor_name)(self.model, dataset_reader)
 
         # Argument batch size first then model param file and then default 64
-        batch_size = batch_size or 64
-        if 'iterator' in all_model_params and batch_size != 64:
-            iter_params = all_model_params.get("iterator")
-            if 'batch_size' in iter_params:
-                batch_size = iter_params['batch_size']
+        if batch_size is None:
+            if 'iterator' in all_model_params:
+                iter_params = all_model_params.get("iterator")
+                if 'batch_size' in iter_params:
+                    batch_size = iter_params['batch_size']
+            batch_size = batch_size or 64
         
         # Data has to be an iterator
         if isinstance(data, list) or isinstance(data, collections.Iterable):
