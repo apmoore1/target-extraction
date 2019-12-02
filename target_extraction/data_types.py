@@ -10,7 +10,7 @@ classes:
 2. `target_extraction.data_types.TargetTextCollection`
 '''
 from collections.abc import MutableMapping
-from collections import OrderedDict, Counter, defaultdict
+from collections import OrderedDict, Counter, defaultdict, deque
 import copy
 import json
 import functools
@@ -78,9 +78,6 @@ class TargetText(MutableMapping):
     7. category_sentiments -- List of the sentiments associated to the 
        categories. If the categories and targets map to each other then 
        this will be empty and you will only use the target_sentiments.
-    8. de_anonymise -- This will set the `anonymised` attribute to False 
-       from True and set the `text` key value to the value in the `text` 
-       key within the `text_dict` argument.
 
     Attributes:
 
@@ -119,6 +116,9 @@ class TargetText(MutableMapping):
     11. replace_target -- Given an index and a new target word it will replace 
         the target at the index with the new target word and return a new 
         TargetText object with everything the same apart from this new target.
+    12. de_anonymise -- This will set the `anonymised` attribute to False 
+        from True and set the `text` key value to the value in the `text` 
+        key within the `text_dict` argument. 
     
     Static Functions:
 
@@ -1075,7 +1075,7 @@ class TargetText(MutableMapping):
 
         :param text_dict: A dictionary that contain the following two keys: 
                           1. `text` and 2. `text_id` where the `text_id` has 
-                          to match the curretn TargetText object `text_id` and 
+                          to match the current TargetText object `text_id` and 
                           the `text` value will become the new value in the 
                           `text` key for this TargetText object.
         :raises ValueError: If the TargetText object `text_id` does not match 
@@ -1289,22 +1289,27 @@ class TargetTextCollection(MutableMapping):
     11. one_sample_per_span -- This applies the TargetText.one_sample_per_span 
         method across all of the TargetText instances within the collection to 
         create a new collection with those new TargetText instances within it.
-    12. sanitize -- This applies the TargetText.sanitize function to all of 
+    12. number_targets -- Returns the total number of targets.
+    13. number_categories -- Returns the total number of categories.
+    14. category_count -- Returns a dictionary of categories as keys and 
+        values as the number of times the category occurs.
+    15. target_sentiments -- A dictionary where the keys are target texts and 
+        the values are a List of sentiment values that have been associated to 
+        that target.
+    16. dict_iter -- Returns an interator of all of the TargetText objects 
+        within the collection as dictionaries.
+    17. unique_distinct_sentiments -- A set of the distinct sentiments within 
+        the collection. The length of the set represents the number of distinct 
+        sentiments within the collection.
+    18. de_anonymise -- This will set the `anonymised` attribute to False 
+        from True and set the `text` key value to the value in the `text` 
+        key within the `text_dict` argument for each of the TargetTexts in 
+        the collection. If any Error is raised this collection will revert back
+        fully to being anonymised.
+    19. sanitize -- This applies the TargetText.sanitize function to all of 
         the TargetText instances within this collection, affectively ensures 
         that all of the instances follow the specified rules that TargetText 
         instances should follow.
-    13. number_targets -- Returns the total number of targets.
-    14. number_categories -- Returns the total number of categories.
-    15. category_count -- Returns a dictionary of categories as keys and 
-        values as the number of times the category occurs.
-    16. target_sentiments -- A dictionary where the keys are target texts and 
-        the values are a List of sentiment values that have been associated to 
-        that target.
-    17. dict_iter -- Returns an interator of all of the TargetText objects 
-        within the collection as dictionaries.
-    18. unique_distinct_sentiments -- A set of the distinct sentiments within 
-        the collection. The length of the set represents the number of distinct 
-        sentiments within the collection.
     
     Static Functions:
 
@@ -1425,6 +1430,33 @@ class TargetTextCollection(MutableMapping):
         return json_text
 
     @staticmethod
+    def _get_metadata(json_iterable: Iterable[str]) -> Tuple[Union[Dict[str, Any], None],
+                                                             Union[str, None], bool]:
+        '''
+        :param json_iterable: An interable that generates a JSON string, of 
+                              which the last string contains the metadata if 
+                              it exists. 
+        :returns: The metadata for the collection being loaded, as a Tuple of 
+                  length 3 where the 3 items are: 1. The metadata, 
+                  2. The name of the collection, and 3. Whether it has been 
+                  anonymised. The first 2 by default are None and the 3 is 
+                  False by default. 
+        '''
+        metadata = None
+        name = None
+        anonymised = False
+        for line in deque(json_iterable, 1):
+            if line.strip():
+                json_line = json.loads(line)
+                if 'metadata' in json_line:
+                    metadata = json_line['metadata']
+                    if 'name' in metadata:
+                        name = metadata['name']
+                    if 'anonymised' in metadata:
+                        anonymised = metadata['anonymised']  
+        return metadata, name, anonymised
+
+    @staticmethod
     def from_json(json_text: str, **target_text_collection_kwargs
                   ) -> 'TargetTextCollection':
         '''
@@ -1439,30 +1471,34 @@ class TargetTextCollection(MutableMapping):
                                               constructor.
         :returns: A TargetTextCollection based on each new line in the given 
                   text to be passable by TargetText.from_json method.
+        :raises AnonymisedError: If the `TargetText` object that it is loading 
+                                 is anonymied but the `target_text_collection_kwargs`
+                                 argument contains `anonymised` False, as 
+                                 you cannot de-anonymised without performing 
+                                 the 
+                                 :py:meth:`target_extraction.data_types.TargetTextCollection.de_anonymised`.
         '''
+        
+       
         if json_text.strip() == '':
             return TargetTextCollection(**target_text_collection_kwargs)
 
         target_text_instances = []
-        metadata = None
-        name = None
+        metadata, name, anonymised = TargetTextCollection._get_metadata(json_text.split('\n'))
         for line in json_text.split('\n'):
             json_line = json.loads(line)
-            if 'metadata' in json_line:
-                metadata = json_line['metadata']
-                if 'name' in metadata:
-                    name = metadata['name']
-            else:
-                target_text_instances.append(TargetText.from_json(line))
+            if not 'metadata' in json_line:
+                target_text_instance = TargetText.from_json(line, anonymised=anonymised)
+                target_text_instances.append(target_text_instance)
         # Key word arguments over riding meta data
         if 'name' in target_text_collection_kwargs:
             name = target_text_collection_kwargs['name']
         if 'metadata' in target_text_collection_kwargs:
             metadata = target_text_collection_kwargs['metadata']
+        if 'anonymised' in target_text_collection_kwargs:
+            anonymised = target_text_collection_kwargs['anonymised']
         return TargetTextCollection(target_text_instances, name=name, 
-                                    metadata=metadata)
-        #return TargetTextCollection(target_text_instances, 
-        #                            **target_text_collection_kwargs)
+                                    metadata=metadata, anonymised=anonymised)
 
     @staticmethod
     def load_json(json_fp: Path, **target_text_collection_kwargs
@@ -1486,26 +1522,26 @@ class TargetTextCollection(MutableMapping):
                   json file, and the optional meta data on the last line.
         '''
         target_text_instances = []
-        metadata = None
-        name = None
+        with json_fp.open('r') as json_file:
+            metadata, name, anonymised = TargetTextCollection._get_metadata(json_file)
+
         with json_fp.open('r') as json_file:
             for line in json_file:
                 if line.strip():
                     json_line = json.loads(line)
-                    if 'metadata' in json_line:
-                        metadata = json_line['metadata']
-                        if 'name' in metadata:
-                            name = metadata['name']
-                    else:
-                        target_text_instance = TargetText.from_json(line)
+                    if 'metadata' not in json_line:
+                        target_text_instance = TargetText.from_json(line, anonymised)
                         target_text_instances.append(target_text_instance)
+                        
         # Key word arguments over riding meta data
         if 'name' in target_text_collection_kwargs:
             name = target_text_collection_kwargs['name']
         if 'metadata' in target_text_collection_kwargs:
             metadata = target_text_collection_kwargs['metadata']
+        if 'anonymised' in target_text_collection_kwargs:
+            anonymised = target_text_collection_kwargs['anonymised']
         return TargetTextCollection(target_text_instances, name=name, 
-                                    metadata=metadata)
+                                    metadata=metadata, anonymised=anonymised)
 
     def to_json_file(self, json_fp: Path) -> None:
         '''
@@ -1879,6 +1915,48 @@ class TargetTextCollection(MutableMapping):
         if 0 in unique_ds:
             unique_ds.remove(0)
         return unique_ds
+
+    def de_anonymise(self, text_dicts: Iterable[Dict[str, str]]) -> None:
+        '''
+        This will set the `anonymised` attribute to False 
+        from True and set the `text` key value to the value in the `text` 
+        key within the `text_dict` argument for each of the TargetTexts in 
+        the collection. If any Error is raised this collection will revert back
+        fully to being anonymised.
+
+        :param text_dicts: An iterable of dictionaries that contain the following 
+                           two keys: 1. `text` and 2. `text_id` where 
+                           the `text_id` has to be a key within the current 
+                           collection. The `text` associated to that id will 
+                           become that TargetText object's text value.
+        :raises ValueError: If the length of the `text_dicts` does not match 
+                            that of the collection.
+        :raises KeyError: If any of the `text_id`s in the `text_dicts` do not 
+                          match those within this collection.
+        '''
+        try:
+            self_len = len(self)
+            text_dict_len = {}
+            for text_dict in text_dicts:
+                text_dict_id = text_dict['text_id']
+                text_dict_len[text_dict_id] = 1
+                if text_dict_id not in self:
+                    raise KeyError(f"The key {text_dict_id} from `text_dicts`"
+                                   f" is not in this collection.")
+                self[text_dict_id].de_anonymise(text_dict)
+            text_dict_len = len(text_dict_len)
+            if self_len != text_dict_len:
+                raise ValueError(f'The length of collection {self_len} is not '
+                                 'equal to the length of the `text_dicts` '
+                                 f'{text_dict_len}.')
+        except Exception as e:
+            # Cleans up after the exception as we have to preserve the case 
+            # that it is still anonymised
+            for target_text in self.values():
+                if not target_text.anonymised:
+                    target_text.anonymised = True
+            raise e
+        self.anonymised = False
 
     def sanitize(self) -> None:
         '''

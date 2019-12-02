@@ -314,49 +314,93 @@ class TestTargetTextCollection:
                              '{"metadata": {"name": "test name"}}')
         assert new_collection.to_json() == true_json_version
 
+        # Test that anonymised is added
+        new_collection = TargetTextCollection(self._target_text_examples()[:2], 
+                                              anonymised=True)
+        true_json_version = ('{"text_id": "0", "targets": '
+                             '["laptop case"], "spans": [[4, 15]], '
+                             '"target_sentiments": [0], "categories": '
+                             '["LAPTOP#CASE"], "category_sentiments": null}'
+                             '\n{"text_id": '
+                             '"another_id", "targets": ["cover"], "spans": '
+                             '[[30, 35]], "target_sentiments": [1], "categories": '
+                             '["LAPTOP"], "category_sentiments": null}\n'
+                             '{"metadata": {"anonymised": true}}')
+        assert new_collection.to_json() == true_json_version
+
+    @pytest.mark.parametrize("anonymised", (True, False))
     @pytest.mark.parametrize("name", (' ', 'test_name'))
-    @pytest.mark.parametrize("metadata", (None, {'model': 'InterAE'}))
-    def test_from_json(self, name: str, metadata: Optional[Dict[str, Any]]):
+    @pytest.mark.parametrize("metadata", (None, 'InterAE'))
+    def test_from_json(self, name: str, metadata: Optional[Dict[str, Any]],
+                       anonymised: bool):
+        if metadata == 'InterAE':
+            metadata = {'model': metadata}
         if metadata is None:
             metadata = {}
             metadata['name'] = name
+            if anonymised:
+                metadata['anonymised'] = anonymised
         # no text given
         test_collection = TargetTextCollection.from_json('', name=name, 
-                                                         metadata=metadata)
+                                                         metadata=metadata,
+                                                         anonymised=anonymised)
         assert TargetTextCollection() == test_collection
         assert test_collection.name == name
-        assert test_collection.metadata == metadata
+        assert len(test_collection.metadata) == len(metadata)
+        for key, value in metadata.items():
+            assert value == test_collection.metadata[key]
+        assert test_collection.anonymised == anonymised
 
         # One target text instance in the text
         new_collection = TargetTextCollection([self._target_text_example()], 
-                                              name=name, metadata=metadata)
+                                              name=name, metadata=metadata,
+                                              anonymised=anonymised)
         json_one_collection = new_collection.to_json()
         assert new_collection == TargetTextCollection.from_json(json_one_collection)
         assert new_collection.name == name
         assert new_collection.metadata == metadata
+        assert len(new_collection.metadata) == len(metadata)
+        for key, value in metadata.items():
+            assert value == new_collection.metadata[key]
+        assert new_collection.anonymised == anonymised
 
         # Multiple target text instances in the text
         new_collection = TargetTextCollection(self._target_text_examples()[:2], 
-                                              name=name, metadata=metadata)
+                                              name=name, metadata=metadata,
+                                              anonymised=anonymised)
         json_multi_collection = new_collection.to_json()
         assert new_collection == TargetTextCollection.from_json(json_multi_collection)
         assert new_collection.name == name
-        assert new_collection.metadata == metadata
+        assert len(new_collection.metadata) == len(metadata)
+        for key, value in metadata.items():
+            assert value == new_collection.metadata[key]
+        assert new_collection.anonymised == anonymised
 
-        # Test the case where the metadata and name is overridden in the function
-        # call.
+        # Test the case where the metadata, name, and anonymised is overridden
+        # in the function call.
         new_collection = TargetTextCollection(self._target_text_examples()[:2], 
-                                              name=name, metadata=metadata)
+                                              name=name, metadata=metadata,
+                                              anonymised=anonymised)
         json_multi_collection = new_collection.to_json()
         new_name = 'new name'
         new_metadata = {'model': 'TDLSTM'}
-        from_json_collection = TargetTextCollection.from_json(json_multi_collection, 
-                                                              name=new_name, metadata=new_metadata)
-        assert new_collection == from_json_collection
-        assert from_json_collection.name == new_name
-        assert from_json_collection.metadata['name'] == new_name
-        assert from_json_collection.metadata['model'] == 'TDLSTM'
+        new_anonymised = not anonymised
+        if new_anonymised == False and anonymised:
+            with pytest.raises(AnonymisedError):
+                TargetTextCollection.from_json(json_multi_collection, name=new_name, 
+                                            metadata=new_metadata, anonymised=new_anonymised)
+        else:
+            from_json_collection = TargetTextCollection.from_json(json_multi_collection, 
+                                                                name=new_name, metadata=new_metadata,
+                                                                anonymised=new_anonymised)
+            assert new_collection == from_json_collection
+            assert from_json_collection.name == new_name
+            assert from_json_collection.metadata['name'] == new_name
+            assert from_json_collection.metadata['model'] == 'TDLSTM'
+            assert from_json_collection.metadata['anonymised'] == True
+            assert 'text' not in from_json_collection['0']
 
+        
     @pytest.mark.parametrize("name", ('', 'test_name'))
     def test_load_json(self, name):
         empty_json_fp = Path(self._json_data_dir(), 'empty_target_instance.json')
@@ -387,7 +431,7 @@ class TestTargetTextCollection:
         assert len(two_target_collection) == 2
 
         # Ensure that it can load the multiple target text instances with metadata
-        # with and without a name variable
+        # with and without a name variable.
         for contains_name, metadata_fp in [(True, 'one_target_one_empty_metadata.json'), 
                                            (False, 'one_target_one_empty_metadata_no_name.json')]:
             two_target_metadata_json_fp = Path(self._json_data_dir(), metadata_fp)
@@ -404,59 +448,103 @@ class TestTargetTextCollection:
             assert len(correct_metadata['target sentiment predictions']) == len(test_metadata['target sentiment predictions'])
             assert correct_metadata['target sentiment predictions'] == test_metadata['target sentiment predictions']
             assert two_target_metadata_collection.name == correct_name
-            assert two_target_metadata_collection.metadata == correct_metadata
+            assert len(two_target_metadata_collection.metadata) == len(correct_metadata)
+            for key, value in correct_metadata.items():
+                assert value == two_target_metadata_collection.metadata[key]
+            assert not two_target_metadata_collection.anonymised
 
         # Ensure that when loading the given data is overriden
         two_target_metadata_json_fp = Path(self._json_data_dir(), 'one_target_one_empty_metadata.json')
-        name = 'different'
-        metadata = {'model': 'TDLSTM'}
-        two_target_metadata_collection = TargetTextCollection.load_json(two_target_metadata_json_fp, name=name, metadata=metadata)
-        assert two_target_metadata_collection.name == name
-        assert two_target_metadata_collection.metadata == metadata
-        assert 2 == len(two_target_metadata_collection)
+        new_name = 'different'
+        new_metadata = {'model': 'TDLSTM'}
 
+        two_target_metadata_collection = TargetTextCollection.load_json(two_target_metadata_json_fp, 
+                                                                        name=new_name, metadata=new_metadata,
+                                                                        anonymised=True)
+        new_metadata['name'] = new_name
+        new_metadata['anonymised'] = True
+        assert two_target_metadata_collection.name == new_name
+        assert len(two_target_metadata_collection.metadata) == len(new_metadata)
+        for key, value in new_metadata.items():
+            assert value == two_target_metadata_collection.metadata[key]
+        assert 2 == len(two_target_metadata_collection)
+        assert two_target_metadata_collection.anonymised
+        assert 'text' not in two_target_metadata_collection['1']
+
+        # Test that it can load a dataset that has been anonymised
+        anonymised_fp = Path(self._json_data_dir(), 'anonymised.json')
+        loaded_dataset = TargetTextCollection.load_json(anonymised_fp)
+        assert 2 == len(loaded_dataset)
+        for target_object in loaded_dataset.values():
+            assert 'text' not in target_object
+        assert loaded_dataset.anonymised
+        assert 'loaded' == loaded_dataset.name
+        assert True == loaded_dataset.metadata['anonymised']
+
+    @pytest.mark.parametrize("anonymised", (True, False))
     @pytest.mark.parametrize("name", (' ', 'test_name'))
-    @pytest.mark.parametrize("metadata", (None, {'model': 'InterAE'}))
-    def test_to_json_file(self, name: str, metadata: Optional[Dict[str, Any]]):
+    @pytest.mark.parametrize("metadata", (None, 'InterAE'))
+    def test_to_json_file(self, name: str, metadata: Optional[Dict[str, Any]],
+                          anonymised: bool):
+        if metadata == 'InterAE':
+            metadata = {'model': metadata}
         if metadata is None:
             metadata = {}
         metadata['name'] = name
+        if anonymised:
+            metadata['anonymised'] = anonymised
         with tempfile.NamedTemporaryFile(mode='w+') as temp_fp:
             temp_path = Path(temp_fp.name)
-            test_collection = TargetTextCollection(name=name, metadata=metadata)
+            test_collection = TargetTextCollection(name=name, metadata=metadata, 
+                                                   anonymised=anonymised)
             test_collection.to_json_file(temp_path)
             loaded_collection = TargetTextCollection.load_json(temp_path)
             assert len(loaded_collection) == 0
             assert name == loaded_collection.name
-            assert metadata == loaded_collection.metadata
+            assert len(metadata) == len(loaded_collection.metadata)
+            for key, value in metadata.items():
+                assert value == loaded_collection.metadata[key]
+            assert loaded_collection.anonymised == anonymised
 
             # Ensure that it can load more than one Target Text examples
             test_collection = TargetTextCollection(self._target_text_examples(), 
-                                                   name=name, metadata=metadata)
+                                                   name=name, metadata=metadata,
+                                                   anonymised=anonymised)
             test_collection.to_json_file(temp_path)
             loaded_collection = TargetTextCollection.load_json(temp_path)
             assert len(loaded_collection) == 3
             assert name == loaded_collection.name
-            assert metadata == loaded_collection.metadata
+            assert len(metadata) == len(loaded_collection.metadata)
+            for key, value in metadata.items():
+                assert value == loaded_collection.metadata[key]
+            assert loaded_collection.anonymised == anonymised
 
             # Ensure that if it saves to the same file that it overwrites that 
             # file
             test_collection = TargetTextCollection(self._target_text_examples(),
-                                                   name=name, metadata=metadata)
+                                                   name=name, metadata=metadata,
+                                                   anonymised=anonymised)
             test_collection.to_json_file(temp_path)
             loaded_collection = TargetTextCollection.load_json(temp_path)
             assert len(loaded_collection) == 3
             assert name == loaded_collection.name
-            assert metadata == loaded_collection.metadata
+            assert len(metadata) == len(loaded_collection.metadata)
+            for key, value in metadata.items():
+                assert value == loaded_collection.metadata[key]
+            assert loaded_collection.anonymised == anonymised
 
             # Ensure that it can just load one examples
             test_collection = TargetTextCollection([self._target_text_example()],
-                                                   name=name, metadata=metadata)
+                                                   name=name, metadata=metadata,
+                                                   anonymised=anonymised)
             test_collection.to_json_file(temp_path)
             loaded_collection = TargetTextCollection.load_json(temp_path)
             assert len(loaded_collection) == 1
             assert name == loaded_collection.name
-            assert metadata == loaded_collection.metadata
+            assert len(metadata) == len(loaded_collection.metadata)
+            for key, value in metadata.items():
+                assert value == loaded_collection.metadata[key]
+            assert loaded_collection.anonymised == anonymised
     
     def test_tokenize(self):
         # Test the normal case with one TargetText Instance in the collection
@@ -1192,3 +1280,59 @@ class TestTargetTextCollection:
         with pytest.raises(TypeError):
             coll_err = TargetTextCollection([target_text_4])
             coll_err.unique_distinct_sentiments(sentiment_key)
+        
+    def test_de_anonymise(self):
+        import copy
+        target_examples = self._target_text_examples()
+        copy_target_examples = iter(copy.deepcopy(target_examples))
+        collection = TargetTextCollection(target_examples, anonymised=True)
+        assert collection.anonymised
+        for target in collection.values():
+            assert 'text' not in target
+
+        collection.de_anonymise(copy_target_examples)
+        assert not collection.anonymised
+        correct_text = 'The laptop case was great and cover was rubbish'
+        for target in collection.values():
+            assert 'text' in target
+            assert correct_text == target['text']
+            assert not target.anonymised
+        # Test the case where the length of the text dictionaries given are not 
+        # the same length as the TargetTextCollection
+        target_examples = self._target_text_examples()
+        collection = TargetTextCollection(target_examples, anonymised=True)
+        wrong_dict_length = [{'text_id': '0', 'text': correct_text},
+                             {'text_id': '0', 'text': correct_text},
+                             {'text_id': '0', 'text': correct_text}]
+        with pytest.raises(ValueError):
+            collection.de_anonymise(wrong_dict_length)
+        wrong_dict_length = [{'text_id': '0', 'text': correct_text},
+                             {'text_id': '2', 'text': correct_text}]
+        with pytest.raises(ValueError):
+            collection.de_anonymise(wrong_dict_length)
+        assert collection.anonymised
+        for target in collection.values():
+            assert 'text' not in target
+            assert target.anonymised
+        # Test the case where the length of the text dictionaries is correct 
+        # but the dictionary keys are not correct.
+        wrong_keys = [{'text_id': '0', 'text': correct_text}, 
+                      {'text_id': '1', 'text': correct_text}, 
+                      {'text_id': '2', 'text': correct_text}]
+        with pytest.raises(KeyError):
+            collection.de_anonymise(wrong_keys)
+        for target in collection.values():
+            assert 'text' not in target
+            assert target.anonymised
+        assert collection.anonymised
+        # Test the case where the text is in-correct
+        wrong_text = 'The laptop case was great and cove was rubbish'
+        wrong_text_dicts = [{'text_id': '0', 'text': wrong_text}, 
+                            {'text_id': '2', 'text': wrong_text}, 
+                            {'text_id': 'another_id', 'text': wrong_text}]
+        with pytest.raises(AnonymisedError):
+            collection.de_anonymise(wrong_text_dicts)
+        for target in collection.values():
+            assert 'text' not in target
+            assert target.anonymised
+        assert collection.anonymised
