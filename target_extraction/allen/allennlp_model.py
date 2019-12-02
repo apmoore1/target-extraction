@@ -1,5 +1,5 @@
 import collections
-from typing import Optional, List, Any, Iterable, Dict, Union
+from typing import Optional, List, Any, Iterable, Dict, Union, Tuple
 import tempfile
 from pathlib import Path
 import random
@@ -93,8 +93,11 @@ class AllenNLPModel():
 
     def _predict_iter(self, data: Union[Iterable[Dict[str, Any]], 
                                         List[Dict[str, Any]]],
-                      batch_size: Optional[int] = None
-                      ) -> Iterable[Dict[str, Any]]:
+                      batch_size: Optional[int] = None,
+                      yield_original_target: bool = False
+                      ) -> Iterable[Union[Dict[str, Any], 
+                                          Tuple[Dict[str, Any], Dict[str, Any]]
+                                         ]]:
         '''
         Iterates over the predictions and yields one prediction at a time.
         This is a useful wrapper as it performs the data pre-processing and 
@@ -110,9 +113,14 @@ class AllenNLPModel():
                            defaults to 64 unless it is specified in the 
                            `model_param_fp` within the constructor then 
                            the batch size from the param file is used. 
+        :param yield_original_target: If True it will then yield the 
+                                      dictionary that has been predicted on.
         :yields: A dictionary containing all the values the model outputs e.g.
                  For the `target_tagger` model it would return `logits`, 
                  `class_probabilities`, `mask`, `tags`, `words`, and `text`.
+                 If `yield_original_target` is True it will then yield a Tuple 
+                 of 2 dictionaries the first being what has already been stated 
+                 and the second being the dictionary that is being predicted on.
         :raises AssertionError: If the `model` attribute is None. This can be 
                                 overcome by either fitting or loading a model.
         :raises TypeError: If the data given is not of Type List or Iterable.
@@ -152,8 +160,67 @@ class AllenNLPModel():
                     data_exists = False
             if data_batch:
                 predictions = predictor.predict_batch_json(data_batch)
-                for prediction in predictions:
-                    yield prediction
+                for prediction_index, prediction in enumerate(predictions):
+                    if yield_original_target:
+                        yield (prediction, data_batch[prediction_index])
+                    else:
+                        yield prediction
+
+    def predict_into_collection(self, collection: TargetTextCollection,
+                                key_mapping: Dict[str, str],
+                                batch_size: Optional[int] = None,
+                                append_if_exists: bool = True
+                                ) -> TargetTextCollection:
+        '''
+        :param collection: The TargetTextCollection that is to be predicted on 
+                           and to be the store of the predicted data.
+        :param key_mapping: Dictionary mapping the prediction keys that contain 
+                            the prediction values to the keys that will store 
+                            those prediction values within the collection that 
+                            has been predicted on.
+        :param batch_size: Specify the batch size to predict on. If left None 
+                           defaults to 64 unless it is specified in the 
+                           `model_param_fp` within the constructor then 
+                           the batch size from the param file is used.
+        :param append_if_exists: If False and a TargetText within the collection 
+                                 already has a prediction within the given key 
+                                 based on the `key_mapping` then KeyError is 
+                                 raised. 
+        :returns: The collection that was predict on with the new predictions 
+                  within the collection stored in keys that are the values of 
+                  the `key_mapping` argument. Note that all predictions are 
+                  sotred within Lists within their respective keys in the 
+                  collection.
+        :raises KeyError: If the keys from `key_mapping` is not within the 
+                          prediction dictionary.
+        :raises KeyError: If `append_if_exists` is False and the a TargetText 
+                          within the collection already has a prediction within
+                          the given key based on the `key_mapping` then this 
+                          is raised. 
+        '''
+        for prediction, original_target in self._predict_iter(collection.dict_iterator(), 
+                                                              batch_size=batch_size, 
+                                                              yield_original_target=True):
+            text_id = original_target['text_id']
+            # This happens first as we want an error to be raised before any
+            # data is added to the TargetTextCollection.
+            for prediction_key, collection_key in key_mapping.items():
+                if prediction_key not in prediction:
+                    raise KeyError(f'The key {prediction_key} from `key_mapping`'
+                                   f' {key_mapping} is not within the prediction'
+                                   f' {prediction} for the follwoing TargeText'
+                                   f' {original_target}')
+            
+            for prediction_key, collection_key in key_mapping.items():
+                if collection_key not in collection[text_id]:
+                    collection[text_id][collection_key] = []
+                elif not append_if_exists:
+                    raise KeyError(f'The key {collection_key} from `key_mapping`'
+                                   f' {key_mapping} already exists within the'
+                                   f' follwoing TargeText {original_target}')
+                collection[text_id][collection_key].append(prediction[prediction_key])
+        return collection
+
 
     def predict_sequences(self, data: Union[Iterable[Dict[str, Any]], 
                                             List[Dict[str, Any]]],

@@ -70,8 +70,10 @@ class TestAllenNLPModel():
             model.fit(train_data, val_data)
             assert saved_model_fp.exists()
     
+    @pytest.mark.parametrize("yield_original_target", (True, False))
     @pytest.mark.parametrize("batch_size", (None, 20))
-    def test_predict_iter(self, batch_size: Optional[int]):
+    def test_predict_iter(self, batch_size: Optional[int], 
+                          yield_original_target: bool):
         data = [{"text": "The laptop case was great and cover was rubbish"},
                 {"text": "Another day at the office"},
                 {"text": "The laptop case was great and cover was rubbish"}]
@@ -79,43 +81,66 @@ class TestAllenNLPModel():
         model_dir = self.TARGET_EXTRACTION_MODEL
         model = AllenNLPModel('TE', self.CONFIG_FILE, 'target-tagger', model_dir)
         with pytest.raises(AssertionError):
-            for _ in model._predict_iter(data):
+            for _ in model._predict_iter(data, batch_size=batch_size,
+                                         yield_original_target=yield_original_target):
                 pass
         # Test that it raises an Error when the data provided is not a list or 
         # iterable
         model.load()
         non_iter_data = 5
         with pytest.raises(TypeError):
-            for _ in model._predict_iter(non_iter_data, batch_size=batch_size):
+            for _ in model._predict_iter(non_iter_data, batch_size=batch_size,
+                                         yield_original_target=yield_original_target):
                 pass
         # Test that it works on the normal cases which are lists and iterables
         for data_type in [data, iter(data)]:
             predictions = []
-            for prediction in model._predict_iter(data_type, batch_size=batch_size):
+            for prediction in model._predict_iter(data_type, batch_size=batch_size,
+                                                  yield_original_target=yield_original_target):
                 predictions.append(prediction)
             assert 3 == len(predictions)
-            assert isinstance(predictions[0], dict)
-            assert 6 == len(predictions[1])
-            assert 5 == len(predictions[1]['tags'])
-            assert 9 == len(predictions[1]['class_probabilities'])
+            predictions_0 = predictions[0]
+            predictions_1 = predictions[1]
 
-            correct_text = "Another day at the office"
-            correct_tokens = correct_text.split()
-            assert correct_tokens == predictions[1]['words']
-            assert correct_text == predictions[1]['text']
+            if yield_original_target:
+                assert isinstance(predictions_0, tuple)
+                for pred_index, original_data_dict in enumerate(predictions):
+                    _, original_data_dict = original_data_dict
+                    assert len(data[pred_index]) == len(original_data_dict)
+                    for key, value in data[pred_index].items():
+                        assert value == original_data_dict[key]
+                predictions_0 = predictions_0[0]
+                predictions_1 = predictions_1[0]
+            assert isinstance(predictions_0, dict)
+            assert 6 == len(predictions_1)
+            assert 5 == len(predictions_1['tags'])
+            assert 9 == len(predictions_1['class_probabilities'])
+
+            correct_text_1 = "Another day at the office"
+            correct_tokens_1 = correct_text_1.split()
+            assert correct_tokens_1 == predictions_1['words']
+            assert correct_text_1 == predictions_1['text']
         
         # Test that it works on a larger dataset of 150
         larger_dataset = data * 50
         for data_type in [larger_dataset, iter(larger_dataset)]:
             predictions = []
-            for prediction in model._predict_iter(data_type, batch_size=batch_size):
+            for prediction in model._predict_iter(data_type, batch_size=batch_size,
+                                                  yield_original_target=yield_original_target):
                 predictions.append(prediction)
             assert 150 == len(predictions)
-            assert isinstance(predictions[0], dict)
-            assert 5 == len(predictions[-2]['tags'])
-            assert 9 == len(predictions[-2]['class_probabilities'])
-            assert 9 == len(predictions[-1]['tags'])
-            assert 9 == len(predictions[-1]['class_probabilities'])
+            predictions_0 = predictions[0]
+            predictions_1 = predictions[-1]
+            predictions_2 = predictions[-2]
+            if yield_original_target:
+                predictions_0 = predictions_0[0]
+                predictions_1 = predictions_1[0]
+                predictions_2 = predictions_2[0]
+            assert isinstance(predictions_0, dict)
+            assert 5 == len(predictions_2['tags'])
+            assert 9 == len(predictions_2['class_probabilities'])
+            assert 9 == len(predictions_1['tags'])
+            assert 9 == len(predictions_1['class_probabilities'])
         
         # Test the case when you feed it no data which can happen through 
         # multiple iterators e.g.
@@ -123,9 +148,61 @@ class TestAllenNLPModel():
         # ensure alt_data has no data
         assert 3 == len([d for d in alt_data])
         predictions = []
-        for prediction in model._predict_iter(alt_data, batch_size=batch_size):
+        for prediction in model._predict_iter(alt_data, batch_size=batch_size,
+                                              yield_original_target=yield_original_target):
             predictions.append(prediction)
         assert not predictions
+
+    @pytest.mark.parametrize("append_if_exists", (True, False))
+    @pytest.mark.parametrize("batch_size", (None, 20))
+    def test_predict_into_collection(self, batch_size: Optional[int], 
+                                     append_if_exists: bool):
+        # Test that it raises an Error when the model attribute is not None
+        model_dir = self.TARGET_EXTRACTION_MODEL
+        model = AllenNLPModel('TE', self.CONFIG_FILE, 'target-tagger', model_dir)
+        model.load()
+        # Test the normal case
+        train_data = TargetTextCollection.load_json(self.TARGET_EXTRACTION_TRAIN_DATA)
+        key_mappings = {'tags': 'predicted_tags', 'words': 'predicted_tokens'}
+        train_data = model.predict_into_collection(train_data, key_mappings, 
+                                                   batch_size, append_if_exists)
+        for target_data in train_data.values():
+            assert 'predicted_tags' in target_data
+            assert 'tags' not in target_data
+            assert 'predicted_tokens' in target_data
+            assert 'tokens' not in target_data
+
+            target_tokens = target_data['tokenized_text']
+            assert len(target_tokens) == len(target_data['predicted_tags'][0])
+            assert len(target_tokens) == len(target_data['predicted_tokens'][0])
+            assert target_tokens == target_data['predicted_tokens'][0]
+        # This should be fine when append_if_exists is True and KeyError other
+        # wise.
+        if append_if_exists:
+            train_data = model.predict_into_collection(train_data, key_mappings, 
+                                                       batch_size, append_if_exists)
+            for target_data in train_data.values():
+                target_tokens = target_data['tokenized_text']
+                assert 2 == len(target_data['predicted_tags'])
+                assert target_data['predicted_tags'][0] == target_data['predicted_tags'][1]
+                assert target_tokens == target_data['predicted_tokens'][0]
+                assert target_tokens == target_data['predicted_tokens'][1]
+        else:
+            with pytest.raises(KeyError):
+                train_data = model.predict_into_collection(train_data, key_mappings, 
+                                                           batch_size, append_if_exists)
+        # Raise a KeyError when the `key_mappings` values are not within the 
+        # TargetText
+        from collections import OrderedDict
+        key_mappings = OrderedDict([('tags', 'predicted_tags'), 
+                                    ('wordss', 'predicted_tokens')])
+        train_data = TargetTextCollection.load_json(self.TARGET_EXTRACTION_TRAIN_DATA)
+        with pytest.raises(KeyError):
+            train_data = model.predict_into_collection(train_data, key_mappings, 
+                                                       batch_size, append_if_exists)
+        for target_data in train_data.values():
+            assert 'predicted_tags' not in target_data
+            assert 'predicted_tokens' not in target_data
 
     @pytest.mark.parametrize("batch_size", (None, 20))
     def test_predict_sequences(self, batch_size: Optional[int]):
