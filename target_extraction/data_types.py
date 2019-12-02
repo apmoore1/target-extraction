@@ -1283,7 +1283,7 @@ class TargetTextCollection(MutableMapping):
        not always matching tokenization therefore this removes the tokenization 
        error that can come from the sequence label measures.
     9. samples_with_targets -- Returns all of the samples that have target 
-                               spans as a TargetTextCollection. 
+       spans as a TargetTextCollection. 
     10. target_count -- A dictionary of target text as key and values as the  
         number of times the target text occurs in this TargetTextCollection
     11. one_sample_per_span -- This applies the TargetText.one_sample_per_span 
