@@ -1543,7 +1543,8 @@ class TargetTextCollection(MutableMapping):
         return TargetTextCollection(target_text_instances, name=name, 
                                     metadata=metadata, anonymised=anonymised)
 
-    def to_json_file(self, json_fp: Path) -> None:
+    def to_json_file(self, json_fp: Path, 
+                     include_metadata: bool = False) -> None:
         '''
         Saves the current TargetTextCollection to a json file which won't be 
         strictly json but each line in the file will be and each line in the 
@@ -1552,6 +1553,8 @@ class TargetTextCollection(MutableMapping):
         TargetTextCollection.load_json.
 
         :param json_fp: File path to the json file to save the current data to.
+        :param include_metadata: Whether or not to include the metadata when 
+                                 writing to file.
         '''
         with json_fp.open('w+') as json_file:
             for index, target_text_instance in enumerate(self.values()):
@@ -1560,7 +1563,7 @@ class TargetTextCollection(MutableMapping):
                 if index != 0:
                     target_text_string = f'\n{target_text_string}'
                 json_file.write(target_text_string)
-            if self.metadata is not None:
+            if self.metadata is not None and include_metadata:
                 metadata_to_write = {'metadata': self.metadata}
                 json_file.write(f'\n{json.dumps(metadata_to_write)}')
 

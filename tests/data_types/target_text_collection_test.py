@@ -484,8 +484,9 @@ class TestTargetTextCollection:
     @pytest.mark.parametrize("anonymised", (True, False))
     @pytest.mark.parametrize("name", (' ', 'test_name'))
     @pytest.mark.parametrize("metadata", (None, 'InterAE'))
+    @pytest.mark.parametrize("include_metadata", (True, False))
     def test_to_json_file(self, name: str, metadata: Optional[Dict[str, Any]],
-                          anonymised: bool):
+                          anonymised: bool, include_metadata: bool):
         if metadata == 'InterAE':
             metadata = {'model': metadata}
         if metadata is None:
@@ -497,54 +498,69 @@ class TestTargetTextCollection:
             temp_path = Path(temp_fp.name)
             test_collection = TargetTextCollection(name=name, metadata=metadata, 
                                                    anonymised=anonymised)
-            test_collection.to_json_file(temp_path)
+            test_collection.to_json_file(temp_path, include_metadata=include_metadata)
             loaded_collection = TargetTextCollection.load_json(temp_path)
             assert len(loaded_collection) == 0
-            assert name == loaded_collection.name
-            assert len(metadata) == len(loaded_collection.metadata)
-            for key, value in metadata.items():
-                assert value == loaded_collection.metadata[key]
-            assert loaded_collection.anonymised == anonymised
+            if include_metadata:
+                assert name == loaded_collection.name
+                assert len(metadata) == len(loaded_collection.metadata)
+                for key, value in metadata.items():
+                    assert value == loaded_collection.metadata[key]
+                assert loaded_collection.anonymised == anonymised
 
             # Ensure that it can load more than one Target Text examples
             test_collection = TargetTextCollection(self._target_text_examples(), 
                                                    name=name, metadata=metadata,
                                                    anonymised=anonymised)
-            test_collection.to_json_file(temp_path)
-            loaded_collection = TargetTextCollection.load_json(temp_path)
-            assert len(loaded_collection) == 3
-            assert name == loaded_collection.name
-            assert len(metadata) == len(loaded_collection.metadata)
-            for key, value in metadata.items():
-                assert value == loaded_collection.metadata[key]
-            assert loaded_collection.anonymised == anonymised
+            test_collection.to_json_file(temp_path, include_metadata=include_metadata)
+            if include_metadata:
+                loaded_collection = TargetTextCollection.load_json(temp_path)
+                assert len(loaded_collection) == 3
+                assert name == loaded_collection.name
+                assert len(metadata) == len(loaded_collection.metadata)
+                for key, value in metadata.items():
+                    assert value == loaded_collection.metadata[key]
+                assert loaded_collection.anonymised == anonymised
+            # Cannot load anonymised data without knowing it is anonymised 
+            # through the metadata
+            elif not anonymised:
+                loaded_collection = TargetTextCollection.load_json(temp_path)
+                assert len(loaded_collection) == 3
 
             # Ensure that if it saves to the same file that it overwrites that 
             # file
             test_collection = TargetTextCollection(self._target_text_examples(),
                                                    name=name, metadata=metadata,
                                                    anonymised=anonymised)
-            test_collection.to_json_file(temp_path)
-            loaded_collection = TargetTextCollection.load_json(temp_path)
-            assert len(loaded_collection) == 3
-            assert name == loaded_collection.name
-            assert len(metadata) == len(loaded_collection.metadata)
-            for key, value in metadata.items():
-                assert value == loaded_collection.metadata[key]
-            assert loaded_collection.anonymised == anonymised
+            test_collection.to_json_file(temp_path, include_metadata=include_metadata)
+            if include_metadata:
+                loaded_collection = TargetTextCollection.load_json(temp_path)
+                assert len(loaded_collection) == 3
+                assert name == loaded_collection.name
+                assert len(metadata) == len(loaded_collection.metadata)
+                for key, value in metadata.items():
+                    assert value == loaded_collection.metadata[key]
+                assert loaded_collection.anonymised == anonymised
+            elif not anonymised:
+                loaded_collection = TargetTextCollection.load_json(temp_path)
+                assert len(loaded_collection) == 3
 
             # Ensure that it can just load one examples
             test_collection = TargetTextCollection([self._target_text_example()],
                                                    name=name, metadata=metadata,
                                                    anonymised=anonymised)
-            test_collection.to_json_file(temp_path)
-            loaded_collection = TargetTextCollection.load_json(temp_path)
-            assert len(loaded_collection) == 1
-            assert name == loaded_collection.name
-            assert len(metadata) == len(loaded_collection.metadata)
-            for key, value in metadata.items():
-                assert value == loaded_collection.metadata[key]
-            assert loaded_collection.anonymised == anonymised
+            test_collection.to_json_file(temp_path, include_metadata=include_metadata)
+            if include_metadata:
+                loaded_collection = TargetTextCollection.load_json(temp_path)
+                assert len(loaded_collection) == 1
+                assert name == loaded_collection.name
+                assert len(metadata) == len(loaded_collection.metadata)
+                for key, value in metadata.items():
+                    assert value == loaded_collection.metadata[key]
+                assert loaded_collection.anonymised == anonymised
+            elif not anonymised:
+                loaded_collection = TargetTextCollection.load_json(temp_path)
+                assert len(loaded_collection) == 1
     
     def test_tokenize(self):
         # Test the normal case with one TargetText Instance in the collection
