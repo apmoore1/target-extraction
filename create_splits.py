@@ -8,6 +8,7 @@ from target_extraction.data_types import TargetTextCollection
 from target_extraction.dataset_parsers import semeval_2014, semeval_2016
 from target_extraction.dataset_parsers import wang_2017_election_twitter_train
 from target_extraction.dataset_parsers import wang_2017_election_twitter_test
+from target_extraction.dataset_parsers import CACHE_DIRECTORY
 from target_extraction import tokenizers, pos_taggers
 
 def parse_path(path_string: str) -> Path:
@@ -51,10 +52,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.dataset_name == 'election_twitter':
-        election_dataset_folder = Path('/', 'tmp', 'twitter_election_dataset')
-        print(f'Downloading the Twitter dataset to {election_dataset_folder}')
-        train_dataset: TargetTextCollection = wang_2017_election_twitter_train(election_dataset_folder)
-        test_dataset: TargetTextCollection = wang_2017_election_twitter_test(election_dataset_folder)
+        print(f'Downloading the Twitter dataset to {CACHE_DIRECTORY}')
+        train_dataset: TargetTextCollection = wang_2017_election_twitter_train()
+        test_dataset: TargetTextCollection = wang_2017_election_twitter_test()
     else:
         dataset_name_parser = {name: parser for name, parser in 
                            zip(valid_dataset_names, dataset_parsers)}
