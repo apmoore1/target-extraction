@@ -1362,6 +1362,26 @@ class TargetTextCollection(MutableMapping):
             self.name = ''
 
     @property
+    def name(self) -> str:
+        '''
+        :returns: The name attribute.
+        '''
+
+        return self._name
+
+    @name.setter
+    def name(self, name_string: str) -> None:
+        '''
+        Sets the value of the name attribute, and also updates the `name` key 
+        value in the `metadata` attribute.
+
+        :param name_string: New name to give to the name attribute.
+        '''
+        self._name = name_string
+        self.metadata = {} if self.metadata is None else self.metadata
+        self.metadata['name'] = self._name
+
+    @property
     def anonymised(self) -> bool:
         '''
         :returns: True if the data within the TargetTextCollection has been 
@@ -1392,6 +1412,8 @@ class TargetTextCollection(MutableMapping):
         '''
         for target_text in self.values():
             target_text.anonymised = value
+        self.metadata = {} if self.metadata is None else self.metadata
+        self.metadata['anonymised'] = value
         self._anonymised = value 
 
     def add(self, value: 'TargetText') -> None:
@@ -1425,7 +1447,8 @@ class TargetTextCollection(MutableMapping):
             target_text_instance: TargetText
             json_text += target_text_instance.to_json()
         if self.metadata is not None:
-            json_text += '\n'
+            if json_text != '':
+                json_text += '\n'
             json_text += json.dumps({'metadata': self.metadata})
         return json_text
 

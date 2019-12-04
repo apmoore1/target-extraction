@@ -212,9 +212,9 @@ class TestTargetTextCollection:
 
         new_collection = TargetTextCollection()
         assert new_collection.name == ''
-        assert new_collection.metadata is None
+        assert new_collection.metadata == {'name': ''}
 
-        example_metadata = {'model': 'InterAE'}
+        example_metadata = {'model': 'InterAE', 'name': ''}
         new_collection = TargetTextCollection(metadata=example_metadata)
         assert new_collection.name == ''
         assert new_collection.metadata == example_metadata
@@ -228,7 +228,7 @@ class TestTargetTextCollection:
         new_collection = TargetTextCollection(target_texts=self._target_text_examples())
         assert len(new_collection) == 3
         assert '2' in new_collection
-        assert new_collection.metadata is None
+        assert new_collection.metadata == {'name': ''}
         assert new_collection.name == ''
         assert new_collection.anonymised == False
         assert 'text' in new_collection['0']
@@ -237,27 +237,43 @@ class TestTargetTextCollection:
         new_collection = TargetTextCollection(target_texts=self._target_text_examples(), 
                                               anonymised=True)
         assert new_collection.anonymised == True
-        assert new_collection.metadata == {'anonymised': True}
+        assert new_collection.metadata == {'anonymised': True, 'name': ''}
         assert 'text' not in new_collection['0']
+
+    def test_name(self):
+        new_collection = TargetTextCollection(target_texts=self._target_text_examples())
+        assert new_collection.name == ''
+        assert new_collection.metadata == {'name': ''}
+        new_collection.name = 'something new'
+        assert new_collection.name == 'something new'
+        assert new_collection.metadata == {'name': 'something new'}
 
     def test_anonymised(self):
         new_collection = TargetTextCollection(target_texts=self._target_text_examples())
         assert not new_collection.anonymised
         for target_text in new_collection.values():
             assert 'text' in target_text
+        assert new_collection.metadata == {'name': ''}
         new_collection.anonymised = True
         assert new_collection.anonymised
+        correct_metadata = {'name': '', 'anonymised': True}
+        assert len(new_collection.metadata) == len(correct_metadata)
+        for key, value in correct_metadata.items():
+            assert value == new_collection.metadata[key]
         for target_text in new_collection.values():
             assert 'text' not in target_text
         with pytest.raises(AnonymisedError):
             new_collection.anonymised = False
         assert new_collection.anonymised
+        assert len(new_collection.metadata) == len(correct_metadata)
+        for key, value in correct_metadata.items():
+            assert value == new_collection.metadata[key]
 
 
     def test_to_json(self):
         # no target text instances in the collection (empty collection)
         new_collection = TargetTextCollection()
-        assert new_collection.to_json() == ''
+        assert new_collection.to_json() == '{"metadata": {"name": ""}}'
 
         # One target text in the collection
         new_collection = TargetTextCollection([self._target_text_example()])
@@ -265,7 +281,8 @@ class TestTargetTextCollection:
                              'was rubbish", "text_id": "2", "targets": ["laptop '
                              'case", "cover"], "spans": [[4, 15], [30, 35]], '
                              '"target_sentiments": [0, 1], "categories": '
-                             '["LAPTOP#CASE", "LAPTOP"], "category_sentiments": null}')
+                             '["LAPTOP#CASE", "LAPTOP"], "category_sentiments": null}\n'
+                             '{"metadata": {"name": ""}}')
         assert new_collection.to_json() == true_json_version
 
         # Multiple target text in the collection
@@ -279,7 +296,8 @@ class TestTargetTextCollection:
                              'great and cover was rubbish", "text_id": '
                              '"another_id", "targets": ["cover"], "spans": '
                              '[[30, 35]], "target_sentiments": [1], "categories": '
-                             '["LAPTOP"], "category_sentiments": null}')
+                             '["LAPTOP"], "category_sentiments": null}\n'
+                             '{"metadata": {"name": ""}}')
         assert new_collection.to_json() == true_json_version
 
         # Test that adding the metadata works
@@ -295,7 +313,7 @@ class TestTargetTextCollection:
                              '"another_id", "targets": ["cover"], "spans": '
                              '[[30, 35]], "target_sentiments": [1], "categories": '
                              '["LAPTOP"], "category_sentiments": null}\n'
-                             '{"metadata": {"model": "InterAE"}}')
+                             '{"metadata": {"model": "InterAE", "name": ""}}')
         assert new_collection.to_json() == true_json_version
         
         # Test that adding the name works
@@ -325,7 +343,7 @@ class TestTargetTextCollection:
                              '"another_id", "targets": ["cover"], "spans": '
                              '[[30, 35]], "target_sentiments": [1], "categories": '
                              '["LAPTOP"], "category_sentiments": null}\n'
-                             '{"metadata": {"anonymised": true}}')
+                             '{"metadata": {"anonymised": true, "name": ""}}')
         assert new_collection.to_json() == true_json_version
 
     @pytest.mark.parametrize("anonymised", (True, False))
@@ -442,8 +460,8 @@ class TestTargetTextCollection:
             test_metadata = two_target_metadata_collection.metadata
             if contains_name:
                 correct_name = "multi targets"
-                correct_metadata['name'] = 'multi targets'
-                assert correct_metadata['name'] == test_metadata['name']
+            correct_metadata['name'] = correct_name
+            assert correct_metadata['name'] == test_metadata['name']
             assert len(correct_metadata) == len(test_metadata)
             assert len(correct_metadata['target sentiment predictions']) == len(test_metadata['target sentiment predictions'])
             assert correct_metadata['target sentiment predictions'] == test_metadata['target sentiment predictions']
