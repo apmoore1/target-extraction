@@ -5,3 +5,9 @@ allennlp train tests/data/allen/predictors/target_sentiment/split_contexts/confi
 ``` bash
 allennlp train tests/data/allen/predictors/target_sentiment/split_contexts/config_tclstm.jsonnet -s tests/data/allen/predictors/target_sentiment/split_contexts/tclstm --include-package target_extraction
 ```
+``` bash
+allennlp train tests/data/allen/predictors/target_sentiment/split_contexts/config_inter_tdlstm.jsonnet -s tests/data/allen/predictors/target_sentiment/split_contexts/inter_tdlstm --include-package target_extraction
+```
+``` bash
+allennlp train tests/data/allen/predictors/target_sentiment/split_contexts/config_inter_tclstm.jsonnet -s tests/data/allen/predictors/target_sentiment/split_contexts/inter_tclstm --include-package target_extraction
+```

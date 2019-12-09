@@ -17,7 +17,18 @@ class TestSplitContextsPredictor():
     tclstm_archive = load_archive(str(Path(archive_dir, 'tclstm', 'model.tar.gz')))
     tclstm_predictor = Predictor.from_archive(tclstm_archive, 'target-sentiment')
 
-    predictors = [('tdlstm', tdlstm_predictor), ('tclstm', tclstm_predictor)]
+    inter_tdlstm_archive = load_archive(str(Path(archive_dir, 'inter_tdlstm', 
+                                                 'model.tar.gz')))
+    inter_tdlstm_predictor = Predictor.from_archive(inter_tdlstm_archive, 
+                                                    'target-sentiment')
+    inter_tclstm_archive = load_archive(str(Path(archive_dir, 'inter_tclstm', 
+                                                 'model.tar.gz')))
+    inter_tclstm_predictor = Predictor.from_archive(inter_tclstm_archive, 
+                                                    'target-sentiment')
+
+    predictors = [('tdlstm', tdlstm_predictor), ('tclstm', tclstm_predictor), 
+                  ('inter_tdlstm', inter_tclstm_predictor), 
+                  ('inter_tclstm', inter_tclstm_predictor)]
 
 
     def test_outputs(self):

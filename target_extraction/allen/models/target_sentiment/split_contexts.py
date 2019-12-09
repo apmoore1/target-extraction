@@ -14,7 +14,8 @@ from torch.nn.modules import Dropout, Linear
 
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reshape, elmo_input_reverse
-    
+from target_extraction.allen.modules.inter_target import InterTarget
+
 @Model.register("split_contexts_classifier")
 class SplitContextsClassifier(Model):
     def __init__(self,
@@ -25,6 +26,7 @@ class SplitContextsClassifier(Model):
                  feedforward: Optional[FeedForward] = None,
                  target_field_embedder: Optional[TextFieldEmbedder] = None,
                  target_encoder: Optional[Seq2VecEncoder] = None,
+                 inter_target_encoding: Optional[InterTarget] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
@@ -53,6 +55,8 @@ class SplitContextsClassifier(Model):
                                       target text.
         :param target_encoder: Encoder that will create the representation of 
                                target text tokens.
+        :param inter_target_encoding: Whether to model the relationship between 
+                                      targets/aspect.
         :param initializer: Used to initialize the model parameters.
         :param regularizer: If provided, will be used to calculate the 
                             regularization penalty during training.
@@ -91,12 +95,18 @@ class SplitContextsClassifier(Model):
         # the vocab)
         self.loss_weights = target_sentiment.util.loss_weight_order(self, loss_weights, self.label_name)
 
+        # Inter target modelling
+        self.inter_target_encoding = inter_target_encoding
+
+        left_out_dim = self.left_text_encoder.get_output_dim()
+        right_out_dim = self.right_text_encoder.get_output_dim()
+        left_right_out_dim = left_out_dim + right_out_dim
         if feedforward is not None:
             output_dim = self.feedforward.get_output_dim()
+        elif self.inter_target_encoding is not None:
+            output_dim = self.inter_target_encoding.get_output_dim()
         else:
-            left_out_dim = self.left_text_encoder.get_output_dim()
-            right_out_dim = self.right_text_encoder.get_output_dim()
-            output_dim = left_out_dim + right_out_dim
+            output_dim = left_right_out_dim
         self.label_projection = Linear(output_dim, self.num_classes)
         
         self.metrics = {
@@ -142,6 +152,12 @@ class SplitContextsClassifier(Model):
             check_dimensions_match(target_in, target_embed_out, 
                                    'target_field_embedder output', 
                                    'target_encoder input')
+        
+        if self.inter_target_encoding:
+            check_dimensions_match(left_right_out_dim,
+                                   self.inter_target_encoding.get_input_dim(),
+                                   'Output from the left and right encoders', 
+                                   'Inter Target encoder input dim')
 
         # TimeDistributed everything as we are processing multiple Targets at 
         # once as the input is a sentence containing one or more targets
@@ -152,7 +168,7 @@ class SplitContextsClassifier(Model):
         if self.feedforward is not None:
             self.feedforward = TimeDistributed(self.feedforward)
         self.label_projection = TimeDistributed(self.label_projection)
-        self._variational_dropout = TimeDistributed(self._variational_dropout)
+        self._time_variational_dropout = TimeDistributed(self._variational_dropout)
         self._naive_dropout = TimeDistributed(self._naive_dropout)
 
         initializer(self)
@@ -183,7 +199,7 @@ class SplitContextsClassifier(Model):
         left_embedded_text = elmo_input_reverse(left_embedded_text, left_contexts, 
                                                 batch_size, number_targets, 
                                                 batch_size_num_targets)
-        left_embedded_text = self._variational_dropout(left_embedded_text)
+        left_embedded_text = self._time_variational_dropout(left_embedded_text)
         left_text_mask = util.get_text_field_mask(left_contexts, num_wrapping_dims=1)
 
         temp_right_contexts = elmo_input_reshape(right_contexts, batch_size, 
@@ -192,7 +208,7 @@ class SplitContextsClassifier(Model):
         right_embedded_text = elmo_input_reverse(right_embedded_text, right_contexts, 
                                                  batch_size, number_targets, 
                                                  batch_size_num_targets)
-        right_embedded_text = self._variational_dropout(right_embedded_text)
+        right_embedded_text = self._time_variational_dropout(right_embedded_text)
         right_text_mask = util.get_text_field_mask(right_contexts, num_wrapping_dims=1)
         if self.target_encoder:
             temp_target = elmo_input_reshape(targets, batch_size, number_targets, 
@@ -204,7 +220,7 @@ class SplitContextsClassifier(Model):
             embedded_target = elmo_input_reverse(embedded_target, targets, 
                                                  batch_size, number_targets, 
                                                  batch_size_num_targets)
-            embedded_target = self._variational_dropout(embedded_target)
+            embedded_target = self._time_variational_dropout(embedded_target)
             target_text_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
 
             target_encoded_text = self.target_encoder(embedded_target, 
@@ -237,6 +253,12 @@ class SplitContextsClassifier(Model):
 
         encoded_left_right = torch.cat([left_encoded_text, right_encoded_text], 
                                        dim=-1)
+
+        if self.inter_target_encoding is not None:
+            encoded_left_right = self.inter_target_encoding(encoded_left_right, 
+                                                            targets_mask)
+            encoded_left_right = self._variational_dropout(encoded_left_right)
+
         if self.feedforward:
             encoded_left_right = self.feedforward(encoded_left_right)
         logits = self.label_projection(encoded_left_right)

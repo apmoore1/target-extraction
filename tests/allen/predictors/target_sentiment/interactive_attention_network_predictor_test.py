@@ -15,7 +15,7 @@ class TestInteractiveAttentionNetworkPredictor():
     ian_predictor = Predictor.from_archive(ian_archive, 'target-sentiment')
 
     inter_ian_archive = load_archive(str(Path(archive_dir, 'inter_ian', 'model.tar.gz')))
-    inter_ian_predictor = Predictor.from_archive(ian_archive, 'target-sentiment')
+    inter_ian_predictor = Predictor.from_archive(inter_ian_archive, 'target-sentiment')
 
     ian_sequences_archive = load_archive(str(Path(archive_dir, 'ian_target_sequences', 
                                                   'model.tar.gz')))
