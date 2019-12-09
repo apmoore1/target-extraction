@@ -1816,3 +1816,19 @@ class TestTargetText:
                                    anonymised=True)
         with pytest.raises(AnonymisedError):
             target_object.replace_target(3, 'bad day')
+
+    def test_in_order(self):
+        for example in self._regular_examples()[0]:
+            assert example.in_order()
+        not_in_order = self._regular_examples()[0][-1]
+        valid_spans = not_in_order._storage['spans']
+        not_in_order._storage['spans'] = [valid_spans[1], valid_spans[0]]
+        assert not not_in_order.in_order()
+
+        # Test the case where two targets overlap and they start in the same 
+        # position this should return in_order
+        edge_case = TargetText(text_id='1', text='had a good day', 
+                               targets=['good day', 'good'], 
+                               spans=[Span(6,14), Span(6,10)])
+        edge_case.sanitize()
+        assert edge_case.in_order()

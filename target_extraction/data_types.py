@@ -119,6 +119,8 @@ class TargetText(MutableMapping):
     12. de_anonymise -- This will set the `anonymised` attribute to False 
         from True and set the `text` key value to the value in the `text` 
         key within the `text_dict` argument. 
+    13. in_order -- True if all the `targets` within this TargetText 
+        are in sequential left to right order within the text.
     
     Static Functions:
 
@@ -1100,6 +1102,17 @@ class TargetText(MutableMapping):
                                   f'{self} as it cannot pass the `sanitize`'
                                   ' check of which the following is the '
                                   f'error from said check {sanitize_err}')
+
+    def in_order(self) -> bool:
+        '''
+        :returns: True if all the `targets` within this TargetText 
+                  are in sequential left to right order within the text.
+        '''
+        spans = self['spans']
+        ordered_spans = sorted(spans, key=lambda x: x[0])
+        if ordered_spans != spans:
+            return False
+        return True
             
     @staticmethod
     def from_json(json_text: str, anonymised: bool = False) -> 'TargetText':
@@ -1310,6 +1323,12 @@ class TargetTextCollection(MutableMapping):
         the TargetText instances within this collection, affectively ensures 
         that all of the instances follow the specified rules that TargetText 
         instances should follow.
+    20. in_order -- This returns True if all TargetText objects within the 
+        collection contains a list of targets that are in order of appearance 
+        within the text from left to right e.g. if the only TargetText in the 
+        collection contains two targets where the first target in the `targets`
+        list is the first (left most) target in the text then this method would 
+        return True.
     
     Static Functions:
 
@@ -1994,6 +2013,24 @@ class TargetTextCollection(MutableMapping):
 
         for target_text in self.values():
             target_text.sanitize()
+
+    def in_order(self) -> bool:
+        '''
+        This returns True if all TargetText objects within the 
+        collection contains a list of targets that are in order of appearance 
+        within the text from left to right e.g. if the only TargetText in the 
+        collection contains two targets where the first target in the `targets`
+        list is the first (left most) target in the text then this method would 
+        return True.
+
+        :returns: True if all the `targets` within all the TargetText objects 
+                  in this collection are in sequential left to right order 
+                  within the text.
+        '''
+        for target_text in self.values():
+            if not target_text.in_order():
+                return False
+        return True
 
     @staticmethod
     def combine(*collections) -> 'TargetTextCollection':

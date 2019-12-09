@@ -1370,3 +1370,24 @@ class TestTargetTextCollection:
             assert 'text' not in target
             assert target.anonymised
         assert collection.anonymised
+
+    def test_in_order(self):
+        assert TargetTextCollection(self._target_text_examples()).in_order()
+        # not in order case
+        examples = self._target_text_examples()
+        example = examples[-1]
+        valid_spans = example._storage['spans']
+        valied_targets = example._storage['targets']
+        example._storage['spans'] = [valid_spans[1], valid_spans[0]]
+        example._storage['targets'] = [valied_targets[1], valied_targets[0]]
+        examples.pop()
+        examples.append(example)
+        assert not TargetTextCollection(examples).in_order()
+
+        # Test the case where two targets overlap and they start in the same 
+        # position this should return in_order
+        edge_case = TargetText(text_id='1', text='had a good day', 
+                               targets=['good day', 'good'], 
+                               spans=[Span(6,14), Span(6,10)])
+        edge_case.sanitize()
+        assert TargetTextCollection([edge_case]).in_order()
