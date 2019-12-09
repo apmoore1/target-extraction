@@ -65,8 +65,11 @@ class InteractivateAttentionNetworkClassifier(Model):
                             regularization penalty during training.
         :param dropout: To apply dropout after each layer apart from the last 
                         layer. All dropout that is applied to timebased data 
-                        will be `variational dropout`_ all else will be  
-                        standard dropout.
+                        will be `variational dropout 
+                        <https://arxiv.org/abs/1512.05287>`_ all else will be  
+                        standard dropout. Variation dropout is applied to the 
+                        target vectors after they have been processed by the 
+                        `inter_target_encoding` if this is set.
         :param label_name: Name of the label name space.
         :param loss_weights: The amount of weight to give the negative, neutral,
                              positive classes respectively. e.g. [0.2, 0.5, 0.3]
