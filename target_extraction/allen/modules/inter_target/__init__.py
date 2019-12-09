@@ -1,0 +1,2 @@
+from target_extraction.allen.modules.inter_target.inter_target import InterTarget
+from target_extraction.allen.modules.inter_target.sequence_inter_target import SequenceInterTarget

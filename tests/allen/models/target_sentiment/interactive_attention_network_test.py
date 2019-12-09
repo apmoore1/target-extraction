@@ -25,6 +25,7 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         test_data = str(Path(test_dir, 'multi_target_category_sentiments.json'))
         config_dir = Path(test_dir, 'IAN')
         self.ian_config = str(Path(config_dir, 'ian_config.jsonnet'))
+        self.inter_ian_config = str(Path(config_dir, 'inter_ian_config.jsonnet'))
         self.ian_elmo_wordvector_config = str(Path(config_dir, 'ian_elmo_wordvector_config.jsonnet'))
         self.ian_elmo_config = str(Path(config_dir, 'ian_elmo_config.jsonnet'))
         self.ian_elmo_target_sequences_config = str(Path(config_dir, 'ian_elmo_target_sequences_config.jsonnet'))
@@ -34,6 +35,14 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
 
     def test_model_can_train_save_and_load(self):
         self.ensure_model_can_train_save_and_load(self.param_file)
+
+    def test_inter_ian_train_save(self):
+        params = Params.from_file(self.inter_ian_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
 
     def test_ian_elmo_train_save(self):
         params = Params.from_file(self.ian_elmo_config).duplicate()
@@ -113,6 +122,15 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         with pytest.raises(ConfigurationError):
             Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
 
+    def test_inter_context(self):
+        # Raises a config error if the context and target encoder combined 
+        # output are not the same input size as the inter target encoder input.
+        params = Params.from_file(self.inter_ian_config).duplicate()
+        params['model']['context_encoder']['hidden_size'] = 6
+        params_copy = copy.deepcopy(params)
+        with pytest.raises(ConfigurationError):
+            Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+    
     def test_forward_pass_runs_correctly(self):
         params = Params.from_file(self.param_file)   
         model = Model.from_params(vocab=self.vocab, 

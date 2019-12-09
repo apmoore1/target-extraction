@@ -18,6 +18,7 @@ import numpy
 
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
+from target_extraction.allen.modules.inter_target import InterTarget
 
 @Model.register("atae_classifier")
 class ATAEClassifier(Model):
@@ -30,7 +31,7 @@ class ATAEClassifier(Model):
                  context_attention_activation_function: str = 'tanh',
                  target_field_embedder: Optional[TextFieldEmbedder] = None,
                  AE: bool = True, AttentionAE: bool = True,
-                 inter_target_encoding: Optional[Seq2SeqEncoder] = None,
+                 inter_target_encoding: Optional[InterTarget] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
@@ -66,12 +67,7 @@ class ATAEClassifier(Model):
                             to each contextualised word representation i.e. 
                             to each word's vector after the `context_encoder` 
         :param inter_target_encoding: Whether to model the relationship between 
-                                      targets/aspect. This was done in the 
-                                      `Modeling Inter-Aspect Dependencies for 
-                                      Aspect-Based Sentiment Analysis 
-                                      <https://www.aclweb.org/anthology/N18-2043>`_
-                                      where this defines equation 4 from that 
-                                      paper.
+                                      targets/aspect.
         :param initializer: Used to initialize the model parameters.
         :param regularizer: If provided, will be used to calculate the 
                             regularization penalty during training.
@@ -363,26 +359,19 @@ class ATAEClassifier(Model):
         weighted_encoded_context_vec = self.final_attention_projection_layer(weighted_encoded_context_vec)
         feature_vector = context_final_states + weighted_encoded_context_vec
         feature_vector = self._naive_dropout(feature_vector)
+        # Reshape the vector into (Batch Size, Number Targets, number labels)
+        _, feature_dim = feature_vector.shape
+        feature_target_seq = feature_vector.view(batch_size, number_targets, 
+                                                 feature_dim)
 
         if self.inter_target_encoding is not None:
-            # Reshape the vector into (Batch Size, Number Targets, number labels)
-            # So that we can perform an LSTM over the target feature representations
-            # over the targets in the same sentence
-            _, feature_dim = feature_vector.shape
-            feature_target_seq = feature_vector.view(batch_size, number_targets, 
-                                                     feature_dim)
             feature_target_seq = self.inter_target_encoding(feature_target_seq, label_mask)
             feature_target_seq = self._variational_dropout(feature_target_seq)
-            _, _, feature_seq_dim = feature_target_seq.shape
-            feature_vector = feature_target_seq.view(batch_size_num_targets, feature_seq_dim)
         
         if self.feedforward is not None:
-            feature_vector = self.feedforward(feature_vector)
+            feature_target_seq = self.feedforward(feature_target_seq)
         
-        logits = self.label_projection(feature_vector)
-        # Reshape the logits from (Batch Size * Number target, number labels)
-        # to (Batch Size, Number Targets, number labels)
-        logits = logits.view(batch_size, number_targets, self.num_classes)
+        logits = self.label_projection(feature_target_seq)
         masked_class_probabilities = util.masked_softmax(logits, label_mask.unsqueeze(-1))
         output_dict = {"class_probabilities": masked_class_probabilities, 
                        "targets_mask": label_mask}

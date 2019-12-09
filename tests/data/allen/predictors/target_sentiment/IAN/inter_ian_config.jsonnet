@@ -11,7 +11,7 @@
   "train_data_path": "./tests/data/allen/models/target_sentiment/multi_target_category_sentiments.json",
   "validation_data_path": "./tests/data/allen/models/target_sentiment/multi_target_category_sentiments.json",
   "model": {
-    "type": "atae_classifier",
+    "type": "interactive_attention_network_classifier",
     "dropout": 0.5,
     "context_field_embedder": {
       "tokens": {
@@ -20,34 +20,33 @@
         "trainable": false
       }
     },
-    "context_encoder": {
-      "type": "gru",
-      "input_size": 17,
-      "hidden_size": 10,
-      "bidirectional": true,
-      "num_layers": 1
-    },
     "target_encoder": {
       "type": "gru",
       "input_size": 5,
-      "hidden_size": 6,
-      "bidirectional": true,
+      "hidden_size": 5,
+      "bidirectional": false,
+      "num_layers": 1
+    },
+    "context_encoder": {
+      "type": "gru",
+      "input_size": 5,
+      "hidden_size": 5,
+      "bidirectional": false,
       "num_layers": 1
     },
     "inter_target_encoding": {
-        "type": "sequence_inter_target",
-        "sequence_encoder": {
-          "type": "gru",
-          "input_size": 20,
-        "hidden_size": 6,
-        "bidirectional": true,
-        "num_layers": 1
-        }
+      "type": "sequence_inter_target",
+      "sequence_encoder":{
+        "type": "gru",
+        "input_size": 10,
+        "hidden_size": 5,
+        "bidirectional": false,
+        "num_layers": 1}
     },
     "feedforward": {
-        "input_dim": 12,
+        "input_dim": 5,
         "num_layers": 1,
-        "hidden_dims": 5,
+        "hidden_dims": 4,
         "activations": "sigmoid",
         "dropout": 0.1
       }

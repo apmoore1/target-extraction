@@ -16,6 +16,7 @@ import numpy
 
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
+from target_extraction.allen.modules.inter_target import InterTarget
 
 @Model.register("interactive_attention_network_classifier")
 class InteractivateAttentionNetworkClassifier(Model):
@@ -28,6 +29,7 @@ class InteractivateAttentionNetworkClassifier(Model):
                  context_attention_activation_function: str = 'tanh',
                  target_attention_activation_function: str = 'tanh',
                  target_field_embedder: Optional[TextFieldEmbedder] = None,
+                 inter_target_encoding: Optional[InterTarget] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
@@ -56,7 +58,8 @@ class InteractivateAttentionNetworkClassifier(Model):
                                       input to the target_encoder. Thus this 
                                       allows a separate embedding for context 
                                       and target text.
-        
+        :param inter_target_encoding: Whether to model the relationship between 
+                                      targets/aspect.
         :param initializer: Used to initialize the model parameters.
         :param regularizer: If provided, will be used to calculate the 
                             regularization penalty during training.
@@ -133,8 +136,13 @@ class InteractivateAttentionNetworkClassifier(Model):
         # the vocab)
         self.loss_weights = target_sentiment.util.loss_weight_order(self, loss_weights, self.label_name)
 
+        # Inter target modelling
+        self.inter_target_encoding = inter_target_encoding
+
         if feedforward is not None:
             output_dim = self.feedforward.get_output_dim()
+        elif self.inter_target_encoding is not None:
+            output_dim = self.inter_target_encoding.get_output_dim()
         else:
             output_dim = target_encoder_out + context_encoder_out
         self.label_projection = Linear(output_dim, self.num_classes)
@@ -168,6 +176,12 @@ class InteractivateAttentionNetworkClassifier(Model):
         check_dimensions_match(target_field_embedder_dim, 
                                target_encoder.get_input_dim(),
                                target_field_error, "target encoder input dim")
+
+        if self.inter_target_encoding:
+            check_dimensions_match(target_encoder_out + context_encoder_out,
+                                   self.inter_target_encoding.get_input_dim(),
+                                   'Output from target and context encdoers', 
+                                   'Inter Target encoder input dim')
         
         # TimeDistributed anything that is related to the targets.
         if self.feedforward is not None:
@@ -309,6 +323,10 @@ class InteractivateAttentionNetworkClassifier(Model):
         weighted_text_target = torch.cat([weighted_encoded_context_vec, 
                                           weighted_encoded_target_vec], -1)
         weighted_text_target = self._time_naive_dropout(weighted_text_target)
+
+        if self.inter_target_encoding is not None:
+            weighted_text_target = self.inter_target_encoding(weighted_text_target, label_mask)
+            weighted_text_target = self._variational_dropout(weighted_text_target)
 
         if self.feedforward:
             weighted_text_target = self.feedforward(weighted_text_target)

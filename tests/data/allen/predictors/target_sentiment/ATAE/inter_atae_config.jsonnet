@@ -35,11 +35,14 @@
       "num_layers": 1
     },
     "inter_target_encoding": {
-      "type": "gru",
-      "input_size": 20,
-      "hidden_size": 6,
-      "bidirectional": true,
-      "num_layers": 1
+        "type": "sequence_inter_target",
+        "sequence_encoder": {
+          "type": "gru",
+          "input_size": 20,
+        "hidden_size": 6,
+        "bidirectional": true,
+        "num_layers": 1
+        }
     },
     "feedforward": {
         "input_dim": 12,

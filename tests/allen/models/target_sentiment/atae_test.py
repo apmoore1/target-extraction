@@ -63,9 +63,10 @@ class ATAEClassifierTest(ModelTestCase):
 
     def test_inter_ae_train_save(self):
         params = Params.from_file(self.ae_config).duplicate()
-        inter_target_encoder = {"type": "gru", "input_size": 20,
+        inter_target_encoder = {"sequence_encoder": {"type": "gru", "input_size": 20,
                                 "hidden_size": 6, "bidirectional": False,
-                                "num_layers": 1}
+                                "num_layers": 1},
+                                "type": "sequence_inter_target"}
         params['model']['inter_target_encoding'] = inter_target_encoder
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
@@ -75,9 +76,10 @@ class ATAEClassifierTest(ModelTestCase):
     
     def test_inter_at_train_save(self):
         params = Params.from_file(self.at_config).duplicate()
-        inter_target_encoder = {"type": "gru", "input_size": 20,
+        inter_target_encoder = {"sequence_encoder": {"type": "gru", "input_size": 20,
                                 "hidden_size": 6, "bidirectional": False,
-                                "num_layers": 1}
+                                "num_layers": 1}, 
+                                "type": "sequence_inter_target"}
         params['model']['inter_target_encoding'] = inter_target_encoder
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
