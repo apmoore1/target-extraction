@@ -2072,13 +2072,16 @@ class TargetTextCollection(MutableMapping):
                 return False
         return True
     
-    def re_order(self) -> None:
+    def re_order(self, keys_not_to_order: Optional[List[str]] = None) -> None:
         '''
         This will apply :py:meth:`target_extraction.data_types.TargetText.re_order`
         to each TargetText within the collection.
+
+        :param keys_not_to_order: Any keys within the TargetTexts that do not 
+                                  need re-ordering
         '''
         for target_text in self.values():
-            target_text.re_order()
+            target_text.re_order(keys_not_to_order)
 
     @staticmethod
     def combine(*collections) -> 'TargetTextCollection':
