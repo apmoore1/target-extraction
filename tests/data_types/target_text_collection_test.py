@@ -1387,7 +1387,24 @@ class TestTargetTextCollection:
         # Test the case where two targets overlap and they start in the same 
         # position this should return in_order
         edge_case = TargetText(text_id='1', text='had a good day', 
-                               targets=['good day', 'good'], 
-                               spans=[Span(6,14), Span(6,10)])
+                               targets=['good', 'good day'], 
+                               spans=[Span(6,10), Span(6,14)])
         edge_case.sanitize()
         assert TargetTextCollection([edge_case]).in_order()
+    
+    def test_re_order(self):
+        examples = self._target_text_examples()
+        example = examples[-1]
+        valid_spans = example._storage['spans']
+        valied_targets = example._storage['targets']
+        example._storage['spans'] = [valid_spans[1], valid_spans[0]]
+        example._storage['targets'] = [valied_targets[1], valied_targets[0]]
+        examples.pop()
+        examples.append(example)
+        collection = TargetTextCollection(examples)
+        assert not collection.in_order()
+        collection.re_order()
+        assert collection.in_order()
+        # Test that it can be re-ordered twice without any affect
+        collection.re_order()
+        assert collection.in_order()

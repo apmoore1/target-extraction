@@ -121,6 +121,11 @@ class TargetText(MutableMapping):
         key within the `text_dict` argument. 
     13. in_order -- True if all the `targets` within this TargetText 
         are in sequential left to right order within the text.
+    14. re_order -- Re-Orders the TargetText object targets so that they are in 
+        a left to right order within the text, this will then re-order all 
+        values within this object that are in a list format into this order. 
+        Once the TargetText has been re-ordered it will return True when 
+        :py:meth`target_extraction.data_types.TargetText.in_order` is called.
     
     Static Functions:
 
@@ -1109,11 +1114,44 @@ class TargetText(MutableMapping):
                   are in sequential left to right order within the text.
         '''
         spans = self['spans']
-        ordered_spans = sorted(spans, key=lambda x: x[0])
+        ordered_spans = sorted(spans)
         if ordered_spans != spans:
             return False
         return True
-            
+
+    def re_order(self, keys_not_to_order: Optional[List[str]] = None) -> None:
+        '''
+        Re-orders the TargetText object so that the targets are in a left to 
+        right order within the text, this will then re-order all values within 
+        this object that are in a list format into this order. Once the 
+        TargetText has been re-ordered it will return True when 
+        :py:meth`target_extraction.data_types.TargetText.in_order` is called.
+
+        :param keys_not_to_order: Any key values not to re-order using this 
+                                  function e.g. `pos_tags`, `tokenized_text`, 
+                                  etc
+        :raises AssertionError: If running :py:meth`target_extraction.data_types.TargetText.in_order`
+                                after being re-ordered does not return True.
+        '''
+        if keys_not_to_order is None:
+            keys_not_to_order = []
+
+        spans: List[Span] = self['spans']
+        index_order = sorted(range(len(spans)), key=lambda k: spans[k], 
+                             reverse=False)
+        new_key_values = {}
+        for key, value in self._storage.items():
+            if isinstance(value, list) and key not in keys_not_to_order:
+                sorted_value = []
+                for index in index_order:
+                    sorted_value.append(value[index])
+                new_key_values[key] = sorted_value
+        for key, value in new_key_values.items():
+            self._storage[key] = value
+        self.sanitize()
+        assert self.in_order(), print(f'After re-ordering the object is '
+                                      f'still not in order:{self}')
+
     @staticmethod
     def from_json(json_text: str, anonymised: bool = False) -> 'TargetText':
         '''
@@ -1329,6 +1367,8 @@ class TargetTextCollection(MutableMapping):
         collection contains two targets where the first target in the `targets`
         list is the first (left most) target in the text then this method would 
         return True.
+    21. re_order -- This will apply :py:meth:`target_extraction.data_types.TargetText.re_order`
+        to each TargetText within the collection.
     
     Static Functions:
 
@@ -2031,6 +2071,14 @@ class TargetTextCollection(MutableMapping):
             if not target_text.in_order():
                 return False
         return True
+    
+    def re_order(self) -> None:
+        '''
+        This will apply :py:meth:`target_extraction.data_types.TargetText.re_order`
+        to each TargetText within the collection.
+        '''
+        for target_text in self.values():
+            target_text.re_order()
 
     @staticmethod
     def combine(*collections) -> 'TargetTextCollection':

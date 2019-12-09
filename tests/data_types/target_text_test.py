@@ -1825,10 +1825,54 @@ class TestTargetText:
         not_in_order._storage['spans'] = [valid_spans[1], valid_spans[0]]
         assert not not_in_order.in_order()
 
-        # Test the case where two targets overlap and they start in the same 
-        # position this should return in_order
+        # Tests that when two spans start with the same index but one index 
+        # ends after the other it should be ordered start span and then end 
+        # span if the start span is the same
         edge_case = TargetText(text_id='1', text='had a good day', 
                                targets=['good day', 'good'], 
                                spans=[Span(6,14), Span(6,10)])
         edge_case.sanitize()
+        assert not edge_case.in_order()
+        edge_case = TargetText(text_id='1', text='had a good day', 
+                               targets=['good', 'good day'], 
+                               spans=[Span(6,10), Span(6,14)])
+        edge_case.sanitize()
         assert edge_case.in_order()
+
+    def test_re_order(self):
+        good_example = self._regular_examples()[0][-1]
+        correct = copy.deepcopy(good_example._storage)
+        good_example.re_order()
+        for key, value in correct.items():
+            assert value == good_example[key]
+        
+        text = 'The laptop case was great and cover was rubbish'
+        text_id = '2'
+        spans = [Span(30, 35), Span(4, 15)]
+        target_sentiments = [1, 0]
+        targets = ['cover', 'laptop case']
+        categories = ['LAPTOP', 'LAPTOP#CASE']
+        category_sentiments = [1, 0]
+        re_order_required_example = TargetText(text=text, text_id=text_id, spans=spans, 
+                                               target_sentiments=target_sentiments,
+                                               targets=targets, 
+                                               categories=categories, category_sentiments=category_sentiments)
+        re_order_required_example.re_order()
+        for key, value in correct.items():
+            assert value == re_order_required_example[key]
+        # ensure re-ordering twice does not make a difference
+        re_order_required_example.re_order()
+        for key, value in correct.items():
+            assert value == re_order_required_example[key]
+        # ignoring one key
+        re_order_required_example = TargetText(text=text, text_id=text_id, spans=spans, 
+                                               target_sentiments=target_sentiments,
+                                               targets=targets, 
+                                               categories=categories, category_sentiments=category_sentiments)
+        re_order_required_example.re_order(keys_not_to_order=['categories'])
+        for key, value in correct.items():
+            if key == 'categories':
+                with pytest.raises(AssertionError):
+                    assert value == re_order_required_example[key]
+            else:
+                assert value == re_order_required_example[key]
