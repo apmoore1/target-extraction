@@ -124,7 +124,7 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
 
     def test_inter_context(self):
         # Raises a config error if the context and target encoder combined 
-        # output are not the same input size as the inter target encoder input.
+        # output are not the same input size to the inter target encoder input.
         params = Params.from_file(self.inter_ian_config).duplicate()
         params['model']['context_encoder']['hidden_size'] = 6
         params_copy = copy.deepcopy(params)
