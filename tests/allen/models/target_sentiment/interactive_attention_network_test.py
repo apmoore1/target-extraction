@@ -43,9 +43,27 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
             params.to_file(temp_file.name)
             self.ensure_model_can_train_save_and_load(temp_file.name)
+    
+    def test_inter_ian_no_feedforward_train_save(self):
+        params = Params.from_file(self.inter_ian_config).duplicate()
+        del params['model']['feedforward']
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
 
     def test_ian_elmo_train_save(self):
         params = Params.from_file(self.ian_elmo_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_ian_elmo_no_feedforward_train_save(self):
+        params = Params.from_file(self.ian_elmo_config).duplicate()
+        del params['model']['feedforward']
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
