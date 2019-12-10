@@ -1876,3 +1876,24 @@ class TestTargetText:
                     assert value == re_order_required_example[key]
             else:
                 assert value == re_order_required_example[key]
+        # that it can re-order lists that are made of list where the inner list 
+        # should be sorted and not the outer list
+        preds = [[1, 0], [0, 1], [1, 1], [1, 0]]
+        re_order_required_example = TargetText(text=text, text_id=text_id, spans=spans, 
+                                               target_sentiments=target_sentiments,
+                                               targets=targets, preds=preds, 
+                                               categories=categories, category_sentiments=category_sentiments)
+        correct['preds'] = [[0, 1], [1, 0], [1, 1], [0, 1]]
+        re_order_required_example.re_order()
+        for key, value in correct.items():
+            assert value == re_order_required_example[key]
+        # raises IndexError when there is a key that is a list that does not 
+        # have the same number of indexs as the `spans` key
+        categories = ['LAPTOP']
+        category_sentiments = [0]
+        re_order_required_example = TargetText(text=text, text_id=text_id, spans=spans, 
+                                               target_sentiments=target_sentiments,
+                                               targets=targets, preds=preds, 
+                                               categories=categories, category_sentiments=category_sentiments)
+        with pytest.raises(Exception):
+            re_order_required_example.re_order()

@@ -1133,6 +1133,13 @@ class TargetText(MutableMapping):
         :raises AssertionError: If running :py:meth`target_extraction.data_types.TargetText.in_order`
                                 after being re-ordered does not return True.
         '''
+        def sorting_by_index(index_order: List[int], 
+                             value_to_sort: List[Any]) -> List[Any]:
+            sorted_value = []
+            for index in index_order:
+                sorted_value.append(value_to_sort[index])
+            return sorted_value
+
         if keys_not_to_order is None:
             keys_not_to_order = []
 
@@ -1141,11 +1148,30 @@ class TargetText(MutableMapping):
                              reverse=False)
         new_key_values = {}
         for key, value in self._storage.items():
-            if isinstance(value, list) and key not in keys_not_to_order:
-                sorted_value = []
-                for index in index_order:
-                    sorted_value.append(value[index])
-                new_key_values[key] = sorted_value
+            try:
+                if isinstance(value, list) and key not in keys_not_to_order:
+                    # Need to check if the first instance of the value is a 
+                    # list and if so then that needs to be sorted and not the 
+                    # outer list
+                    sorted_value = []
+                    if isinstance(value[0], list):
+                        for inner_value in value:
+                            sorted_inner_value = sorting_by_index(index_order, 
+                                                                  inner_value)
+                            sorted_value.append(sorted_inner_value)
+                    else:
+                        sorted_value = sorting_by_index(index_order, value)
+                    assert sorted_value
+                    new_key_values[key] = sorted_value
+                    #for index in index_order:
+                    #    sorted_value.append(value[index])
+                    #new_key_values[key] = sorted_value
+            except:
+                real_err = traceback.format_exc()
+                err_msg = (f'The following error {real_err} has occured on this '
+                           f'TargetText {self} for the following key {key} '
+                           f'and value {value}')
+                raise Exception(err_msg)
         for key, value in new_key_values.items():
             self._storage[key] = value
         self.sanitize()
