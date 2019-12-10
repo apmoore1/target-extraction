@@ -7,6 +7,7 @@ classes:
 1. Span
 2. OverLappingTargetsError
 3. AnonymisedError
+4. OverwriteError
 '''
 from typing import NamedTuple
 
@@ -34,6 +35,18 @@ class AnonymisedError(Exception):
    :py:class:`target_extraction.data_types.TargetText` 
    or :py:class:`target_extraction.data_types.TargetTextCollection` 
    object has been anonymised.
+   '''
+   def __init__(self, error_string: str) -> None:
+        '''
+        :param error_string: The error string to attach to this exception.
+        '''
+        super().__init__(error_string)
+
+class OverwriteError(Exception):
+   '''
+   If some key exists in a dictionary like object and the intended action 
+   is to write data to that key when it should not then this error is raised 
+   to indicate this action was going to be performed.
    '''
    def __init__(self, error_string: str) -> None:
         '''

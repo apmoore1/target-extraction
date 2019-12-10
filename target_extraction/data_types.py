@@ -21,7 +21,7 @@ import traceback
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
 from target_extraction.data_types_util import (Span, OverLappingTargetsError,
-                                               AnonymisedError)
+                                               AnonymisedError, OverwriteError)
 
 def check_anonymised(func):
     '''
@@ -1432,8 +1432,8 @@ class TargetTextCollection(MutableMapping):
         to each TargetText within this collection
     23. key_difference -- Given this collection and another it will return all
         of the keys that the other collection contains which this does not.
-    24. add_data_by_id -- Given this collection and another it will add all of
-        the data from the other collection into this collection based on the 
+    24. combine_data_on_id -- Given this collection and another it will add all
+        of the data from the other collection into this collection based on the 
         unique key given. 
 
     Static Functions:
@@ -2177,6 +2177,78 @@ class TargetTextCollection(MutableMapping):
         this_keys = {key for value in self.values() for key in value.keys()}
         other_keys = {key for value in other_collection.values() for key in value.keys()}
         return list(other_keys.difference(this_keys))
+
+    def combine_data_on_id(self, other_collection: 'TargetTextCollection', 
+                           id_key: str, data_keys: List[str], 
+                           raise_on_overwrite: bool = True,
+                           check_same_ids: bool = True) -> None:
+        '''
+        :param other_collection: The collection that contains the data 
+                                 that is to be copied to this collection.
+        :param id_key: The key that indicates in each TargetText within 
+                       this and the `other_collection` how the values are 
+                       to be copied from the `other_collection` to this 
+                       collection.
+        :param data_keys: The keys of the values in each TargetText within the 
+                          `other_collection` that is be copied to the relevant 
+                          TargetTexts within this collection.
+        :param raise_on_overwrite: If True will raise the 
+                                   :py:class:`target_extraction.data_types_util.OverwriteError` 
+                                   if any of the `data_keys` exist in any 
+                                   of the TargetTexts within this collection.
+        :param check_same_ids: If True will ensure that this collection and the 
+                               other collection are of same length and check 
+                               if each have the same unique ids
+        :raises ValueError: If `check_same_ids` is True and the two collections 
+                            are either of not the same length or have  
+                            different unique ids according to `id_key` within 
+                            the TargetText objects.
+        :raises OverwriteError: If `raise_on_overwrite` is True and the any of 
+                                the `data_keys` exist in any of the TargetTexts
+                                within this collection.
+        '''
+        if check_same_ids:
+            len_self = len(self)
+            len_other = len(other_collection)
+            if len_self != len_other:
+                raise ValueError('The two collections are not the same length. '
+                                 f'This length {len_self} other {len_other}')
+            self_ids = {_id for value in self.values() for _id in value[id_key]}
+            other_ids = {_id for value in other_collection.values() 
+                             for _id in value[id_key]}
+            self_differences = self_ids.difference(other_ids)
+            other_differences = other_ids.difference(self_ids)
+            all_differences = self_differences.union(other_differences)
+            if len(all_differences):
+                raise ValueError(f'The two collections do not contain the same'
+                                 f' ids. The difference between this and the '
+                                 f'other are the following ids {self_differences}'
+                                 f'\nThe difference between the other and this '
+                                 f'is the following {other_differences}')
+        # If an error occurs would be good to have a roll back poilcy that 
+        # will return this collection back to it's original self
+        self_copy = copy.deepcopy(self._storage)
+        try:
+            for text_id, self_target_text in self.items():
+                other_target_text = other_collection[text_id]
+                # Cannot assume that the unique ids will be in the same order.
+                for data_key in data_keys:
+                    if data_key in self_target_text and raise_on_overwrite:
+                        raise OverwriteError(f'The following data key {data_key}'
+                                             ' exists in the following TargetText'
+                                             f' {self_target_text} within this collection. '
+                                             'The other TargetText that contains '
+                                             'this data key to copy the data from '
+                                             f'is {other_target_text}')
+                    self_data_values = []
+                    other_data_values = other_target_text[data_key]
+                    for self_id_value in self_target_text[id_key]:
+                        index_other_id_value = other_target_text[id_key].index(self_id_value)
+                        self_data_values.append(other_data_values[index_other_id_value])
+                    self_target_text[data_key] = self_data_values
+        except Exception as e:
+            self._storage = self_copy
+            raise e
 
     @staticmethod
     def combine(*collections) -> 'TargetTextCollection':

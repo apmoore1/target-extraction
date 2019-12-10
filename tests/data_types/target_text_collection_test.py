@@ -5,7 +5,7 @@ import tempfile
 import pytest
 
 from target_extraction.data_types import TargetTextCollection, TargetText
-from target_extraction.data_types_util import Span, AnonymisedError
+from target_extraction.data_types_util import Span, AnonymisedError, OverwriteError
 from target_extraction.tokenizers import spacy_tokenizer
 from target_extraction.pos_taggers import spacy_tagger
 
@@ -1420,6 +1420,30 @@ class TestTargetTextCollection:
                 correct_ids.append(f'{text_ids[index]}::{key_index}')
             assert correct_ids == value['span_ids']
 
+    def add_keys_and_values(self, collection: 'TargetTextCollection', 
+                            key_to_values: List[List[str]],
+                            values_to_add: List[List[List[Any]]]
+                            ) -> 'TargetTextCollection':
+        '''
+        :param collection: The collection that is going to have the keys and 
+                           associated values added to its collection.
+        :param keys_to_values: A list of a list of keys where each key has to 
+                               within the inner keys has to be repeated for 
+                               number of targets
+        :param values_to_add: A list of a list of a list of values where the 
+                              outer most list represents the number of keys 
+                              from `keys_to_values`, and the next inner list represents 
+                              the number of targets within the collection, and then 
+                              the inner most list represents the number of values 
+                              to add for that Target.
+        '''
+        for target_index, target_text in enumerate(collection.values()):
+            for keys_to_add in range(len(key_to_values)):
+                added_key = key_to_values[keys_to_add][target_index]
+                added_value = values_to_add[keys_to_add][target_index]
+                target_text[added_key] = added_value
+        return collection
+
     def test_key_difference(self):
         # Normal case where the given collection has all of the keys of the 
         # other collection but the other collection does have a few more keys 
@@ -1427,11 +1451,7 @@ class TestTargetTextCollection:
         collection_2 = TargetTextCollection(self._target_text_examples())
         added_values = [[[1], [2], [3, 4]], [['great'], ['another'], ['better', 'that']]]
         added_keys = [['new_key'] * 3, ['another_key'] * 3]
-        for target_index, target_text in enumerate(collection_2.values()):
-            for keys_to_add in range(len(added_keys)):
-                added_key = added_keys[keys_to_add][target_index]
-                added_value = added_values[keys_to_add][target_index]
-                target_text[added_key] = added_value
+        collection_2 = self.add_keys_and_values(collection_2, added_keys, added_values)
         correct_key_difference = ['new_key', 'another_key']
         differences = collection_1.key_difference(collection_2)
         assert len(correct_key_difference) == len(differences)
@@ -1442,12 +1462,9 @@ class TestTargetTextCollection:
 
         # The case where both of them have key differences but each have 
         # different differences
-        added_values = [[1], [2], [3, 4]]
-        added_keys = ['different_key'] * 3
-        for target_index, target_text in enumerate(collection_1.values()):
-            added_key = added_keys[target_index]
-            added_value = added_values[target_index]
-            target_text[added_key] = added_value
+        added_values = [[[1], [2], [3, 4]]]
+        added_keys = [['different_key'] * 3]
+        collection_1 = self.add_keys_and_values(collection_1, added_keys, added_values)
         collection_1_difference = ['new_key', 'another_key']
         differences = collection_1.key_difference(collection_2)
         assert len(collection_1_difference) == len(differences)
@@ -1459,5 +1476,119 @@ class TestTargetTextCollection:
         assert len(collection_2_difference) == len(differences)
         for difference in collection_2_difference:
             assert difference in differences
+    
+    @pytest.mark.parametrize("raise_on_overwrite", (True, False))
+    @pytest.mark.parametrize("check_same_ids", (True, False))
+    def test_combine_data_on_id(self, raise_on_overwrite: bool, 
+                                check_same_ids: bool):
+        # Normal case of copying from collection 2 to collection 1 where they 
+        # both have the same ID's
+        collection_1 = TargetTextCollection(self._target_text_examples())
+        collection_1.add_unique_key('targets', 'target_id')
+        collection_2 = TargetTextCollection(self._target_text_examples())
+        collection_2.add_unique_key('targets', 'target_id')
+        # values to add
+        added_values = [[[1], [2], [3, 4]]]
+        added_keys = [['different_key'] * 3]
+        collection_2 = self.add_keys_and_values(collection_2, added_keys, added_values)
+        assert ['different_key'] == collection_1.key_difference(collection_2)
+        collection_1.combine_data_on_id(collection_2, 'target_id', ['different_key'],
+                                        raise_on_overwrite=raise_on_overwrite, 
+                                        check_same_ids=check_same_ids)
+        for target_index, target_text in enumerate(collection_1.values()):
+            for value_index, value in enumerate(target_text['different_key']):
+                assert added_values[0][target_index][value_index] == value
+        assert collection_1['2']['different_key'][1] == collection_2['2']['different_key'][1]
+        assert collection_1['2']['target_id'][1] == collection_2['2']['target_id'][1]
+        assert collection_1['2']['different_key'][0] == collection_2['2']['different_key'][0]
+        assert collection_1['2']['target_id'][0] == collection_2['2']['target_id'][0]
+        # The more difficult case where the 2nd collection contains ids that 
+        # exist in both collections but i a different order
+        temp_ids = collection_2['2']['target_id']
+        temp_diff_values = collection_2['2']['different_key']
+        collection_2['2']._storage['target_id'] = [temp_ids[1], temp_ids[0]]
+        collection_2['2']._storage['different_key'] = [temp_diff_values[1], temp_diff_values[0]]
+        collection_2.sanitize()
+        # new collection 1
+        collection_1 = TargetTextCollection(self._target_text_examples())
+        collection_1.add_unique_key('targets', 'target_id')
+        collection_1.combine_data_on_id(collection_2, 'target_id', ['different_key'],
+                                        raise_on_overwrite=raise_on_overwrite, 
+                                        check_same_ids=check_same_ids)
+        for target_index, target_text in enumerate(collection_1.values()):
+            for value_index, value in enumerate(target_text['different_key']):
+                assert added_values[0][target_index][value_index] == value
+        assert collection_1['2']['different_key'][0] == collection_2['2']['different_key'][-1]
+        assert collection_1['2']['target_id'][0] == collection_2['2']['target_id'][-1]
+        assert collection_1['2']['different_key'][-1] == collection_2['2']['different_key'][0]
+        assert collection_1['2']['target_id'][-1] == collection_2['2']['target_id'][0]
+
+        # Test the raise on over write and that it will over write the data
+        assert collection_1['2']['different_key'][0] == 3
+        different_values = [[[5], [6], [7, 8]]]
+        collection_2 = TargetTextCollection(self._target_text_examples())
+        collection_2.add_unique_key('targets', 'target_id')
+        collection_2 = self.add_keys_and_values(collection_2, added_keys, different_values)
+        if raise_on_overwrite:
+            with pytest.raises(OverwriteError):
+                collection_1.combine_data_on_id(collection_2, 'target_id', ['different_key'],
+                                                raise_on_overwrite=raise_on_overwrite, 
+                                                check_same_ids=check_same_ids)
+        else:
+            collection_1.combine_data_on_id(collection_2, 'target_id', ['different_key'],
+                                            raise_on_overwrite=raise_on_overwrite, 
+                                            check_same_ids=check_same_ids)
+            assert collection_1['2']['different_key'] == [7, 8]
+            assert collection_1['another_id']['different_key'] == [6]
+            assert collection_1['0']['different_key'] == [5]
+
+        # Test that if it does raise an error when the collections are not 
+        # the same lengths if check_same_ids is True. As tests the roll back 
+        # function
+        another_collection = TargetTextCollection(self._target_text_examples())
+        another_collection.add_unique_key('targets', 'target_id')
+        another_collection = self.add_keys_and_values(another_collection, added_keys, 
+                                                      different_values)
+        del another_collection['another_id']
+        collection_1 = TargetTextCollection(self._target_text_examples())
+        collection_1.add_unique_key('targets', 'target_id')
+        if check_same_ids:
+            with pytest.raises(ValueError):
+                collection_1.combine_data_on_id(another_collection, 'target_id', ['different_key'],
+                                                raise_on_overwrite=raise_on_overwrite, 
+                                                check_same_ids=check_same_ids)
+        else:
+            with pytest.raises(KeyError):
+                assert 'different_key' not in collection_1['0']
+                collection_1.combine_data_on_id(another_collection, 'target_id', ['different_key'],
+                                                raise_on_overwrite=raise_on_overwrite, 
+                                                check_same_ids=check_same_ids)
+        # This tests that the rollback on storage works, as in when 
+        # an error occurs half way through adding data that added data 
+        # is removed and the collection is returned as it was before 
+        # `combine_data_on_id` was called.
+        assert 'different_key' not in collection_1['0']
+
+        # Test that it works when the two collections are the same length but 
+        # contain different unique target ids
+        another_collection = TargetTextCollection(self._target_text_examples())
+        another_collection.add_unique_key('targets', 'target_id')
+        another_collection = self.add_keys_and_values(another_collection, added_keys, 
+                                                      different_values)
+        another_collection['another_id']['target_id'][0] = 'another_id::2'
+        collection_1 = TargetTextCollection(self._target_text_examples())
+        collection_1.add_unique_key('targets', 'target_id')
+        if check_same_ids:
+            with pytest.raises(ValueError):
+                collection_1.combine_data_on_id(another_collection, 'target_id', ['different_key'],
+                                                raise_on_overwrite=raise_on_overwrite, 
+                                                check_same_ids=check_same_ids)
+        else:
+            with pytest.raises(ValueError):
+                collection_1.combine_data_on_id(another_collection, 'target_id', ['different_key'],
+                                                raise_on_overwrite=raise_on_overwrite, 
+                                                check_same_ids=check_same_ids)
+        assert 'different_key' not in collection_1['0']
+
         
                 
