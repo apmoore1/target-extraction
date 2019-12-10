@@ -1419,3 +1419,45 @@ class TestTargetTextCollection:
             for key_index in range(len(value['spans'])):
                 correct_ids.append(f'{text_ids[index]}::{key_index}')
             assert correct_ids == value['span_ids']
+
+    def test_key_difference(self):
+        # Normal case where the given collection has all of the keys of the 
+        # other collection but the other collection does have a few more keys 
+        collection_1 = TargetTextCollection(self._target_text_examples())
+        collection_2 = TargetTextCollection(self._target_text_examples())
+        added_values = [[[1], [2], [3, 4]], [['great'], ['another'], ['better', 'that']]]
+        added_keys = [['new_key'] * 3, ['another_key'] * 3]
+        for target_index, target_text in enumerate(collection_2.values()):
+            for keys_to_add in range(len(added_keys)):
+                added_key = added_keys[keys_to_add][target_index]
+                added_value = added_values[keys_to_add][target_index]
+                target_text[added_key] = added_value
+        correct_key_difference = ['new_key', 'another_key']
+        differences = collection_1.key_difference(collection_2)
+        assert len(correct_key_difference) == len(differences)
+        for difference in correct_key_difference:
+            assert difference in differences
+        # The case where one collection contains all of the other collection
+        assert not len(collection_2.key_difference(collection_1))
+
+        # The case where both of them have key differences but each have 
+        # different differences
+        added_values = [[1], [2], [3, 4]]
+        added_keys = ['different_key'] * 3
+        for target_index, target_text in enumerate(collection_1.values()):
+            added_key = added_keys[target_index]
+            added_value = added_values[target_index]
+            target_text[added_key] = added_value
+        collection_1_difference = ['new_key', 'another_key']
+        differences = collection_1.key_difference(collection_2)
+        assert len(collection_1_difference) == len(differences)
+        for difference in collection_1_difference:
+            assert difference in differences
+        
+        collection_2_difference = ['different_key']
+        differences = collection_2.key_difference(collection_1)
+        assert len(collection_2_difference) == len(differences)
+        for difference in collection_2_difference:
+            assert difference in differences
+        
+                

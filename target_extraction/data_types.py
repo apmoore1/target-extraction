@@ -1430,6 +1430,11 @@ class TargetTextCollection(MutableMapping):
     22. add_unique_key -- Applies the following 
         :py:meth:`target_extraction.data_types.TargetText.add_unique_key` 
         to each TargetText within this collection
+    23. key_difference -- Given this collection and another it will return all
+        of the keys that the other collection contains which this does not.
+    24. add_data_by_id -- Given this collection and another it will add all of
+        the data from the other collection into this collection based on the 
+        unique key given. 
 
     Static Functions:
 
@@ -2161,6 +2166,17 @@ class TargetTextCollection(MutableMapping):
         '''
         for value in self.values():
             value.add_unique_key(id_key, id_key_name, id_delimiter=id_delimiter)
+
+    def key_difference(self, other_collection: 'TargetTextCollection'
+                       ) -> List[str]:
+        '''
+        :param other_collection: The collection that is being compared to this.
+        :returns: A list of keys that represent all of the keys that are in the 
+                  other (compared) collection and not in this collection.
+        '''
+        this_keys = {key for value in self.values() for key in value.keys()}
+        other_keys = {key for value in other_collection.values() for key in value.keys()}
+        return list(other_keys.difference(this_keys))
 
     @staticmethod
     def combine(*collections) -> 'TargetTextCollection':
