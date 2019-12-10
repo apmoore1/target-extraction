@@ -1897,3 +1897,37 @@ class TestTargetText:
                                                categories=categories, category_sentiments=category_sentiments)
         with pytest.raises(Exception):
             re_order_required_example.re_order()
+
+    @pytest.mark.parametrize("id_delimiter", ('$$', None))
+    def test_add_unique_key(self, id_delimiter: Optional[str]):
+        # Normal case, tested across different keys and id keys.
+        examples = self._regular_examples()[0]
+        text_ids = ['0', 'another_id', '2']
+        for key_name, id_key_name in [('spans', 'spans_id'), 
+                                      ('targets', 'targets_id')]:
+            for index, example in enumerate(examples):
+                example: TargetText
+                assert id_key_name not in example
+                if id_delimiter is not None:
+                    example.add_unique_key(key_name, id_key_name, id_delimiter=id_delimiter)
+                else:
+                    example.add_unique_key(key_name, id_key_name)
+                assert id_key_name in example
+                relevant_text_id = text_ids[index]
+                if id_delimiter is not None:
+                    relevant_text_id = relevant_text_id + id_delimiter
+                else:
+                    relevant_text_id = relevant_text_id + '::'
+                
+                correct_ids = []
+                for key_index in range(len(example[key_name])):
+                    correct_ids.append(f'{relevant_text_id}{key_index}')
+                assert correct_ids == example[id_key_name]
+        # Test the case where the id_key_name already exists
+        with pytest.raises(KeyError):
+            examples[0].add_unique_key('spans', 'spans_id')
+        # Test the case where the key_name is not of type List
+        with pytest.raises(TypeError):
+            examples[0].add_unique_key('text', 'another_id')
+            
+            

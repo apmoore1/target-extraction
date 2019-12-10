@@ -49,8 +49,7 @@ class TargetText(MutableMapping):
     essentially a python dictionary.
 
     The following are the default keys that are in all `TargetText` 
-    objects, additional items can be added through __setitem__ but the default 
-    items cannot be deleted.
+    objects, additional items can be added through __setitem__
 
     1. text - The text associated to all of the other items
     2. text_id -- The unique ID associated to this object 
@@ -126,6 +125,11 @@ class TargetText(MutableMapping):
         values within this object that are in a list format into this order. 
         Once the TargetText has been re-ordered it will return True when 
         :py:meth`target_extraction.data_types.TargetText.in_order` is called.
+    15. add_unique_key -- Given a key e.g. `targets` it will create a new value 
+        in the TargetText object that is a list of strings which are unique IDs
+        based on the `text_id` and the index the `targets` occur in e.g. 
+        if the `targets` contain [`food`, `service`] and the `text_id` is 
+        `12a5` then the `target_id` created will contain `[`12a5$$0`,`12a5$$1`]`  
     
     Static Functions:
 
@@ -1163,9 +1167,6 @@ class TargetText(MutableMapping):
                         sorted_value = sorting_by_index(index_order, value)
                     assert sorted_value
                     new_key_values[key] = sorted_value
-                    #for index in index_order:
-                    #    sorted_value.append(value[index])
-                    #new_key_values[key] = sorted_value
             except:
                 real_err = traceback.format_exc()
                 err_msg = (f'The following error {real_err} has occured on this '
@@ -1177,6 +1178,37 @@ class TargetText(MutableMapping):
         self.sanitize()
         assert self.in_order(), print(f'After re-ordering the object is '
                                       f'still not in order:{self}')
+    
+    def add_unique_key(self, id_key: str, id_key_name: str, 
+                       id_delimiter: str = '::') -> None:
+        '''
+        :param id_key: The name of the key within this TargetText that requires 
+                       unique ids that will be stored in `id_key_name`.
+        :param id_key_name: The name of the key to associate to these new 
+                            unique ids.
+        :param id_delimiter: The delimiter to seperate the `text_id` and the 
+                             index of the `id_key` that is being represented 
+                             by this unique id.
+        :raises KeyError: If the `id_key_name` already exists within the 
+                          TargetText.
+        :raises TypeError: If the value of `id_key` is not of type List.
+        :Example: self.add_unique_key(`targets`, `targets_id`) where 
+                  `targets`=[`food`, `service`] and `text_id`=`12a5` the 
+                  following key will be added to self `targets_id` with the 
+                  following value = `[`12a5::0`, `12a5::1`]`
+        '''
+        self._key_error(id_key)
+        text_id = self['text_id']
+        if id_key_name in self:
+            raise KeyError(f'The new id_key_name {id_key_name} '
+                           f'already exists within {self}')
+        if not isinstance(self[id_key], list):
+            raise TypeError(f'The value of `id_key` {self[id_key]} in {self} '
+                            f'has to be of type List and not {type(self[id_key])}')
+        new_ids = []
+        for index in range(len(self[id_key])):
+            new_ids.append(f'{text_id}{id_delimiter}{index}')
+        self[id_key_name] = new_ids
 
     @staticmethod
     def from_json(json_text: str, anonymised: bool = False) -> 'TargetText':
@@ -1395,7 +1427,10 @@ class TargetTextCollection(MutableMapping):
         return True.
     21. re_order -- This will apply :py:meth:`target_extraction.data_types.TargetText.re_order`
         to each TargetText within the collection.
-    
+    22. add_unique_key -- Applies the following 
+        :py:meth:`target_extraction.data_types.TargetText.add_unique_key` 
+        to each TargetText within this collection
+
     Static Functions:
 
     1. from_json -- Returns a TargetTextCollection object given the json like 
@@ -2108,6 +2143,24 @@ class TargetTextCollection(MutableMapping):
         '''
         for target_text in self.values():
             target_text.re_order(keys_not_to_order)
+
+    def add_unique_key(self, id_key: str, id_key_name: str, 
+                       id_delimiter: str = '::') -> None:
+        '''
+        Applies the following 
+        :py:meth:`target_extraction.data_types.TargetText.add_unique_key` 
+        to each TargetText within this collection
+        
+        :param id_key: The name of the key within this TargetText that requires 
+                       unique ids that will be stored in `id_key_name`.
+        :param id_key_name: The name of the key to associate to these new 
+                            unique ids.
+        :param id_delimiter: The delimiter to seperate the `text_id` and the 
+                             index of the `id_key` that is being represented 
+                             by this unique id.
+        '''
+        for value in self.values():
+            value.add_unique_key(id_key, id_key_name, id_delimiter=id_delimiter)
 
     @staticmethod
     def combine(*collections) -> 'TargetTextCollection':

@@ -1408,3 +1408,14 @@ class TestTargetTextCollection:
         # Test that it can be re-ordered twice without any affect
         collection.re_order()
         assert collection.in_order()
+
+    def test_add_unique_key(self):
+        examples = self._target_text_examples()
+        text_ids = ['0', 'another_id', '2']
+        collection = TargetTextCollection(examples)
+        collection.add_unique_key('spans', 'span_ids')
+        for index, value in enumerate(collection.values()):
+            correct_ids = []
+            for key_index in range(len(value['spans'])):
+                correct_ids.append(f'{text_ids[index]}::{key_index}')
+            assert correct_ids == value['span_ids']
