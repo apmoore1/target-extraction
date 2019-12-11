@@ -1907,6 +1907,17 @@ class TestTargetText:
         assert text_id == edge_case_example['text_id']
         assert text == edge_case_example['text']
 
+        # Test the rollback case where an error occurs halfway through ordering
+        spans = [Span(30, 35), Span(4, 15)]
+        targets = ['cover', 'laptop case']
+        rollback_case_example = TargetText(text_id=text_id, targets=targets, spans=spans,
+                                           zcategories=['LAPTOP'],
+                                           text=text)
+        with pytest.raises(Exception):
+            rollback_case_example.re_order()
+        assert rollback_case_example['targets'][0] == 'cover'
+        assert rollback_case_example['spans'][0] == Span(30, 35)
+
 
     @pytest.mark.parametrize("id_delimiter", ('$$', None))
     def test_add_unique_key(self, id_delimiter: Optional[str]):

@@ -1176,6 +1176,7 @@ class TargetText(MutableMapping):
                            f'following key {key} and value {value} for this '
                            f'TargetText {self}')
                 raise Exception(err_msg)
+        # Covers the rollback problem
         for key, value in new_key_values.items():
             self._storage[key] = value
         self.sanitize()
@@ -2149,8 +2150,17 @@ class TargetTextCollection(MutableMapping):
         :param keys_not_to_order: Any keys within the TargetTexts that do not 
                                   need re-ordering
         '''
-        for target_text in self.values():
-            target_text.re_order(keys_not_to_order)
+        # This takes into account the rollback problem where an error occurs 
+        # halfway through performing the function and half the collection has 
+        # been re-ordered where as the other half has not. This will bring it 
+        # back into a stable state.
+        self_copy = copy.deepcopy(self._storage)
+        try:
+            for target_text in self.values():
+                target_text.re_order(keys_not_to_order)
+        except Exception as e:
+            self._storage = self_copy
+            raise e
 
     def add_unique_key(self, id_key: str, id_key_name: str, 
                        id_delimiter: str = '::') -> None:

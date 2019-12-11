@@ -1408,6 +1408,20 @@ class TestTargetTextCollection:
         # Test that it can be re-ordered twice without any affect
         collection.re_order()
         assert collection.in_order()
+        # Test the rollback case
+        examples = TargetTextCollection(self._target_text_examples())
+        del examples['2']
+        example = self._target_text_examples()[-1]
+        valid_spans = example._storage['spans']
+        valied_targets = example._storage['targets']
+        example._storage['spans'] = [valid_spans[1], valid_spans[0]]
+        example._storage['targets'] = [valied_targets[1], valied_targets[0]]
+        examples.add(example)
+        examples.add(TargetText(text_id='something', text=None, spans=[], tokens=['hello']))
+        
+        with pytest.raises(Exception):
+            examples.re_order()
+        assert Span(30, 35) == examples['2']['spans'][0]
 
     def test_add_unique_key(self):
         examples = self._target_text_examples()
