@@ -1897,6 +1897,16 @@ class TestTargetText:
                                                categories=categories, category_sentiments=category_sentiments)
         with pytest.raises(Exception):
             re_order_required_example.re_order()
+        # edge case where the targets is a list but with no targets in it.
+        edge_case_example = TargetText(text_id=text_id, text=text, targets=[], 
+                                       spans=[], target_sentiments=[])
+        edge_case_example.re_order()
+        assert [] == edge_case_example['targets']
+        assert [] == edge_case_example['spans']
+        assert [] == edge_case_example['target_sentiments']
+        assert text_id == edge_case_example['text_id']
+        assert text == edge_case_example['text']
+
 
     @pytest.mark.parametrize("id_delimiter", ('$$', None))
     def test_add_unique_key(self, id_delimiter: Optional[str]):

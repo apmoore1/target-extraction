@@ -1154,6 +1154,9 @@ class TargetText(MutableMapping):
         for key, value in self._storage.items():
             try:
                 if isinstance(value, list) and key not in keys_not_to_order:
+                    # Edge case where the list can be just an empty list
+                    if not value:
+                        continue
                     # Need to check if the first instance of the value is a 
                     # list and if so then that needs to be sorted and not the 
                     # outer list
@@ -1169,9 +1172,9 @@ class TargetText(MutableMapping):
                     new_key_values[key] = sorted_value
             except:
                 real_err = traceback.format_exc()
-                err_msg = (f'The following error {real_err} has occured on this '
-                           f'TargetText {self} for the following key {key} '
-                           f'and value {value}')
+                err_msg = (f'The following error {real_err} has occured on the '
+                           f'following key {key} and value {value} for this '
+                           f'TargetText {self}')
                 raise Exception(err_msg)
         for key, value in new_key_values.items():
             self._storage[key] = value
