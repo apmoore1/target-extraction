@@ -2204,7 +2204,10 @@ class TargetTextCollection(MutableMapping):
                        collection.
         :param data_keys: The keys of the values in each TargetText within the 
                           `other_collection` that is be copied to the relevant 
-                          TargetTexts within this collection.
+                          TargetTexts within this collection. It assumes that if
+                          any of key/values are a list of lists that the inner 
+                          lists relate to the targets and the outer list is 
+                          not related to the targets. 
         :param raise_on_overwrite: If True will raise the 
                                    :py:class:`target_extraction.data_types_util.OverwriteError` 
                                    if any of the `data_keys` exist in any 
@@ -2212,6 +2215,8 @@ class TargetTextCollection(MutableMapping):
         :param check_same_ids: If True will ensure that this collection and the 
                                other collection are of same length and check 
                                if each have the same unique ids
+        :raises AssertionError: If the number of IDs from the `id_key` does not 
+                                match the number of data to be added to a data key
         :raises ValueError: If `check_same_ids` is True and the two collections 
                             are either of not the same length or have  
                             different unique ids according to `id_key` within 
@@ -2220,6 +2225,43 @@ class TargetTextCollection(MutableMapping):
                                 the `data_keys` exist in any of the TargetTexts
                                 within this collection.
         '''
+        def sort_data_by_key(key: str, self_target_text: TargetText, 
+                             other_target_text: TargetText, 
+                             data_to_sort: List[Any]) -> List[Any]:
+            '''
+            :param key: A key that appear in both `self_target_text` and 
+                        `other_target_text`, where the key for both represents 
+                        values that appear in both and are unique.
+            :param self_target_text: A TargetText object where the values in 
+                                     `key` will determine the sorting performed
+                                     to `data_to_sort`. 
+            :param other_target_text: The TargetText that represents the `data_to_sort`
+                                      and is in this TargetText's sort order 
+                                      based on values in `key`
+            :param data_to_sort: Data that has come from `other_target_text` that 
+                                 is to be sorted based on `key` values from 
+                                 `self_target_text`
+            :returns: The `data_to_sort` ordered by the values in `self_target_text`
+                      key `key`
+            :raises AssertionError: If the number of IDs from the `key` does not 
+                                    match the number of data_to_sort
+            '''
+            self_data_values = []
+            num_ids = len(other_target_text[key])
+            num_data = len(data_to_sort)
+            assert_err = (f'The ID key {key} contains {num_ids}, however the '
+                          'number of values/data to be added from the other '
+                          f'TargetText is {num_data} which is {data_to_sort} '
+                          f'OtherTargetText {other_target_text}\n'
+                          f'SelfTargetText {self_target_text}')
+            assert num_ids == num_data, assert_err
+
+            for self_id_value in self_target_text[key]:
+                index_other_id_value = other_target_text[key].index(self_id_value)
+                self_data_values.append(data_to_sort[index_other_id_value])
+            
+            return self_data_values
+
         if check_same_ids:
             len_self = len(self)
             len_other = len(other_collection)
@@ -2255,9 +2297,24 @@ class TargetTextCollection(MutableMapping):
                                              f'is {other_target_text}')
                     self_data_values = []
                     other_data_values = other_target_text[data_key]
-                    for self_id_value in self_target_text[id_key]:
-                        index_other_id_value = other_target_text[id_key].index(self_id_value)
-                        self_data_values.append(other_data_values[index_other_id_value])
+                    # If the other_data_values is a list of a list, need to 
+                    # take into account the sorting of the targets should only 
+                    # be applied to the inner list.
+                    is_inner_list = False
+                    if isinstance(other_data_values, list):
+                        if other_data_values:
+                            if isinstance(other_data_values[0], list):
+                                is_inner_list = True
+                    if is_inner_list:
+                        for other_inner_list_data in other_data_values:
+                            self_inner_list_data = sort_data_by_key(id_key, self_target_text, 
+                                                                    other_target_text, 
+                                                                    other_inner_list_data)
+                            self_data_values.append(self_inner_list_data)
+                    else:
+                        self_data_values = sort_data_by_key(id_key, self_target_text, 
+                                                            other_target_text, 
+                                                            other_data_values)
                     self_target_text[data_key] = self_data_values
         except Exception as e:
             self._storage = self_copy

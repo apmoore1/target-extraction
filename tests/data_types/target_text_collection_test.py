@@ -1517,7 +1517,7 @@ class TestTargetTextCollection:
         assert collection_1['2']['different_key'][0] == collection_2['2']['different_key'][0]
         assert collection_1['2']['target_id'][0] == collection_2['2']['target_id'][0]
         # The more difficult case where the 2nd collection contains ids that 
-        # exist in both collections but i a different order
+        # exist in both collections but id are different order
         temp_ids = collection_2['2']['target_id']
         temp_diff_values = collection_2['2']['different_key']
         collection_2['2']._storage['target_id'] = [temp_ids[1], temp_ids[0]]
@@ -1603,6 +1603,63 @@ class TestTargetTextCollection:
                                                 raise_on_overwrite=raise_on_overwrite, 
                                                 check_same_ids=check_same_ids)
         assert 'different_key' not in collection_1['0']
+
+        # Test the case where there are keys that are a list of a list where 
+        # the inner list and not the outer list are in the target order. In 
+        # this example we will assume that the two collections have a different 
+        # target order.
+        collection_1 = TargetTextCollection(self._target_text_examples())
+        collection_1.add_unique_key('targets', 'target_id')
+        collection_2 = TargetTextCollection(self._target_text_examples())
+        collection_2.add_unique_key('targets', 'target_id')
+        temp_ids = collection_2['2']['target_id']
+        collection_2['2']._storage['target_id'] = [temp_ids[1], temp_ids[0]]
+
+        pred_sentiment_values_0 = [[0], [1], [1], [1]]
+        collection_2['0']['preds'] = pred_sentiment_values_0
+        pred_sentiment_values_another = [[1], [0], [0], [2]]
+        collection_2['another_id']['preds'] = pred_sentiment_values_another
+        pred_sentiment_values_2 = [[1,3], [2,1], [1, 0], [1, 2]]
+        collection_2['2']['preds'] = pred_sentiment_values_2
+        collection_2.sanitize()
+        collection_1.sanitize()
+
+        collection_1.combine_data_on_id(collection_2, 'target_id', data_keys=['preds'], 
+                                        raise_on_overwrite=raise_on_overwrite, 
+                                        check_same_ids=check_same_ids)
+        assert collection_1['0']['preds'] == pred_sentiment_values_0
+        assert collection_1['another_id']['preds'] == pred_sentiment_values_another
+        assert collection_1['2']['preds'] == [[3,1], [1,2], [0, 1], [2, 1]]
+        # Ensure that an error is raised if the values returned for a 
+        # key that is a list is greater than the number of targets.
+        pred_sentiment_values_0 = [[0, 1], [1, 1], [1, 1], [1, 1]]
+        collection_2['0']['long_preds'] = pred_sentiment_values_0
+        pred_sentiment_values_another = [[1, 2], [0, 2], [0, 2], [2, 2]]
+        collection_2['another_id']['long_preds'] = pred_sentiment_values_another
+        pred_sentiment_values_2 = [[1,3, 4], [2,1, 4], [1, 0, 4], [1, 2, 4]]
+        collection_2['2']['long_preds'] = pred_sentiment_values_2
+        collection_2.sanitize()
+        collection_1.sanitize()
+        with pytest.raises(AssertionError):
+            collection_1.combine_data_on_id(collection_2, 'target_id', data_keys=['long_preds'], 
+                                            raise_on_overwrite=raise_on_overwrite, 
+                                            check_same_ids=check_same_ids)
+        # Ensure that it raises the AssertionError for data keys that are 
+        # lists of lists of lists as these are not supported.
+        pred_sentiment_values_0 = [[[0]], [[1]], [[1]], [[1]]]
+        collection_2['0']['nested_preds'] = pred_sentiment_values_0
+        pred_sentiment_values_another = [[[1, 2]], [[0, 2]], [[0, 2]], [[2, 2]]]
+        collection_2['another_id']['nested_preds'] = pred_sentiment_values_another
+        pred_sentiment_values_2 = [[[1,3, 4]], [[2,1, 4]], [[1, 0, 4]], [[1, 2, 4]]]
+        collection_2['2']['nested_preds'] = pred_sentiment_values_2
+        collection_2.sanitize()
+        collection_1.sanitize()
+        with pytest.raises(AssertionError):
+            collection_1.combine_data_on_id(collection_2, 'target_id', data_keys=['nested_preds'], 
+                                                raise_on_overwrite=raise_on_overwrite, 
+                                                check_same_ids=check_same_ids)
+        
+
 
         
                 
