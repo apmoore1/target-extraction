@@ -11,7 +11,7 @@ DATA_DIR = Path(__file__, '..', '..', '..', 'data', 'allen',
 # All of these tests have been taken from the Allennlp github
 # https://github.com/allenai/allennlp/blob/master/allennlp/tests/data/dataset_readers/text_classification_json_test.py
 # here the only add on is the `label_name` argument in the constructor
-class TestTextClassificationJsonReader:
+class TestTextSentimentReader:
     @pytest.mark.parametrize("label_name", ('label', 'text_sentiment'))
     @pytest.mark.parametrize("lazy", (True, False))
     def test_set_skip_indexing_true(self, lazy: bool, label_name: str):
