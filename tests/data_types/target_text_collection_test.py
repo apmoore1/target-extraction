@@ -1658,6 +1658,58 @@ class TestTargetTextCollection:
             collection_1.combine_data_on_id(collection_2, 'target_id', data_keys=['nested_preds'], 
                                                 raise_on_overwrite=raise_on_overwrite, 
                                                 check_same_ids=check_same_ids)
+
+    @pytest.mark.parametrize("sentiment_key", ('target_sentiments', 'category_sentiments'))
+    @pytest.mark.parametrize("average_sentiment", (True, False))
+    @pytest.mark.parametrize("text_sentiment_key", ('text_sentiment', 'sentence_sentiment'))
+    def test_one_sentiment_text(self, sentiment_key: bool, 
+                                average_sentiment: bool, 
+                                text_sentiment_key: str):
+        examples: List[TargetText] = self._target_text_examples()
+        text = "The laptop case was great and cover was rubbish" 
+        spans = [Span(4, 15), Span(30, 35), Span(0, 3), Span(16,19), Span(40,47)]
+        targets = ["laptop case", "cover", "The", "was", "rubbish"]
+        target_sentiments = [0, 1, 0, 1, 2] 
+        categories = ["LAPTOP", "ANOTHER", "SOMETHING", "TEST", "DIFFER"]
+        varied_sentiment_example = TargetText(text=text, text_id='6', targets=targets, 
+                                              spans=spans, target_sentiments=target_sentiments,
+                                              categories=categories)
+        examples.append(varied_sentiment_example)
+        for example in examples:
+            example['category_sentiments'] = example['target_sentiments']
+        no_target_examples = TargetText(text_id='5', text='example text', targets=[], 
+                                        target_sentiments=[], categories=[], 
+                                        category_sentiments=[], spans=[])
+        examples.append(no_target_examples)
+        
+        collection_1 = TargetTextCollection(examples)
+        assert 5 == len(collection_1)
+
+        collection_1.one_sentiment_text(sentiment_key, average_sentiment, text_sentiment_key)
+        if average_sentiment:
+            correct_answer = {'0': 0, 'another_id': 1, '2': [0,1], '5': None, 
+                              '6': [0,1]}
+            for target_text in collection_1.values():
+                text_id = target_text['text_id']
+                answer = correct_answer.pop(text_id)
+                if answer is None:
+                    assert text_sentiment_key not in target_text
+                elif isinstance(answer, list):
+                    assert target_text[text_sentiment_key] in answer
+                else:
+                    assert answer == target_text[text_sentiment_key]
+
+        else:
+            correct_answer = {'0': 0, 'another_id': 1, '2': None, '5': None, 
+                              '6': None}
+            for target_text in collection_1.values():
+                text_id = target_text['text_id']
+                answer = correct_answer.pop(text_id)
+                if answer is None:
+                    assert text_sentiment_key not in target_text
+                else:
+                    assert answer == target_text[text_sentiment_key]
+
         
 
 

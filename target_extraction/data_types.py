@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
 from typing import Union, Dict, Set
 import traceback
+import random
 
 from target_extraction.tokenizers import is_character_preserving, token_index_alignment
 from target_extraction.data_types_util import (Span, OverLappingTargetsError,
@@ -1439,6 +1440,11 @@ class TargetTextCollection(MutableMapping):
     24. combine_data_on_id -- Given this collection and another it will add all
         of the data from the other collection into this collection based on the 
         unique key given. 
+    25. one_sentiment_text -- Adds the `text_sentiment_key` to each TargetText 
+        within the collection where the value will represent the sentiment value 
+        for the text based on the `sentiment_key` values and `average_sentiment` 
+        determining how to handle multiple sentiments. This will allow text level 
+        classifiers to be trained on target/aspect/category data.
 
     Static Functions:
 
@@ -2319,6 +2325,56 @@ class TargetTextCollection(MutableMapping):
         except Exception as e:
             self._storage = self_copy
             raise e
+
+    def one_sentiment_text(self, sentiment_key: str,
+                           average_sentiment: bool = False, 
+                           text_sentiment_key: str = 'text_sentiment'
+                           ) -> None:
+        '''
+        Adds the `text_sentiment_key` to each TargetText within the collection 
+        where the value will represent the sentiment value for the text based 
+        on the `sentiment_key` values and `average_sentiment` determining how 
+        to handle multiple sentiments. This will allow text level classifiers 
+        to be trained on target/aspect/category data.
+
+        :param sentiment_key: The key in the TargetTexts that represent the 
+                              sentiment for the TargetTexts sentence. 
+        :param average_sentiment: If False it will only add the `text_sentiment_key` 
+                                  to TargetTexts that have one sentiment in the 
+                                  `sentiment_key`. If True it will choose the 
+                                  most frequent sentiment , ties are decided 
+                                  by random choice. If the there are no 
+                                  values in `sentiment_key` then 
+                                  `text_sentiment_key` will not be added to 
+                                  the TargetText.
+        :param text_sentiment_key: The key to add the text level sentiment value 
+                                   to.
+        '''
+        for target_text in self.values():
+            target_text: TargetText
+            target_text._key_error(sentiment_key)
+
+            sentiments = target_text[sentiment_key]
+            if average_sentiment:
+                if len(sentiments) == 1:
+                    target_text[text_sentiment_key] = sentiments[0]
+                elif len(sentiments) == 0:
+                    continue
+                else:
+                    sentiment_counts = Counter(sentiments)
+                    sorted_counts = sorted(sentiment_counts.items(), 
+                                           key=lambda x: x[1], reverse=True)
+                    highest_count = sorted_counts[0][1]
+                    highest_sentiment_values = []
+                    for sentiment_value, count in sorted_counts:
+                        if count == highest_count:
+                            highest_sentiment_values.append(sentiment_value)
+                    assert highest_sentiment_values
+                    random_sentiment_value = random.choice(highest_sentiment_values)
+                    target_text[text_sentiment_key] = random_sentiment_value
+            else:
+                if len(sentiments) == 1:
+                    target_text[text_sentiment_key] = sentiments[0]
 
     @staticmethod
     def combine(*collections) -> 'TargetTextCollection':
