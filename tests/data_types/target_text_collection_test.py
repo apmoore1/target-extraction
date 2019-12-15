@@ -1675,6 +1675,13 @@ class TestTargetTextCollection:
                                               spans=spans, target_sentiments=target_sentiments,
                                               categories=categories)
         examples.append(varied_sentiment_example)
+
+        import copy
+        same_sentiment_twice = copy.deepcopy(examples[-2]._storage)
+        same_sentiment_twice['text_id'] = '10'
+        same_sentiment_twice['target_sentiments'] = [1, 1]
+        same_sentiment_twice = TargetText(**same_sentiment_twice)
+        examples.append(same_sentiment_twice)
         for example in examples:
             example['category_sentiments'] = example['target_sentiments']
         no_target_examples = TargetText(text_id='5', text='example text', targets=[], 
@@ -1683,12 +1690,12 @@ class TestTargetTextCollection:
         examples.append(no_target_examples)
         
         collection_1 = TargetTextCollection(examples)
-        assert 5 == len(collection_1)
+        assert 6 == len(collection_1)
 
         collection_1.one_sentiment_text(sentiment_key, average_sentiment, text_sentiment_key)
         if average_sentiment:
             correct_answer = {'0': 0, 'another_id': 1, '2': [0,1], '5': None, 
-                              '6': [0,1]}
+                              '6': [0,1], '10': 1}
             for target_text in collection_1.values():
                 text_id = target_text['text_id']
                 answer = correct_answer.pop(text_id)
@@ -1701,7 +1708,7 @@ class TestTargetTextCollection:
 
         else:
             correct_answer = {'0': 0, 'another_id': 1, '2': None, '5': None, 
-                              '6': None}
+                              '6': None, '10': 1}
             for target_text in collection_1.values():
                 text_id = target_text['text_id']
                 answer = correct_answer.pop(text_id)

@@ -2340,8 +2340,11 @@ class TargetTextCollection(MutableMapping):
         :param sentiment_key: The key in the TargetTexts that represent the 
                               sentiment for the TargetTexts sentence. 
         :param average_sentiment: If False it will only add the `text_sentiment_key` 
-                                  to TargetTexts that have one sentiment in the 
-                                  `sentiment_key`. If True it will choose the 
+                                  to TargetTexts that have one unique sentiment in the 
+                                  `sentiment_key` e.g. can have more than one sentiment
+                                  value in the `sentiment_key` but each one of 
+                                  those values has to be the same value. If True 
+                                  it will choose the 
                                   most frequent sentiment , ties are decided 
                                   by random choice. If the there are no 
                                   values in `sentiment_key` then 
@@ -2374,6 +2377,8 @@ class TargetTextCollection(MutableMapping):
                     target_text[text_sentiment_key] = random_sentiment_value
             else:
                 if len(sentiments) == 1:
+                    target_text[text_sentiment_key] = sentiments[0]
+                elif len(sentiments) > 1 and len(set(sentiments)) == 1:
                     target_text[text_sentiment_key] = sentiments[0]
 
     @staticmethod
