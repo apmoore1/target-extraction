@@ -63,10 +63,10 @@ def _calc_partial_cunjunction(p_values: List[float], u: int,
     elif method == 'F':
         raise NotImplementedError('Currently the Fisher test is under '
                                   're-factoring and is not working')
-        sum_chi_stat = 0
-        for p in sorted_pvlas:
-            sum_chi_stat = sum_chi_stat - 2 * np.log(p)
-        p_u_n = 1 - stats.chi2.cdf(sum_chi_stat, 2 * (n - u + 1))
+        #sum_chi_stat = 0
+        #for p in sorted_pvlas:
+        #    sum_chi_stat = sum_chi_stat - 2 * np.log(p)
+        #p_u_n = 1 - stats.chi2.cdf(sum_chi_stat, 2 * (n - u + 1))
     else:
         method_err = ('The method argument has to be either `B` or `F` and '
                       f'not {method}')
