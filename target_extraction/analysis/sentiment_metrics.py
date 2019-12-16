@@ -130,7 +130,12 @@ def get_labels(target_collection: TargetTextCollection,
                                for each target in the TargetTextCollection
     :param predicted_sentiment_key: Key that contains the predicted sentiment   
                                     scores for each target in the 
-                                    TargetTextCollection
+                                    TargetTextCollection. It assumes that the 
+                                    predictions is a List of List where the 
+                                    outer list are the number of model runs and 
+                                    the inner list is the number of targets to 
+                                    predict for, the the second Tuple of the 
+                                    example return for an example of this.
     :returns: A tuple of 1; true sentiment value 2; predicted sentiment values. 
               where the predicted sentiment values is a list of predicted 
               sentiment value, one for each models predictions.
