@@ -5,23 +5,25 @@ import pytest
 
 from target_extraction.data_types_util import Span
 from target_extraction.data_types import TargetTextCollection, TargetText
-from target_extraction.error_analysis import same_one_sentiment
-from target_extraction.error_analysis import same_multi_sentiment
-from target_extraction.error_analysis import similar_sentiment
-from target_extraction.error_analysis import different_sentiment
-from target_extraction.error_analysis import unknown_targets
-from target_extraction.error_analysis import known_sentiment_known_target
-from target_extraction.error_analysis import unknown_sentiment_known_target
-from target_extraction.error_analysis import distinct_sentiment
-from target_extraction.error_analysis import count_error_key_occurrence
-from target_extraction.error_analysis import n_shot_targets, n_shot_subsets
-from target_extraction.error_analysis import reduce_collection_by_key_occurrence
-from target_extraction.error_analysis import swap_list_dimensions
-from target_extraction.error_analysis import num_targets_subset
-from target_extraction.error_analysis import tssr_raw
-from target_extraction.error_analysis import tssr_subset
-from target_extraction.error_analysis import NoSamplesError
+from target_extraction.analysis.sentiment_error_analysis import same_one_sentiment
+from target_extraction.analysis.sentiment_error_analysis import same_multi_sentiment
+from target_extraction.analysis.sentiment_error_analysis import similar_sentiment
+from target_extraction.analysis.sentiment_error_analysis import different_sentiment
+from target_extraction.analysis.sentiment_error_analysis import unknown_targets
+from target_extraction.analysis.sentiment_error_analysis import known_sentiment_known_target
+from target_extraction.analysis.sentiment_error_analysis import unknown_sentiment_known_target
+from target_extraction.analysis.sentiment_error_analysis import distinct_sentiment
+from target_extraction.analysis.sentiment_error_analysis import count_error_key_occurrence
+from target_extraction.analysis.sentiment_error_analysis import n_shot_targets, n_shot_subsets
+from target_extraction.analysis.sentiment_error_analysis import reduce_collection_by_key_occurrence
+from target_extraction.analysis.sentiment_error_analysis import swap_list_dimensions
+from target_extraction.analysis.sentiment_error_analysis import num_targets_subset
+from target_extraction.analysis.sentiment_error_analysis import tssr_raw
+from target_extraction.analysis.sentiment_error_analysis import tssr_subset
+from target_extraction.analysis.sentiment_error_analysis import NoSamplesError
 
+
+DATA_DIR = Path(__file__, '..', '..', 'data', 'analysis', 'sentiment_error_analysis').resolve()
 
 def target_text_examples(target_sentiment_values: List[List[str]]
                          ) -> List[TargetText]:
@@ -728,9 +730,8 @@ def test_n_shot_targets(lower: bool, error_name: str):
 @pytest.mark.parametrize("return_n_values", (True, False))
 def test_n_shot_subsets(return_n_values: bool):
     # this testing function does not care about sentiment just the targets
-    data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
-    train_fp = Path(data_fp, 'train.json').resolve()
-    test_fp = Path(data_fp, 'test.json').resolve()
+    train_fp = Path(DATA_DIR, 'train.json').resolve()
+    test_fp = Path(DATA_DIR, 'test.json').resolve()
     train_collection = TargetTextCollection.load_json(train_fp)
     test_collection = TargetTextCollection.load_json(test_fp)
 
@@ -767,8 +768,7 @@ def test_n_shot_subsets(return_n_values: bool):
 @pytest.mark.parametrize("return_n_values", (True, False))
 def test_num_targets_subset(return_n_values: bool):
     # this testing function does not care about sentiment just the targets
-    data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
-    test_fp = Path(data_fp, 'test.json').resolve()
+    test_fp = Path(DATA_DIR, 'test.json').resolve()
     test_collection = TargetTextCollection.load_json(test_fp)
 
     if return_n_values:
@@ -806,8 +806,7 @@ def test_tssr_raw():
     collection, tssr_values = tssr_raw(test_collection)
     assert {} == tssr_values
     # Test on a collection with various amounts of targets
-    data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
-    test_fp = Path(data_fp, 'test.json').resolve()
+    test_fp = Path(DATA_DIR, 'test.json').resolve()
     test_collection = TargetTextCollection.load_json(test_fp)
 
     collection, tssr_values = tssr_raw(test_collection)
@@ -858,8 +857,7 @@ def test_tssr_subset(return_tssr_boundaries: bool):
     with pytest.raises(NoSamplesError):
         tssr_subset(test_collection, return_tssr_boundaries)
     # Test on a collection with various amounts of targets
-    data_fp = Path(__file__, '..', 'data', 'error_analysis').resolve()
-    test_fp = Path(data_fp, 'test.json').resolve()
+    test_fp = Path(DATA_DIR, 'test.json').resolve()
     test_collection = TargetTextCollection.load_json(test_fp)
 
     

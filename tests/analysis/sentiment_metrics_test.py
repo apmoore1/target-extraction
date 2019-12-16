@@ -3,8 +3,8 @@ from typing import List, Tuple
 import pytest
 
 from target_extraction.data_types import TargetTextCollection, TargetText
-from target_extraction.sentiment_metrics import get_labels, accuracy, LabelError
-from target_extraction.sentiment_metrics import macro_f1
+from target_extraction.analysis.sentiment_metrics import get_labels, accuracy, LabelError
+from target_extraction.analysis.sentiment_metrics import macro_f1
 
 def passable_example(true_sentiment_key: str, 
                      predicted_sentiment_key: str
