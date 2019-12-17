@@ -18,7 +18,8 @@ setup(name='target_extraction',
           'allennlp>=0.9.0',
           'spacy>=2.1,<2.2',
           'stanfordnlp==0.2.0',
-          'twokenize>=1.0.0'
+          'twokenize>=1.0.0',
+          'pandas'
       ],
       python_requires='>=3.6.1',
       packages=find_packages(),
