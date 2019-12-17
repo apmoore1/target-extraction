@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 
 from target_extraction.analysis import statistical_analysis
 
@@ -43,3 +44,29 @@ def test_calc_partial_cunjunction():
         statistical_analysis._calc_partial_cunjunction(p_values, u, 'A')
     with pytest.raises(NotImplementedError):
         statistical_analysis._calc_partial_cunjunction(p_values, u, 'F')
+
+@pytest.mark.parametrize('assume_normal', (True, False))
+def test_one_tailed_p_value(assume_normal: bool):
+    scores_1 = np.random.normal(0.5, 0.01, 200)
+    scores_2 = np.random.normal(0.46, 0.02, 200)
+    # Test the case where scores_1 is better than scores_2
+    p_value = statistical_analysis.one_tailed_p_value(scores_1, scores_2, 
+                                                      assume_normal=assume_normal)
+    assert 0.001 > p_value
+    
+    # Test the case where scores_1 is worse than scores_2
+    scores_1 = np.random.normal(0.46, 0.02, 200)
+    scores_2 = np.random.normal(0.5, 0.01, 200)
+    p_value = statistical_analysis.one_tailed_p_value(scores_1, scores_2, 
+                                                      assume_normal=assume_normal)
+    assert 0.99 < p_value
+    
+    # Ensure that the p_values are different when using different tests
+    scores_1 = np.random.normal(0.5, 0.01, 200)
+    scores_2 = np.random.normal(0.49, 0.015, 200)
+
+    p_value_normal = statistical_analysis.one_tailed_p_value(scores_1, scores_2, 
+                                                             assume_normal=True)
+    p_value_not_normal = statistical_analysis.one_tailed_p_value(scores_1, scores_2, 
+                                                                 assume_normal=False)
+    assert p_value_normal < p_value_not_normal
