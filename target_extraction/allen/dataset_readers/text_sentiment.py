@@ -1,12 +1,13 @@
 import logging
 import json
-from typing import Dict
+from typing import Dict, Union
 
 from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.token_indexers import TokenIndexer
 from allennlp.data.tokenizers import Tokenizer
 from allennlp.data.dataset_readers import TextClassificationJsonReader
+from allennlp.data.instance import Instance
 from overrides import overrides
 
 logger = logging.getLogger(__name__)
@@ -84,3 +85,8 @@ class TextSentimentReader(TextClassificationJsonReader):
                 instance = self.text_to_instance(text=text, label=label)
                 if instance is not None:
                     yield instance
+
+    @overrides
+    def text_to_instance(self, text: str, label: Union[str, int] = None,
+                         **kwargs) -> Instance:
+        return super().text_to_instance(text=text, label=label)
