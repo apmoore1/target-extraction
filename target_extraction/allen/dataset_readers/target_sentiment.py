@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List, Union, NamedTuple
 
 from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
@@ -16,6 +16,17 @@ from target_extraction.data_types import TargetText
 from target_extraction.data_types_util import Span
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+class TargetToken(NamedTuple):
+    '''
+    :param is_target: The length of the list denotes the number of targets within
+                      the text the token came from. The value if `1` denotes 
+                      that the token is a Target, `0` not a target. Each index 
+                      denotes a different multi word target within the text 
+                      the token came from. 
+    '''
+    is_target: List[int]
+
 
 @DatasetReader.register("target_sentiment")
 class TargetSentimentDatasetReader(DatasetReader):
@@ -78,18 +89,56 @@ class TargetSentimentDatasetReader(DatasetReader):
     :param use_categories: Whether or not to return the categories in the 
                            instances even if they do occur in the dataset. 
                            This is a temporary solution to the following 
-                           `issue <https://github.com/apmoore1/target-extraction/issues/5>`_ 
+                           `issue <https://github.com/apmoore1/target-extraction/issues/5>`_.
+                           The number of categories does not have to match the 
+                           number of targets, just there has to be at least one 
+                           category per sentence. 
     :param target_sequences: Whether or not to generate `target_sequences` 
                              which are a sequence of masks per target for all 
                              target texts. This will allow the model to know 
                              which tokens in the context relate to the target.
                              Example of this is shown below (for this to work 
-                             does require the `span` of each target):
+                             does require the `span` of each target)
+    :param position_embeddings: Whether or not to create distance values 
+                                that can be converted to embeddings similar 
+                                to the `position_weights` but instead of the 
+                                model later on using them as weights it uses 
+                                the distances to learn position embeddings.
+                                (for this to work does require the `span` of 
+                                each target). `A Position-aware Bidirectional 
+                                Attention Network for Aspect-level Sentiment 
+                                Analysis <https://www.aclweb.org/anthology/C18-1066.pdf>`_
+    :param position_weights: In the instances there will be an extra key 
+                             `position_weights` which will be an array of 
+                             integers representing the linear distance between 
+                             each token and it's target e.g. If the text 
+                             contains two targets where each token is represented
+                             by a number and the 1's target tokens = 
+                             [[0,0,0,1], [1,1,0,0]] then the `position_weights`
+                             will be [[4,3,2,1], [1,1,2,3]]. (for this to work 
+                             does require the `span` of each target). An example 
+                             of position weighting is in section 3.3 of 
+                             `Modeling Sentiment Dependencies with Graph 
+                             Convolutional Networks for Aspect-level Sentiment 
+                             Classification <https://arxiv.org/pdf/1906.04501.pdf>`_
+    :param max_position_distance: The maximum position distance given to a token 
+                                  from the target e.g. [0,0,0,0,0,1,0,0] if the 
+                                  each value represents a token and 1's represent
+                                  target tokens then the distance array would be 
+                                  [6,5,4,3,2,1,2,3] if the `max_position_distance`
+                                  is 5 then the distance array will be 
+                                  [5,5,4,3,2,1,2,3]. (for this to work either 
+                                  `position_embeddings` has to be True or 
+                                  `position_weights`)
     :raises ValueError: If the `left_right_contexts` is not True while either the 
                         `incl_targets` or `reverse_right_context` arguments are 
                         True.
     :raises ValueError: If the `left_right_contexts` and `target_sequences` are 
                         True at the same time.
+    :raises ValueError: If the `max_position_distance` when set is less than 2.
+    :raises ValueError: If `max_position_distance` is set but neither 
+                        `position_embeddings` nor `position_weights` are 
+                        `True`. 
 
     :Example of target_sequences: {`text`: `This Camera lens is great but the 
                                             screen is rubbish`, 
@@ -106,7 +155,10 @@ class TargetSentimentDatasetReader(DatasetReader):
                  reverse_right_context: bool = False,
                  incl_target: bool = False,
                  use_categories: bool = False,
-                 target_sequences: bool = False) -> None:
+                 target_sequences: bool = False,
+                 position_embeddings: bool = False,
+                 position_weights: bool = False,
+                 max_position_distance: Optional[int] = None) -> None:
         super().__init__(lazy)
         self._tokenizer = tokenizer or WordTokenizer()
         self._token_indexers = token_indexers or \
@@ -127,6 +179,21 @@ class TargetSentimentDatasetReader(DatasetReader):
             raise ValueError('Cannot have both `left_right_contexts` and '
                              '`target_sequences` True at the same time either'
                              ' one or the other or None.')
+        if (not position_embeddings and not position_weights and 
+            max_position_distance is not None):
+            raise ValueError('`max_position_distance` contains a value '
+                             f'{max_position_distance} When neither `position'
+                             '_embeddings` nor `position_weights` are True')
+        if max_position_distance is not None:
+            if max_position_distance < 2:
+                raise ValueError('`max_position_distance` when set has to be '
+                                 'greater than 2. Currently set at '
+                                 f'{max_position_distance}')
+        self._position_embeddings = position_embeddings
+        if position_embeddings:
+            self._position_indexers = {"position_tokens": SingleIdTokenIndexer()}
+        self._position_weights = position_weights
+        self._max_position_distance = max_position_distance
 
     @overrides
     def _read(self, file_path: str):
@@ -159,7 +226,69 @@ class TargetSentimentDatasetReader(DatasetReader):
             context_field = TextField(tokens, self._token_indexers)
             context_fields.append(context_field)
         return ListField(context_fields)
-            
+
+    @staticmethod
+    def _target_indicators_to_distances(target_indicators: List[List[int]],
+                                        max_distance: Optional[int] = None,
+                                        as_string: bool = False
+                                        ) -> List[List[Union[int,str]]]:
+        '''
+        :param target_indicators: For a text the outer list represents the number 
+                                  of targets in the sentence and the inner list 
+                                  are 0's representing no target tokens and 1's 
+                                  representing targets for one potential multi
+                                  word target in that text. e.g. [[0,0,1,1,0], [1,0,0,0,0]]
+                                  this would mean the text has two targets where 
+                                  the first is a multi word target and the second 
+                                  is a single word target.
+        :param max_distance: The maximum distance that can be given.
+        :param as_string: Whether the integers should become string value. Required
+                          if you want to use these as position embeddings.
+        :returns: A list of a list where the outer list represents the number of 
+                  targets in the text and the inner represents the distance the 
+                  tokens are to those targets e.g. using the example in 
+                  `target_indicators` the return would be [[3,2,1,1,2], [1,2,3,4,5]]
+        '''
+        if max_distance is not None:
+            if max_distance < 2:
+                distance_error = ('Max distance has to be greater than 1. '
+                                  f'Currently max distance is {max_distance}')
+                raise ValueError(distance_error)
+        target_indicator_distances: List[List[int]] = []
+        for target_indicator_list in target_indicators:
+            target_indicator_distance: List[int] = []
+            first_one = target_indicator_list.index(1)
+            # tokens up to the target
+            if first_one == 0:
+                pass
+            else:
+                for distance in reversed(range(first_one)):
+                    distance = distance + 2
+                    if max_distance is not None:
+                        if distance > max_distance:
+                            distance = max_distance
+                    target_indicator_distance.append(distance)
+            # https://stackoverflow.com/questions/522372/finding-first-and-last-index-of-some-value-in-a-list-in-python
+            last_one = len(target_indicator_list) - 1 - target_indicator_list[::-1].index(1)
+            length_of_target = (last_one - first_one) + 1
+            # tokens in the target
+            for _ in range(length_of_target):
+                target_indicator_distance.append(1)
+            # tokens after the target
+            number_tokens_left = (len(target_indicator_list) - last_one) - 1
+            for distance in range(number_tokens_left):
+                distance = distance + 2
+                if max_distance is not None:
+                    if distance > max_distance:
+                        distance = max_distance
+                target_indicator_distance.append(distance)
+            assert len(target_indicator_list) == len(target_indicator_distance)
+            # to string 
+            if as_string:
+                target_indicator_distance = [str(distance) for distance in target_indicator_distance]
+            target_indicator_distances.append(target_indicator_distance)
+        return target_indicator_distances
+
     def text_to_instance(self, text: str, 
                          targets: Optional[List[str]] = None,
                          target_sentiments: Optional[List[Union[str, int]]] = None,
@@ -203,7 +332,9 @@ class TargetSentimentDatasetReader(DatasetReader):
         metadata_dict = {}
 
         if targets is not None:
-            if self._target_sequences:
+            # need to change this so that it takes into account the case where 
+            # the positions are True but not the target sequences.
+            if self._target_sequences or self._position_embeddings or self._position_weights:
                 if spans is None:
                     raise ValueError('To create target sequences requires `spans`')
                 spans = [Span(span[0], span[1]) for span in spans]
@@ -217,28 +348,45 @@ class TargetSentimentDatasetReader(DatasetReader):
                 target_text_object.sequence_labels(per_target=True)
                 target_sequences = target_text_object['sequence_labels']
                 # Need to add the target sequences to the instances
+                in_label = {'B', 'I'}
+                number_targets = len(targets)
+                all_target_tokens: List[List[Token]] = [[] for _ in range(number_targets)]
                 target_sequence_fields = []
-                all_target_tokens = []
-                for target_sequence in target_sequences:
-                    in_label = {'B', 'I'}
-                    ones_indexes = []
-                    target_tokens = []
-                    len_err = 'Should be the same length as they are applied to the same token stream'
-                    assert len(target_sequence) == len(allen_tokens), len_err
-                    for one_index, sequence_label in enumerate(target_sequence):
-                        sequence_label = 1 if sequence_label in in_label else 0
-                        if sequence_label:
-                            ones_indexes.append(one_index)
-                            target_tokens.append(allen_tokens[one_index])
-                    all_target_tokens.append(target_tokens)
-                    individual_target_sequences = [[0] * len(target_sequence) 
-                                                   for _ in ones_indexes]
-                    for array_index, one_index in enumerate(ones_indexes):
-                        individual_target_sequences[array_index][one_index] = 1
-                    temp_target_sequence = np.array(individual_target_sequences)
-                    target_sequence_fields.append(ArrayField(temp_target_sequence, dtype=np.int32))
-                instance_fields['target_sequences'] = ListField(target_sequence_fields)
-
+                target_indicators: List[List[int]] = []
+                for target_index in range(number_targets):
+                    one_values = []
+                    target_ones = [0] * len(allen_tokens)
+                    for token_index, token in enumerate(allen_tokens):
+                        target_sequence_value = target_sequences[target_index][token_index]
+                        in_target = 1 if target_sequence_value in in_label else 0
+                        if in_target:
+                            all_target_tokens[target_index].append(allen_tokens[token_index])
+                            one_value_list = [0] * len(allen_tokens)
+                            one_value_list[token_index] = 1
+                            one_values.append(one_value_list)
+                            target_ones[token_index] = 1
+                    one_values = np.array(one_values)
+                    target_sequence_fields.append(ArrayField(one_values, dtype=np.int32))
+                    target_indicators.append(target_ones)
+                if self._position_embeddings:
+                    target_distances = self._target_indicators_to_distances(target_indicators, 
+                                                                            max_distance=self._max_position_distance, 
+                                                                            as_string=True)
+                    target_text_distances = []
+                    for target_distance in target_distances:
+                        token_distances = [Token(distance) for distance in target_distance]
+                        token_distances = TextField(token_distances, self._position_indexers)
+                        target_text_distances.append(token_distances)
+                    instance_fields['position_embeddings'] = ListField(target_text_distances)
+                if self._position_weights:
+                    target_distances = self._target_indicators_to_distances(target_indicators, 
+                                                                            max_distance=self._max_position_distance, 
+                                                                            as_string=False)
+                    target_distances = np.array(target_distances)
+                    instance_fields['position_weights'] = ArrayField(target_distances, 
+                                                                     dtype=np.int32)
+                if self._target_sequences:
+                    instance_fields['target_sequences'] = ListField(target_sequence_fields)
                 instance_fields['tokens'] = TextField(allen_tokens, self._token_indexers)
                 metadata_dict['text words'] = tokens
                 metadata_dict['text'] = text
