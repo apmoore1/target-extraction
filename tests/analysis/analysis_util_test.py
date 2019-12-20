@@ -22,9 +22,11 @@ def passable_example_multiple_preds(true_sentiment_key: str,
         example_2[predicted_sentiment_key] = [['neu', 'neg', 'pos'], ['neg', 'neg', 'pos']]
     return TargetTextCollection([example_1, example_2])
 
+@pytest.mark.parametrize('include_run_number', (True, None))
 @pytest.mark.parametrize('metric_name', (None, 'scores'))
 @pytest.mark.parametrize('metric_function_name', ('macro_f1', 'accuracy'))
-def test_metric_df(metric_function_name: str, metric_name: str):
+def test_metric_df(metric_function_name: str, metric_name: str, 
+                   include_run_number: bool):
     model_1_collection = passable_example_multiple_preds('true_sentiments', 'model_1')
     model_2_collection = passable_example_multiple_preds('true_sentiments', 'model_2')
     combined_collection = TargetTextCollection()
@@ -39,29 +41,45 @@ def test_metric_df(metric_function_name: str, metric_name: str):
                                      average=False, array_scores=True)
     test_df = util.metric_df(combined_collection, metric_function, 'true_sentiments', 
                              predicted_sentiment_keys=['model_1', 'model_2'], 
-                             average=False, array_scores=True, metric_name=metric_name)
+                             average=False, array_scores=True, metric_name=metric_name,
+                             include_run_number=include_run_number)
     get_metric_name = 'metric' if None else metric_name
-    assert (4, 2) == test_df.shape
+    if include_run_number:
+        assert (4, 3) == test_df.shape
+    else:
+        assert (4, 2) == test_df.shape
     for model_name, true_model_scores in [('model_1', model_1_scores), 
                                           ('model_2', model_2_scores)]:
         test_model_scores = test_df.loc[test_df['prediction key']==f'{model_name}'][f'{get_metric_name}']
         assert true_model_scores == test_model_scores.to_list()
+        if include_run_number:
+            test_run_numbers = test_df.loc[test_df['prediction key']==f'{model_name}']['run number']
+            test_run_numbers = test_run_numbers.to_list()
+            assert [0, 1] == test_run_numbers
     # Test the average version
     model_1_scores = metric_function(model_1_collection, 'true_sentiments', 'model_1', 
                                      average=True, array_scores=False)
     model_2_scores = metric_function(model_2_collection, 'true_sentiments', 'model_2', 
                                      average=True, array_scores=False)
-    test_df = util.metric_df(combined_collection, metric_function, 'true_sentiments', 
-                             predicted_sentiment_keys=['model_1', 'model_2'], 
-                             average=True, array_scores=False, metric_name=metric_name)
-    get_metric_name = 'metric' if None else metric_name
-    assert (2,2) == test_df.shape
-    for model_name, true_model_scores in [('model_1', model_1_scores), 
-                                          ('model_2', model_2_scores)]:
-        test_model_scores = test_df.loc[test_df['prediction key']==f'{model_name}'][f'{get_metric_name}']
-        test_model_scores = test_model_scores.to_list()
-        assert 1 == len(test_model_scores)
-        assert true_model_scores == test_model_scores[0]
+    if include_run_number:
+        with pytest.raises(ValueError):
+            util.metric_df(combined_collection, metric_function, 'true_sentiments', 
+                           predicted_sentiment_keys=['model_1', 'model_2'], 
+                           average=True, array_scores=False, metric_name=metric_name,
+                           include_run_number=include_run_number)
+    else:
+        test_df = util.metric_df(combined_collection, metric_function, 'true_sentiments', 
+                                predicted_sentiment_keys=['model_1', 'model_2'], 
+                                average=True, array_scores=False, metric_name=metric_name,
+                                include_run_number=include_run_number)
+        get_metric_name = 'metric' if None else metric_name
+        assert (2,2) == test_df.shape
+        for model_name, true_model_scores in [('model_1', model_1_scores), 
+                                            ('model_2', model_2_scores)]:
+            test_model_scores = test_df.loc[test_df['prediction key']==f'{model_name}'][f'{get_metric_name}']
+            test_model_scores = test_model_scores.to_list()
+            assert 1 == len(test_model_scores)
+            assert true_model_scores == test_model_scores[0]
 
 def test_add_metadata_to_df():
     model_1_collection = passable_example_multiple_preds('true_sentiments', 'model_1')
