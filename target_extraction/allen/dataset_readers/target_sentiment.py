@@ -184,11 +184,6 @@ class TargetSentimentDatasetReader(DatasetReader):
             raise ValueError('`max_position_distance` contains a value '
                              f'{max_position_distance} When neither `position'
                              '_embeddings` nor `position_weights` are True')
-        if max_position_distance is not None:
-            if max_position_distance < 2:
-                raise ValueError('`max_position_distance` when set has to be '
-                                 'greater than 2. Currently set at '
-                                 f'{max_position_distance}')
         self._position_embeddings = position_embeddings
         if position_embeddings:
             self._position_indexers = {"position_tokens": SingleIdTokenIndexer()}

@@ -341,10 +341,16 @@ class TestTargetSentimentDatasetReader():
                 if position_weights:
                     position_weight_array = np.array(true_instance["position_weights"])
                     assert np.array_equal(position_weight_array, fields['position_weights'].array)
+        
         # Ensure raises error if the max_position_distance is less than 2
         with pytest.raises(ValueError):
-            TargetSentimentDatasetReader(lazy=lazy, max_position_distance=1, 
-                                         position_weights=True)
+            reader = TargetSentimentDatasetReader(lazy=lazy, 
+                                                  target_sequences=target_sequences,
+                                                  position_embeddings=position_embeddings,
+                                                  position_weights=position_weights,
+                                                  max_position_distance=1)
+            test_target_fp = Path(data_dir, 'target_sentiment_target_sequences.json').resolve()
+            instances = ensure_list(reader.read(str(test_target_fp)))
 
         # Test the case of both target and category sentiments.
         reader = TargetSentimentDatasetReader(lazy=lazy, incl_target=False,
@@ -397,7 +403,7 @@ class TestTargetSentimentDatasetReader():
             assert true_instance['target_sentiments'] == fields['target_sentiments'].labels
             assert true_instance["categories"] == [x.text for x in fields['categories']]
             assert true_instance["category_sentiments"] == fields['category_sentiments'].labels
-            
+
             assert true_instance["text"] == fields['metadata']["text"] 
             assert true_instance["text words"] == fields['metadata']["text words"]
             assert true_instance["targets"] == fields['metadata']["targets"] 
@@ -445,3 +451,8 @@ class TestTargetSentimentDatasetReader():
                               ['3','2','1','1','2','3','4','5'], 
                               ['5','5','4','3','2','1','1','1']]
         assert true_distances == test_distances
+
+        with pytest.raises(ValueError):
+            TargetSentimentDatasetReader._target_indicators_to_distances(indicators, 
+                                                                         as_string=as_string, 
+                                                                         max_distance=1)
