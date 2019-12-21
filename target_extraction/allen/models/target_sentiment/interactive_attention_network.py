@@ -17,6 +17,7 @@ import numpy
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
 from target_extraction.allen.modules.inter_target import InterTarget
+from target_extraction.allen.modules.target_position_weight import TargetPositionWeight
 
 @Model.register("interactive_attention_network_classifier")
 class InteractivateAttentionNetworkClassifier(Model):
@@ -30,6 +31,7 @@ class InteractivateAttentionNetworkClassifier(Model):
                  target_attention_activation_function: str = 'tanh',
                  target_field_embedder: Optional[TextFieldEmbedder] = None,
                  inter_target_encoding: Optional[InterTarget] = None,
+                 target_position_weight: Optional[TargetPositionWeight] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
@@ -60,6 +62,11 @@ class InteractivateAttentionNetworkClassifier(Model):
                                       and target text.
         :param inter_target_encoding: Whether to model the relationship between 
                                       targets/aspect.
+        :param target_position_weight: Whether to weight the output of the 
+                                       context encoding based on the position 
+                                       of the tokens to the target tokens. This 
+                                       weighting is applied before any attention 
+                                       is applied.
         :param initializer: Used to initialize the model parameters.
         :param regularizer: If provided, will be used to calculate the 
                             regularization penalty during training.
@@ -186,6 +193,7 @@ class InteractivateAttentionNetworkClassifier(Model):
                                    'Output from target and context encdoers', 
                                    'Inter Target encoder input dim')
         
+        self.target_position_weight = target_position_weight
         # TimeDistributed anything that is related to the targets.
         if self.feedforward is not None:
             self.feedforward = TimeDistributed(self.feedforward)
@@ -199,7 +207,8 @@ class InteractivateAttentionNetworkClassifier(Model):
                 targets: Dict[str, torch.LongTensor],
                 target_sentiments: torch.LongTensor = None,
                 target_sequences: Optional[torch.LongTensor] = None,
-                metadata: torch.LongTensor = None, 
+                metadata: Optional[torch.LongTensor] = None,
+                position_weights: Optional[torch.LongTensor] = None,
                 **kwargs
                 ) -> Dict[str, torch.Tensor]:
         '''
@@ -281,6 +290,15 @@ class InteractivateAttentionNetworkClassifier(Model):
         # Batch size * Number targets, sequence length
         repeated_context_mask = context_mask.unsqueeze(1).repeat(1, number_targets, 1)
         repeated_context_mask = repeated_context_mask.view(batch_size_num_targets, context_sequence_length)
+        # Weighted position information encoded into the context sequence.
+        if self.target_position_weight is not None:
+            if position_weights is None:
+                raise ValueError('This model requires `position_weights` to '
+                                 'better encode the target but none were given')
+            position_output = self.target_position_weight(repeated_context_seq, 
+                                                          position_weights, 
+                                                          repeated_context_mask)
+            repeated_context_seq, weighted_position_weights = position_output
         # Batch size * number targets, number targets, dim
         avg_targets_vec = self._target_averager(seq_encoded_targets_seq, seq_targets_mask)
         # Batch size * number targets, sequence length
@@ -299,14 +317,10 @@ class InteractivateAttentionNetworkClassifier(Model):
         
         # target attention
         # Get average of the context hidden states as the query vector for the 
-        # target attention. Need to do the same as for the context, reshape 
-        # the average context so that there are the same number of contexts 
-        # vectors as targets for that context
-        # Batch size, dim
-        avg_context_vec = self._context_averager(encoded_context_seq, context_mask)
-        repeated_avg_context_vec = avg_context_vec.unsqueeze(1).repeat(1,number_targets,1)
-        repeated_avg_context_vec = repeated_avg_context_vec.view(batch_size_num_targets, context_dim)
+        # target attention. 
+
         # batch size * number targets, target length
+        repeated_avg_context_vec = self._context_averager(repeated_context_seq, repeated_context_mask)
         target_attention_weights = self.target_attention_layer(repeated_avg_context_vec,
                                                                seq_encoded_targets_seq,
                                                                seq_targets_mask)

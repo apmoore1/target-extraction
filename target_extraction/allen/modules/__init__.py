@@ -1,4 +1,4 @@
 from target_extraction.allen.modules.word_dropout import WordDrouput
 #from target_extraction.allen.modules.transformer_embed import TransformerEmbed
 #from target_extraction.allen.modules.transformer_elmo_embed import TransformerElmoEmbed
-from target_extraction.allen.modules import inter_target
+from target_extraction.allen.modules import inter_target, target_position_weight
