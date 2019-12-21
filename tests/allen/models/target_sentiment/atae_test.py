@@ -29,6 +29,7 @@ class ATAEClassifierTest(ModelTestCase):
         self.at_config = str(Path(config_dir, 'at_config.jsonnet'))
         self.inter_atae_config = str(Path(config_dir, 'inter_atae_config.jsonnet'))
         self.position_weight_atae_config = str(Path(config_dir, 'position_weight_atae_config.jsonnet'))
+        self.position_embedding_atae_config = str(Path(config_dir, 'position_embedding_atae_config.jsonnet'))
         self.atae_elmo_config = str(Path(config_dir, 'atae_elmo_config.jsonnet'))
         self.atae_elmo_wordvector_config = str(Path(config_dir, 'atae_elmo_wordvector_config.jsonnet'))
         self.atae_elmo_target_sequences_config = str(Path(config_dir, 'atae_elmo_target_sequences_config.jsonnet'))
@@ -64,6 +65,14 @@ class ATAEClassifierTest(ModelTestCase):
 
     def test_position_weight_atae_train_save(self):
         params = Params.from_file(self.position_weight_atae_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_position_embedding_atae_train_save(self):
+        params = Params.from_file(self.position_embedding_atae_config).duplicate()
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
@@ -219,8 +228,7 @@ class ATAEClassifierTest(ModelTestCase):
             Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
 
     def test_requires_position_weights(self):
-        # Raises a ValueError id the position_weights are not in the forward 
-        # pass when the model config requires them
+        # Raises a ValueError when the position_weights are not in the forward 
         params = Params.from_file(self.position_weight_atae_config).duplicate()
         del params['dataset_reader']['position_weights']
         params_copy = copy.deepcopy(params)
@@ -229,6 +237,26 @@ class ATAEClassifierTest(ModelTestCase):
             params.to_file(temp_file.name)
             with pytest.raises(ValueError):
                 self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_requires_position_embeddings(self):
+        # Raises a ValueError when the position_embeedings are not in the forward 
+        params = Params.from_file(self.position_embedding_atae_config).duplicate()
+        del params['dataset_reader']['position_embeddings']
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            with pytest.raises(ValueError):
+                self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_position_embeddings_context_encoder(self):
+        # Raises a ConfigurationError when the context encoder input dim is not 
+        # the sum of the position, context, and target embedders
+        params = Params.from_file(self.position_embedding_atae_config).duplicate()
+        params['model']['target_position_embedding']["position_tokens"]["embedding_dim"] = 4
+        params_copy = copy.deepcopy(params)
+        with pytest.raises(ConfigurationError):
+            Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
 
     def test_inter_feedforward(self):
         # Raises a config error if the inter target encoder does not match 

@@ -34,6 +34,7 @@ class ATAEClassifier(Model):
                  AE: bool = True, AttentionAE: bool = True,
                  inter_target_encoding: Optional[InterTarget] = None,
                  target_position_weight: Optional[TargetPositionWeight] = None,
+                 target_position_embedding: Optional[TextFieldEmbedder] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
@@ -75,6 +76,10 @@ class ATAEClassifier(Model):
                                        of the tokens to the target tokens. This 
                                        weighting is applied before any attention 
                                        is applied.
+        :param target_position_embedding: Whether or not to concatenate a position
+                                          embedding on to the input embeddings 
+                                          before being an input to the 
+                                          `context_encoder`.
         :param initializer: Used to initialize the model parameters.
         :param regularizer: If provided, will be used to calculate the 
                             regularization penalty during training.
@@ -216,6 +221,11 @@ class ATAEClassifier(Model):
         # If AE is True ensure that the context encoder input is equal to the 
         # the output of the target encoder plus the context field embedder
         context_field_embedder_out = context_field_embedder.get_output_dim()
+
+        # position embeddings
+        self.target_position_embedding = target_position_embedding
+        if self.target_position_embedding is not None:
+            context_field_embedder_out += self.target_position_embedding.get_output_dim()
         if AE:
             check_dimensions_match(context_field_embedder_out + target_encoder_out, 
                                    context_encoder.get_input_dim(),
@@ -268,6 +278,7 @@ class ATAEClassifier(Model):
                 target_sequences: Optional[torch.LongTensor] = None,
                 metadata: torch.LongTensor = None, 
                 position_weights: Optional[torch.LongTensor] = None,
+                position_embeddings: Optional[Dict[str, torch.LongTensor]] = None,
                 **kwargs
                 ) -> Dict[str, torch.Tensor]:
         '''
@@ -314,7 +325,7 @@ class ATAEClassifier(Model):
                                                       reshaped_embedding_context)
         else:
             temp_targets = elmo_input_reshape(targets, batch_size, 
-                                            number_targets, batch_size_num_targets)
+                                              number_targets, batch_size_num_targets)
             if self.target_field_embedder:
                 embedded_targets = self.target_field_embedder(temp_targets)
             else:
@@ -343,6 +354,27 @@ class ATAEClassifier(Model):
         repeated_encoded_targets = encoded_targets_seq.unsqueeze(1).repeat(1,context_sequence_length,1)
         if self._AE:
             reshaped_embedding_context = torch.cat((reshaped_embedding_context,repeated_encoded_targets), -1)
+        if self.target_position_embedding:
+            if position_embeddings is None:
+                raise ValueError('This model requires `position_embeddings` as '
+                                 'input to the forward function to encode the '
+                                 'position embeddings')
+            target_position_embeddings = self.target_position_embedding(position_embeddings)
+            position_embedding_shape = target_position_embeddings.shape[:-1]
+            wrong_target_position_shape = ('Position embeddings should have the '
+                                           'same batch, number targets, and '
+                                           'sequence length as the text and '
+                                           'targets. Position shape '
+                                           f'{target_position_embeddings.shape}\n'
+                                           'The other shapes '
+                                           f'{(batch_size, number_targets, context_sequence_length)}')
+            assert (batch_size, number_targets, context_sequence_length) == position_embedding_shape, wrong_target_position_shape
+            position_embedding_dim = target_position_embeddings.shape[-1]
+            # re-shape position_embeddings
+            target_position_embeddings = target_position_embeddings.view(batch_size_num_targets, 
+                                                                         context_sequence_length, 
+                                                                         position_embedding_dim)
+            reshaped_embedding_context = torch.cat((reshaped_embedding_context,target_position_embeddings), -1)
         # Size (batch size * number targets, sequence length, embedding dim)
         reshaped_encoded_context_seq = self.context_encoder(reshaped_embedding_context, repeated_context_mask)
         reshaped_encoded_context_seq = self._variational_dropout(reshaped_encoded_context_seq)
