@@ -19,6 +19,7 @@ import numpy
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
 from target_extraction.allen.modules.inter_target import InterTarget
+from target_extraction.allen.modules.target_position_weight import TargetPositionWeight
 
 @Model.register("atae_classifier")
 class ATAEClassifier(Model):
@@ -32,6 +33,7 @@ class ATAEClassifier(Model):
                  target_field_embedder: Optional[TextFieldEmbedder] = None,
                  AE: bool = True, AttentionAE: bool = True,
                  inter_target_encoding: Optional[InterTarget] = None,
+                 target_position_weight: Optional[TargetPositionWeight] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
@@ -68,6 +70,11 @@ class ATAEClassifier(Model):
                             to each word's vector after the `context_encoder` 
         :param inter_target_encoding: Whether to model the relationship between 
                                       targets/aspect.
+        :param target_position_weight: Whether to weight the output of the 
+                                       context encoding based on the position 
+                                       of the tokens to the target tokens. This 
+                                       weighting is applied before any attention 
+                                       is applied.
         :param initializer: Used to initialize the model parameters.
         :param regularizer: If provided, will be used to calculate the 
                             regularization penalty during training.
@@ -235,6 +242,7 @@ class ATAEClassifier(Model):
                                        'Context encoder output', 
                                        'FeedForward input dim')
 
+        self.target_position_weight = target_position_weight
         # TimeDistributed anything that is related to the targets.
         if self.feedforward is not None:
             self.feedforward = TimeDistributed(self.feedforward)
@@ -259,6 +267,7 @@ class ATAEClassifier(Model):
                 target_sentiments: torch.LongTensor = None,
                 target_sequences: Optional[torch.LongTensor] = None,
                 metadata: torch.LongTensor = None, 
+                position_weights: Optional[torch.LongTensor] = None,
                 **kwargs
                 ) -> Dict[str, torch.Tensor]:
         '''
@@ -337,6 +346,15 @@ class ATAEClassifier(Model):
         # Size (batch size * number targets, sequence length, embedding dim)
         reshaped_encoded_context_seq = self.context_encoder(reshaped_embedding_context, repeated_context_mask)
         reshaped_encoded_context_seq = self._variational_dropout(reshaped_encoded_context_seq)
+        # Weighted position information encoded into the context sequence.
+        if self.target_position_weight is not None:
+            if position_weights is None:
+                raise ValueError('This model requires `position_weights` to '
+                                 'better encode the target but none were given')
+            position_output = self.target_position_weight(reshaped_encoded_context_seq, 
+                                                          position_weights, 
+                                                          repeated_context_mask)
+            reshaped_encoded_context_seq, weighted_position_weights = position_output
         # Whether to concat the aspect embeddings on to the contextualised word 
         # representations
         attention_encoded_context_seq = reshaped_encoded_context_seq

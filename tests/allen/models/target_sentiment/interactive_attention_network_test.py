@@ -26,6 +26,7 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         config_dir = Path(test_dir, 'IAN')
         self.ian_config = str(Path(config_dir, 'ian_config.jsonnet'))
         self.inter_ian_config = str(Path(config_dir, 'inter_ian_config.jsonnet'))
+        self.position_weight_ian_config = str(Path(config_dir, 'position_weight_ian_config.jsonnet'))
         self.ian_elmo_wordvector_config = str(Path(config_dir, 'ian_elmo_wordvector_config.jsonnet'))
         self.ian_elmo_config = str(Path(config_dir, 'ian_elmo_config.jsonnet'))
         self.ian_elmo_target_sequences_config = str(Path(config_dir, 'ian_elmo_target_sequences_config.jsonnet'))
@@ -38,6 +39,14 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
 
     def test_inter_ian_train_save(self):
         params = Params.from_file(self.inter_ian_config).duplicate()
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            self.ensure_model_can_train_save_and_load(temp_file.name)
+
+    def test_position_weight_ian_train_save(self):
+        params = Params.from_file(self.position_weight_ian_config).duplicate()
         params_copy = copy.deepcopy(params)
         Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
         with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
@@ -149,6 +158,18 @@ class InteractivateAttentionNetworkClassifierTest(ModelTestCase):
         with pytest.raises(ConfigurationError):
             Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
     
+    def test_requires_position_weights(self):
+        # Raises a ValueError id the position_weights are not in the forward 
+        # pass when the model config requires them
+        params = Params.from_file(self.position_weight_ian_config).duplicate()
+        del params['dataset_reader']['position_weights']
+        params_copy = copy.deepcopy(params)
+        Model.from_params(vocab=self.vocab, params=params_copy.get('model'))
+        with tempfile.NamedTemporaryFile(mode='w+') as temp_file:
+            params.to_file(temp_file.name)
+            with pytest.raises(ValueError):
+                self.ensure_model_can_train_save_and_load(temp_file.name)
+
     def test_forward_pass_runs_correctly(self):
         params = Params.from_file(self.param_file)   
         model = Model.from_params(vocab=self.vocab, 
