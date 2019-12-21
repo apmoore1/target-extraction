@@ -456,8 +456,8 @@ class TargetText(MutableMapping):
     @check_anonymised
     def force_targets(self) -> None:
         '''
-        :NOTE: As this affects the following attributes `spans` and `text` it 
-               therefore has to modify these through self._storage as both of  
+        :NOTE: As this affects the following attributes `spans`, `text`, and `targets` 
+               it therefore has to modify these through self._storage as both of  
                these attributes are within self._protected_keys.
 
         Does not return anything but modifies the `spans` and `text` values 
