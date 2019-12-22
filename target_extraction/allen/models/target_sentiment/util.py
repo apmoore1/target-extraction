@@ -1,6 +1,7 @@
 from typing import List, Union, Optional, Dict
 
 from allennlp.models import Model
+from allennlp.modules import TextFieldEmbedder
 import torch
 
 def loss_weight_order(model: Model, loss_weights: Optional[List[float]], 
@@ -75,3 +76,41 @@ def elmo_input_reverse(embedded_input: torch.Tensor,
         return embedded_input.view(batch_size, number_targets,
                                *embedded_input.shape[1:])
     return embedded_input
+
+def concat_position_embeddings(embedding_context: torch.Tensor, 
+                               position_indexes: Optional[Dict[str, torch.LongTensor]] = None,
+                               target_position_embedding: Optional[TextFieldEmbedder] = None
+                               ) -> torch.Tensor:
+    '''
+    :param embedding_context: Tensor of shape (batch size * number targets, 
+                              context sequence length, context dim)
+    :param position_indexes: Dictionary of token indexer name to a 
+                             Tensor of shape (batch size, number targets, 
+                             text sequence length)
+    :param target_position_embedding: An embedding function for the position 
+                                      indexes, where the dimension of the position 
+                                      embedding is `position dim`.
+    :returns: If `position_indexes` and `target_position_embedding` are None then
+              the `embedding_context` is returned without any change. Else the 
+              relevant position embeddings are concatenated onto the relevant 
+              token embeddings within the `embedding_context` to create a 
+              Tensor of shape (batch size * number targets, text sequence length, 
+              context dim + position dim)
+    :raises ValueError: If `target_position_embedding` is not None when 
+                        `position_indexes` is None.
+    '''
+    if target_position_embedding:
+        if position_indexes is None:
+            raise ValueError('This model requires `position_indexes` as '
+                             'input to the `target_position_embedding` '
+                             'forward function to get the position embeddings')
+        target_position_embeddings = target_position_embedding(position_indexes)
+        batch_size_num_targets, context_sequence_length, context_dim = embedding_context.shape
+        position_embedding_dim = target_position_embeddings.shape[-1]
+        # re-shape position_embeddings
+        target_position_embeddings = target_position_embeddings.view(batch_size_num_targets, 
+                                                                     context_sequence_length, 
+                                                                     position_embedding_dim)
+        embedding_context = torch.cat((embedding_context, 
+                                       target_position_embeddings), -1)
+    return embedding_context
