@@ -16,6 +16,7 @@ import numpy
 
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
+from target_extraction.allen.models.target_sentiment.util import concat_position_embeddings
 from target_extraction.allen.modules.inter_target import InterTarget
 from target_extraction.allen.modules.target_position_weight import TargetPositionWeight
 
@@ -32,6 +33,7 @@ class InteractivateAttentionNetworkClassifier(Model):
                  target_field_embedder: Optional[TextFieldEmbedder] = None,
                  inter_target_encoding: Optional[InterTarget] = None,
                  target_position_weight: Optional[TargetPositionWeight] = None,
+                 target_position_embedding: Optional[TextFieldEmbedder] = None,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None,
                  dropout: float = 0.0,
@@ -67,6 +69,10 @@ class InteractivateAttentionNetworkClassifier(Model):
                                        of the tokens to the target tokens. This 
                                        weighting is applied before any attention 
                                        is applied.
+        :param target_position_embedding: Whether or not to concatenate a position
+                                          embedding on to the input embeddings 
+                                          before being an input to the 
+                                          `context_encoder`.
         :param initializer: Used to initialize the model parameters.
         :param regularizer: If provided, will be used to calculate the 
                             regularization penalty during training.
@@ -170,11 +176,22 @@ class InteractivateAttentionNetworkClassifier(Model):
         self._variational_dropout = InputVariationalDropout(dropout)
         self._naive_dropout = Dropout(dropout)
 
+        # position embeddings
+        self.target_position_embedding = target_position_embedding
         # Ensure that the dimensions of the text field embedder and text encoder
         # match
-        check_dimensions_match(context_field_embedder.get_output_dim(), 
-                               context_encoder.get_input_dim(),
-                               "context field embedding dim", "text encoder input dim")
+        if self.target_position_embedding:
+            context_and_position_dim = (context_field_embedder.get_output_dim() + 
+                                        self.target_position_embedding.get_output_dim())
+            check_dimensions_match(context_and_position_dim, 
+                                   context_encoder.get_input_dim(),
+                                   "context field embedding dim and the position embeddings", 
+                                   "text encoder input dim")
+        else:
+            check_dimensions_match(context_field_embedder.get_output_dim(), 
+                                   context_encoder.get_input_dim(),
+                                   "context field embedding dim", 
+                                   "text encoder input dim")
         # Ensure that the dimensions of the target or text field embedder and 
         # the target encoder match
         target_field_embedder_dim = context_field_embedder.get_output_dim()
@@ -209,6 +226,7 @@ class InteractivateAttentionNetworkClassifier(Model):
                 target_sequences: Optional[torch.LongTensor] = None,
                 metadata: Optional[torch.LongTensor] = None,
                 position_weights: Optional[torch.LongTensor] = None,
+                position_embeddings: Optional[Dict[str, torch.LongTensor]] = None,
                 **kwargs
                 ) -> Dict[str, torch.Tensor]:
         '''
@@ -222,30 +240,40 @@ class InteractivateAttentionNetworkClassifier(Model):
         embedded_context = self._variational_dropout(embedded_context)
         context_mask = util.get_text_field_mask(tokens)
 
-        # Size (batch size, sequence length, embedding dim)
-        encoded_context_seq = self.context_encoder(embedded_context, context_mask)
-        encoded_context_seq = self._variational_dropout(encoded_context_seq)
-        _, context_sequence_length, context_dim = encoded_context_seq.shape
-        # The if statement determines if True should use contextualized targets
         targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
         label_mask = (targets_mask.sum(dim=-1) >= 1).type(torch.int64)
+        batch_size, number_targets = label_mask.shape
+
+        # add position embeddings if required.
+        batch_size, context_sequence_length, context_embed_dim = embedded_context.shape
+        batch_size_num_targets = batch_size * number_targets
+        repeated_embeded_context_seq = embedded_context.unsqueeze(1).repeat(1,number_targets,1,1)
+        repeated_embeded_context_seq = repeated_embeded_context_seq.view(batch_size_num_targets, 
+                                                                     context_sequence_length, 
+                                                                     context_embed_dim)
+        repeated_embeded_position_context_seq = concat_position_embeddings(repeated_embeded_context_seq,
+                                                                           position_embeddings, 
+                                                                           self.target_position_embedding)
+        repeated_context_mask = context_mask.unsqueeze(1).repeat(1, number_targets, 1)
+        repeated_context_mask = repeated_context_mask.view(batch_size_num_targets, context_sequence_length)
+
+        # Size (batch size * number_targets, sequence length, embedding dim)
+        repeated_context_seq = self.context_encoder(repeated_embeded_position_context_seq, 
+                                                    repeated_context_mask)
+        repeated_context_seq = self._variational_dropout(repeated_context_seq)
+        context_dim = repeated_context_seq.shape[-1]
+        # The if statement determines if True should use contextualized targets
         if self._use_target_sequences:
             # Need to make the target_sequences the mask for the embedded contexts
             # therefore need to make the embedded context the same size by 
             # expanding by the number of targets.
             batch_size, number_targets, target_sequence_length, target_index_length = target_sequences.shape
-            batch_size_num_targets = batch_size * number_targets
             target_index_len_err = ('The size of the context sequence '
                                     f'{context_sequence_length} is not the same'
                                     ' as the target index sequence '
                                     f'{target_index_length}. This is to get '
                                     'the contextualized target through the context')
             assert context_sequence_length == target_index_length, target_index_len_err
-            _, _, context_embeded_dim = embedded_context.shape
-            repeated_embeded_context_seq = embedded_context.unsqueeze(1).repeat(1, number_targets, 1, 1)
-            repeated_embeded_context_seq = repeated_embeded_context_seq.view(batch_size_num_targets, 
-                                                                             context_sequence_length, 
-                                                                             context_embeded_dim)
             seq_targets_mask = target_sequences.view(batch_size_num_targets, 
                                                      target_sequence_length, 
                                                      target_index_length)
@@ -255,8 +283,6 @@ class InteractivateAttentionNetworkClassifier(Model):
             # This is required if the input is of shape greater than 3 dim e.g. 
             # character input where it is 
             # (batch size, number targets, token length, char length)
-            batch_size, number_targets = label_mask.shape
-            batch_size_num_targets = batch_size * number_targets
             # Embed and encode target as a sequence
             temp_targets = elmo_input_reshape(targets, batch_size, 
                                               number_targets, batch_size_num_targets)
@@ -277,19 +303,7 @@ class InteractivateAttentionNetworkClassifier(Model):
         seq_targets_mask = targets_mask.view(batch_size_num_targets, target_sequence_length)
         seq_encoded_targets_seq = self.target_encoder(embedded_targets, seq_targets_mask)
         seq_encoded_targets_dim = seq_encoded_targets_seq.shape[-1]
-        #
-        # Attention layers
-        #
-        # context attention
-        # Get average of the target hidden states as the query vector for the 
-        # context attention. Need to reshape the context so there are enough 
-        # contexts per target so that attention can be applied
-        # Batch Size * Number targets, sequence length, dim
-        repeated_context_seq = encoded_context_seq.unsqueeze(1).repeat(1, number_targets, 1, 1)
-        repeated_context_seq = repeated_context_seq.view(batch_size_num_targets, context_sequence_length, context_dim)
-        # Batch size * Number targets, sequence length
-        repeated_context_mask = context_mask.unsqueeze(1).repeat(1, number_targets, 1)
-        repeated_context_mask = repeated_context_mask.view(batch_size_num_targets, context_sequence_length)
+        
         # Weighted position information encoded into the context sequence.
         if self.target_position_weight is not None:
             if position_weights is None:
@@ -299,6 +313,12 @@ class InteractivateAttentionNetworkClassifier(Model):
                                                           position_weights, 
                                                           repeated_context_mask)
             repeated_context_seq, weighted_position_weights = position_output
+        #
+        # Attention layers
+        #
+        # context attention
+        # Get average of the target hidden states as the query vector for the 
+        # context attention. 
         # Batch size * number targets, number targets, dim
         avg_targets_vec = self._target_averager(seq_encoded_targets_seq, seq_targets_mask)
         # Batch size * number targets, sequence length
