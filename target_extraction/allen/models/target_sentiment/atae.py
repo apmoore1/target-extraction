@@ -18,6 +18,7 @@ import numpy
 
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
+from target_extraction.allen.models.target_sentiment.util import concat_position_embeddings
 from target_extraction.allen.modules.inter_target import InterTarget
 from target_extraction.allen.modules.target_position_weight import TargetPositionWeight
 
@@ -354,27 +355,10 @@ class ATAEClassifier(Model):
         repeated_encoded_targets = encoded_targets_seq.unsqueeze(1).repeat(1,context_sequence_length,1)
         if self._AE:
             reshaped_embedding_context = torch.cat((reshaped_embedding_context,repeated_encoded_targets), -1)
-        if self.target_position_embedding:
-            if position_embeddings is None:
-                raise ValueError('This model requires `position_embeddings` as '
-                                 'input to the forward function to encode the '
-                                 'position embeddings')
-            target_position_embeddings = self.target_position_embedding(position_embeddings)
-            position_embedding_shape = target_position_embeddings.shape[:-1]
-            wrong_target_position_shape = ('Position embeddings should have the '
-                                           'same batch, number targets, and '
-                                           'sequence length as the text and '
-                                           'targets. Position shape '
-                                           f'{target_position_embeddings.shape}\n'
-                                           'The other shapes '
-                                           f'{(batch_size, number_targets, context_sequence_length)}')
-            assert (batch_size, number_targets, context_sequence_length) == position_embedding_shape, wrong_target_position_shape
-            position_embedding_dim = target_position_embeddings.shape[-1]
-            # re-shape position_embeddings
-            target_position_embeddings = target_position_embeddings.view(batch_size_num_targets, 
-                                                                         context_sequence_length, 
-                                                                         position_embedding_dim)
-            reshaped_embedding_context = torch.cat((reshaped_embedding_context,target_position_embeddings), -1)
+        # add position embeddings if required.
+        reshaped_embedding_context = concat_position_embeddings(reshaped_embedding_context,
+                                                                position_embeddings, 
+                                                                self.target_position_embedding)
         # Size (batch size * number targets, sequence length, embedding dim)
         reshaped_encoded_context_seq = self.context_encoder(reshaped_embedding_context, repeated_context_mask)
         reshaped_encoded_context_seq = self._variational_dropout(reshaped_encoded_context_seq)

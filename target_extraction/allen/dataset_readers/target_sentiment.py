@@ -17,17 +17,6 @@ from target_extraction.data_types_util import Span
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-class TargetToken(NamedTuple):
-    '''
-    :param is_target: The length of the list denotes the number of targets within
-                      the text the token came from. The value if `1` denotes 
-                      that the token is a Target, `0` not a target. Each index 
-                      denotes a different multi word target within the text 
-                      the token came from. 
-    '''
-    is_target: List[int]
-
-
 @DatasetReader.register("target_sentiment")
 class TargetSentimentDatasetReader(DatasetReader):
     '''
@@ -186,7 +175,10 @@ class TargetSentimentDatasetReader(DatasetReader):
                              '_embeddings` nor `position_weights` are True')
         self._position_embeddings = position_embeddings
         if position_embeddings:
-            self._position_indexers = {"position_tokens": SingleIdTokenIndexer()}
+            # position_tokens in the namespace forces it to have a different 
+            # vocab in the self.vocab
+            self._position_indexers = {"position_tokens": 
+                                       SingleIdTokenIndexer(namespace="position_tokens")}
         self._position_weights = position_weights
         self._max_position_distance = max_position_distance
 
