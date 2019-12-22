@@ -13,7 +13,7 @@ def metric_df(target_collection: TargetTextCollection,
               average: bool, array_scores: bool, 
               assert_number_labels: Optional[int] = None, 
               metric_name: str = 'metric', 
-              include_run_number: Optional[int] = None) -> pd.DataFrame:
+              include_run_number: bool = False) -> pd.DataFrame:
     '''
     :param target_collection: Collection of targets that have true and predicted 
                               sentiment values.
@@ -135,7 +135,40 @@ def add_metadata_to_df(df: pd.DataFrame, target_collection: TargetTextCollection
         for column_name, column_value in name_value.items():
             df.loc[df['prediction key']==prediction_key, column_name] = column_value
     return df
+
+def combine_metrics(metric_df: pd.DataFrame, other_metric_df: pd.DataFrame, 
+                    other_metric_name: str) -> pd.DataFrame:
+    '''
+    :param metric_df: DataFrame that contains all the metrics to be kept
+    :param other_metric_df: Contains metric scores that are to be added to a copy 
+                            of `metric_df`
+    :param other_metric_name: Name of the column of the metric scores to be copied
+                            from `other_metric_df`
+    :returns: A copy of the `metric_df` with a new column `other_metric_name`
+            that contains the other metric scores.
+    :Note: This assumes that the two dataframes come from 
+           :py:func:`target_extraction.analysis.util.metric_df` with the argument 
+           `include_run_number` as True. This is due to the columns used to 
+           combine the metric scores are `prediction key` and `run number`.
+    :raises KeyError: If `prediction key` and `run number` are not columns 
+                      within `metric_df` and `other_metric_df`
+    '''
+    index_keys = ['prediction key', 'run number']
+    for df_name, df in [('metric_df', metric_df), ('other_metric_df', other_metric_df)]:
+        df_columns = df.columns
+        for index_key in index_keys:
+                if index_key not in df_columns:
+                    raise KeyError(f'The following column {index_key} does not'
+                                   f'exist in {df_name} dataframe. The following'
+                                   f' columns do exist {df_columns}')
     
+    new_metric_df = metric_df.copy(deep=True)
+    new_metric_df = new_metric_df.set_index(index_keys)
+    other_metric_scores = other_metric_df.set_index(index_keys)[other_metric_name]
+    new_metric_df[other_metric_name] = other_metric_scores
+    new_metric_df = new_metric_df.reset_index()
+    return new_metric_df
+
 
     
             

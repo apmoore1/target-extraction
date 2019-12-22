@@ -168,3 +168,30 @@ def test_add_metadata_to_df():
     combined_collection.metadata['non-existing-key'] = {'model_1': {'embedding': True, 'value': '10'}}
     with pytest.raises(KeyError):
         util.add_metadata_to_df(metric_df.copy(deep=True), combined_collection, 'non-existing-key')
+
+@pytest.mark.parametrize('include_run_number', (True, False))
+def test_combine_metrics(include_run_number: bool):
+    collection_acc = passable_example_multiple_preds('true_sentiments', 'model_1')
+    acc_df = util.metric_df(collection_acc, sentiment_metrics.accuracy, 'true_sentiments', 
+                            predicted_sentiment_keys=['model_1'], 
+                            average=False, array_scores=True, metric_name='Accuracy',
+                            include_run_number=include_run_number)
+    f1_df = util.metric_df(collection_acc, sentiment_metrics.macro_f1, 'true_sentiments', 
+                           predicted_sentiment_keys=['model_1'], 
+                           average=False, array_scores=True, metric_name='Macro F1',
+                           include_run_number=include_run_number)
+    if include_run_number:
+        combined_df = util.combine_metrics(acc_df, f1_df, 'Macro F1')
+        assert pd.Series.equals(f1_df['Macro F1'], combined_df['Macro F1'])
+        assert pd.Series.equals(acc_df['Accuracy'], combined_df['Accuracy'])
+        assert (2, 3) == acc_df.shape
+        assert (2, 3) == f1_df.shape
+        assert (2, 4) == combined_df.shape
+    else:
+        with pytest.raises(KeyError):
+            util.combine_metrics(acc_df, f1_df, 'Macro F1')
+        
+
+    
+
+
