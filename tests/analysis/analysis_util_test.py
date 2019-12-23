@@ -190,6 +190,37 @@ def test_combine_metrics(include_run_number: bool):
     else:
         with pytest.raises(KeyError):
             util.combine_metrics(acc_df, f1_df, 'Macro F1')
+
+def test_long_format_metrics():
+    # 2 metrics
+    collection_acc = passable_example_multiple_preds('true_sentiments', 'model_1')
+    acc_df = util.metric_df(collection_acc, sentiment_metrics.accuracy, 'true_sentiments', 
+                            predicted_sentiment_keys=['model_1'], 
+                            average=False, array_scores=True, metric_name='Accuracy',
+                            include_run_number=True)
+    f1_df = util.metric_df(collection_acc, sentiment_metrics.macro_f1, 'true_sentiments', 
+                           predicted_sentiment_keys=['model_1'], 
+                           average=False, array_scores=True, metric_name='Macro F1',
+                           include_run_number=True)
+    combined_df = util.combine_metrics(acc_df, f1_df, 'Macro F1')
+    combined_rows, combined_cols = combined_df.shape
+    long_df = util.long_format_metrics(combined_df, ['Accuracy', 'Macro F1'])
+    assert combined_rows * 2 == long_df.shape[0]
+    assert combined_cols == long_df.shape[1]
+    # 3 metrics
+    ano_f1_df = util.metric_df(collection_acc, sentiment_metrics.macro_f1, 'true_sentiments', 
+                           predicted_sentiment_keys=['model_1'], 
+                           average=False, array_scores=True, metric_name='Another Macro F1',
+                           include_run_number=True)
+    combined_df = util.combine_metrics(combined_df, ano_f1_df, 'Another Macro F1')
+    long_df = util.long_format_metrics(combined_df, ['Accuracy', 'Macro F1', 'Another Macro F1'])
+    combined_rows, combined_cols = combined_df.shape
+    assert combined_rows * 3 == long_df.shape[0]
+    assert combined_cols - 1 == long_df.shape[1]
+    for metric_column in ['Accuracy', 'Macro F1', 'Another Macro F1']:
+        long_df_scores = long_df[long_df['Metric']==f'{metric_column}']['Metric Score'].tolist()
+        combined_df_scores = combined_df[f'{metric_column}'].tolist()
+        assert long_df_scores == combined_df_scores
         
 
     

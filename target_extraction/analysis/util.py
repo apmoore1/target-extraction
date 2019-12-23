@@ -169,6 +169,28 @@ def combine_metrics(metric_df: pd.DataFrame, other_metric_df: pd.DataFrame,
     new_metric_df = new_metric_df.reset_index()
     return new_metric_df
 
+def long_format_metrics(metric_df: pd.DataFrame, 
+                        metric_column_names: List[str]) -> pd.DataFrame:
+    '''
+    :param metric_df: DataFrame from :py:func:`target_extraction.analysis.util.metric_df`
+                      that contains more than one metric score e.g. Accuracy and
+                      Macro F1
+    :param metric_column_names: The list of the metrics columns names that exist  
+                                in `metric_df`
+    :returns: A long format metric version of the `metric_df` e.g. converts a 
+              DataFrame that contains `Accuracy` and `Macro F1` scores to a
+              DataFrame that contains `Metric` and `Metric Score` columns where 
+              the `Metric` column contains either `Accuracy` or `Macro F1` score 
+              and the `Metric Score` contains the relevant metric score. This 
+              will increase the number of row in `metric_df` by *N* where 
+              *N* is the length of `metric_column_names`.
+    '''
+    columns = list(metric_df.columns)
+    for metric_column in metric_column_names:
+        columns.remove(metric_column)
+    return pd.melt(metric_df, id_vars=columns, value_vars=metric_column_names, 
+                   var_name='Metric', value_name='Metric Score')
+
 
     
             
