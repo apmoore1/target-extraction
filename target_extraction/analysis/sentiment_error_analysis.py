@@ -63,7 +63,8 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
                       does not exist in one or more of the TargetText objects 
                       within the `dataset`
     '''
-    reduced_collection = TargetTextCollection()
+    reduced_collection = []
+    anonymised = False
     key_check_list = [error_key, *associated_keys]
     for target_data in dataset.values():
         # Will raise a key error if the TargetText object does not have that 
@@ -88,9 +89,14 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
                         new_target_object[associated_key] = [associated_value]
         if skip_target:
             continue
+        if 'text' not in new_target_object:
+            new_target_object['text'] = None
+        if new_target_object['text'] is None:
+            anonymised = True
+            new_target_object['anonymised'] = True
         new_target_object = TargetText(**new_target_object)
-        reduced_collection.add(new_target_object)
-    return reduced_collection
+        reduced_collection.append(new_target_object)
+    return TargetTextCollection(reduced_collection, anonymised=anonymised)
 
 def _pre_post_subsampling(test_dataset: TargetTextCollection, 
                           train_dataset: TargetTextCollection, 
