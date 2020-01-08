@@ -944,5 +944,7 @@ def swap_list_dimensions(collection: TargetTextCollection, key: str
                     new_value.append([])
                 new_value[index_2].append(value_to_change[index_1][index_2])
         new_target_object_dict[key] = new_value
+        if 'text' not in new_target_object_dict:
+            new_target_object_dict['text'] = None
         new_target_objects.append(TargetText(**new_target_object_dict))
     return TargetTextCollection(new_target_objects)
