@@ -946,8 +946,7 @@ def swap_list_dimensions(collection: TargetTextCollection, key: str
         new_target_object_dict[key] = new_value
         if 'text' not in new_target_object_dict:
             new_target_object_dict['text'] = None
+        if new_target_object_dict['text'] is None:
             new_target_object_dict['anonymised'] = True
-            new_target_objects.append(TargetText(**new_target_object_dict))
-        else:
-            new_target_objects.append(TargetText(**new_target_object_dict))
+        new_target_objects.append(TargetText(**new_target_object_dict))
     return TargetTextCollection(new_target_objects)
