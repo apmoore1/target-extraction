@@ -9,6 +9,18 @@ from typing import List, Callable, Dict, Union, Optional, Any, Tuple
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 
+ERROR_SPLIT_SUBSET_NAMES = {'DS': ['distinct_sentiment_1', 'distinct_sentiment_2', 
+                                   'distinct_sentiment_3'],
+                            'NT': ['1-target', 'low-targets', 'med-targets', 
+                                   'high-targets'],
+                            'TSSR': ['1-TSSR', '1-multi-TSSR', 'low-TSSR', 
+                                     'high-TSSR'],
+                            'TSR': ['unknown_sentiment_known_target', 
+                                    'unknown_targets', 
+                                    'known_sentiment_known_target'],
+                            'n-shot': ['zero-shot', 'low-shot', 
+                                       'med-shot', 'high-shot']}
+
 class NoSamplesError(Exception):
    '''
    If there are or will be no samples within a Dataset or subset.
@@ -958,3 +970,113 @@ def swap_list_dimensions(collection: TargetTextCollection, key: str
             new_target_object_dict['anonymised'] = True
         new_target_objects.append(TargetText(**new_target_object_dict))
     return TargetTextCollection(new_target_objects, anonymised=anonymised)
+
+def error_analysis_wrapper(error_function_name: str
+                           ) -> Callable[[TargetTextCollection, 
+                                          TargetTextCollection, 
+                                          bool], TargetTextCollection]:
+    '''
+    To get a list of all possible function names easily use the `keys` of 
+    `target_extraction.analysis.sentiment_error_analysis.ERROR_SPLIT_SUBSET_NAMES`
+    dictionary.
+
+    :param error_function_name: This can be either 1. `DS`, 2. `NT`, 3. `TSSR`, 
+                                4. `n-shot`, 5. `TSR`
+    :returns: The relevant error function where all error functions have the same 
+                function signature where the input is:
+                1. Train TargetTextCollection, 2. Test TargetTextCollection, and 
+                3. Lower bool - whether to lower the targets.
+                This then returns a the Test TargetTextCollection with the relevant 
+                new keys. From the inputs only the Train and Lower are applicable 
+                to `n-shot` and `TSR` error function due to them both being 
+                global functions and relying on target text information.
+    :raises ValueError: If the `error_function_name` is not one of the 5 listed. 
+    '''
+    def ds_wrapper(train_collection: TargetTextCollection, 
+                    test_collection: TargetTextCollection, 
+                    lower: bool) -> TargetTextCollection:
+        '''
+        :param train_collection: Not Applicable
+        :param test_collection: The collection that is to be analysed
+        :param lower: Lowering the target words Not Applicable
+        :returns: A TargetTextCollection with the follwoing extra keys:
+                `distinct_sentiment_1` `distinct_sentiment_2`, and
+                `distinct_sentiment_3` 
+        '''
+        return distinct_sentiment(test_collection, separate_labels=True)
+
+    def tssr_wrapper(train_collection: TargetTextCollection, 
+                    test_collection: TargetTextCollection, 
+                    lower: bool) -> TargetTextCollection:
+        '''
+        :param train_collection: Not Applicable
+        :param test_collection: The collection that is to be analysed
+        :param lower: Lowering the target words Not Applicable
+        :returns: A TargetTextCollection with the follwoing extra keys:
+                `1-TSSR` `1-multi-TSSR`, `low-TSSR`, and
+                `high-TSSR` 
+        '''
+        return tssr_subset(test_collection, return_tssr_boundaries=False)
+
+    def nt_wrapper(train_collection: TargetTextCollection, 
+                    test_collection: TargetTextCollection, 
+                    lower: bool) -> TargetTextCollection:
+        '''
+        :param train_collection: Not Applicable
+        :param test_collection: The collection that is to be analysed
+        :param lower: Lowering the target words Not Applicable
+        :returns: A TargetTextCollection with the follwoing extra keys:
+                `1-target` `low-targets`, `med-targets`, and
+                `high-targets` 
+        '''
+        return num_targets_subset(test_collection, return_n_values=False)
+    
+    def tsr_wrapper(train_collection: TargetTextCollection, 
+                    test_collection: TargetTextCollection, 
+                    lower: bool) -> TargetTextCollection:
+        '''
+        :param train_collection: The collection to compare the Test collection with.
+        :param test_collection: The collection that is to be analysed
+        :param lower: Lowering the target words
+        :returns: A TargetTextCollection with the follwoing extra keys:
+                `unknown_sentiment_known_target` `unknown_targets`, and
+                `known_sentiment_known_target` 
+        '''
+        subset_functions = [unknown_targets, unknown_sentiment_known_target, 
+                            known_sentiment_known_target]
+        for subset_function in subset_functions:
+            test_collection = subset_function(test_collection, train_collection, 
+                                              lower=lower)
+        return test_collection
+    
+    def n_shot_wrapper(train_collection: TargetTextCollection, 
+                        test_collection: TargetTextCollection, 
+                        lower: bool) -> TargetTextCollection:
+        '''
+        :param train_collection: The collection to compare the Test collection with.
+        :param test_collection: The collection that is to be analysed
+        :param lower: Lowering the target words
+        :returns: A TargetTextCollection with the follwoing extra keys:
+                `zero-shot` `low-shot`, `med-shot`, and
+                `high-shot` 
+        '''
+        return n_shot_subsets(test_collection, train_collection, lower=lower, 
+                              return_n_values=False)
+    
+    acceptable_names = set(ERROR_SPLIT_SUBSET_NAMES.keys())
+    if error_function_name not in acceptable_names:
+        value_error = ('This error function name is not allowed '
+                    f'{error_function_name}. These names are allowed '
+                    f'{acceptable_names}')
+        raise ValueError(value_error)
+    
+    if error_function_name == 'DS':
+        return ds_wrapper
+    elif error_function_name == 'TSSR':
+        return tssr_wrapper
+    elif error_function_name == 'NT':
+        return nt_wrapper
+    elif error_function_name == 'n-shot':
+        return n_shot_wrapper
+    elif error_function_name == 'TSR':
+        return tsr_wrapper

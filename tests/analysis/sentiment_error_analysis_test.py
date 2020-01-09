@@ -21,6 +21,8 @@ from target_extraction.analysis.sentiment_error_analysis import num_targets_subs
 from target_extraction.analysis.sentiment_error_analysis import tssr_raw
 from target_extraction.analysis.sentiment_error_analysis import tssr_subset
 from target_extraction.analysis.sentiment_error_analysis import NoSamplesError
+from target_extraction.analysis.sentiment_error_analysis import error_analysis_wrapper
+from target_extraction.analysis.sentiment_error_analysis import ERROR_SPLIT_SUBSET_NAMES
 
 
 DATA_DIR = Path(__file__, '..', '..', 'data', 'analysis', 'sentiment_error_analysis').resolve()
@@ -954,3 +956,112 @@ def test_swap_list_dimensions():
     with pytest.raises(KeyError):
         del test_case_collection['0']['predicted_sentiments']
         swap_list_dimensions(test_case_collection, 'predicted_sentiments')
+
+def test_error_analysis_wrapper():
+    def test_tssr(tssr_func):
+        test_fp = Path(DATA_DIR, 'test.json').resolve()
+        test_collection = TargetTextCollection.load_json(test_fp)
+        collection = tssr_func(None, test_collection, False)
+        one_values = get_error_counts(collection, '1-TSSR')
+        correct_one = [[1], [1], [0,0], [1], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+        assert correct_one == one_values
+
+        one_values = get_error_counts(collection, '1-multi-TSSR')
+        correct_one = [[0], [0], [1,1], [0], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+        assert correct_one == one_values
+
+        one_values = get_error_counts(collection, 'high-TSSR')
+        correct_one = [[0], [0], [0,0], [0], [0,1,1,0,1], [1,0,1,1], [0,0,0,0,0,0,0]]
+        assert correct_one == one_values
+
+        one_values = get_error_counts(collection, 'low-TSSR')
+        correct_one = [[0], [0], [0,0], [0], [1,0,0,1,0], [0,1,0,0], [1,1,1,1,1,1,1]]
+        assert correct_one == one_values
+    
+    def test_nt(nt_func):
+        test_fp = Path(DATA_DIR, 'test.json').resolve()
+        test_collection = TargetTextCollection.load_json(test_fp)
+        collection = nt_func(None, test_collection, False)
+        one_values = get_error_counts(collection, '1-target')
+        correct_one = [[1], [1], [0,0], [1], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+        assert correct_one == one_values
+
+        low_values = get_error_counts(collection, 'low-targets')
+        correct_low = [[0], [0], [1,1], [0], [0,0,0,0,0], [1,1,1,1], [0,0,0,0,0,0,0]]
+        assert correct_low == low_values
+
+        med_values = get_error_counts(collection, 'med-targets')
+        correct_med = [[0], [0], [0,0], [0], [1,1,1,1,1], [0,0,0,0], [0,0,0,0,0,0,0]]
+        assert correct_med == med_values
+
+        high_values = get_error_counts(collection, 'high-targets')
+        correct_high = [[0], [0], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [1,1,1,1,1,1,1]]
+        assert correct_high == high_values
+
+    def test_ds(ds_func):
+        pos, neg, neu = 'positive', 'negative', 'neutral'
+        train_sentiments = [[pos], [neg], [neu, pos], [neg, neu, neg, pos]]
+        dataset = TargetTextCollection(larger_target_text_examples(train_sentiments))
+        dataset = ds_func(None, dataset, False)
+        true_labels = {'distinct_sentiment_1': [[1], [1], [0,0], [0,0,0,0]],
+                       'distinct_sentiment_2': [[0], [0], [1,1], [0,0,0,0]],
+                       'distinct_sentiment_3': [[0], [0], [0,0], [1,1,1,1]]}
+        for i in range(1, 4):
+            ds_key = f'distinct_sentiment_{i}'
+            assert true_labels[ds_key] == get_error_counts(dataset, ds_key)
+
+    def test_n_shot(n_shot_func):
+        train_fp = Path(DATA_DIR, 'train.json').resolve()
+        test_fp = Path(DATA_DIR, 'test.json').resolve()
+        train_collection = TargetTextCollection.load_json(train_fp)
+        test_collection = TargetTextCollection.load_json(test_fp)
+        collection = n_shot_func(train_collection, test_collection, True)
+        zero_values = get_error_counts(collection, 'zero-shot')
+        correct_zero = [[0], [0], [1,1], [0], [1,1,1,1,1], [1,1,1,1], [0,1,1,1,0,1,1]]
+        assert correct_zero == zero_values
+
+        low_values = get_error_counts(collection, 'low-shot')
+        correct_low = [[1], [1], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,0,0,0]]
+        assert correct_low == low_values
+
+        med_values = get_error_counts(collection, 'med-shot')
+        correct_med = [[0], [0], [0,0], [1], [0,0,0,0,0], [0,0,0,0], [1,0,0,0,0,0,0]]
+        assert correct_med == med_values
+
+        high_values = get_error_counts(collection, 'high-shot')
+        correct_high = [[0], [0], [0,0], [0], [0,0,0,0,0], [0,0,0,0], [0,0,0,0,1,0,0]]
+        assert correct_high == high_values
+
+    def test_tsr(tsr_func):
+        pos, neg, neu = 'positive', 'negative', 'neutral'
+        train_sentiments = [[pos], [neg], [neg, pos]]
+        test_sentiments = [[pos], [neu], [pos, neu]]
+        train = TargetTextCollection(target_text_examples(train_sentiments))
+        test = TargetTextCollection(target_text_examples(test_sentiments))
+        test['2']._storage['targets'] = ['laptop case', 'Cover']
+        test['2']._storage['text'] = 'The laptop case was great and Cover was rubbish'
+
+        unknown_answer = [[0], [0], [0,1]]
+        known_target_answer = [[1], [0], [1, 0]]
+        unknown_sentiment_answer = [[0], [1], [0, 0]]
+        test = tsr_func(train, test, False)
+        assert unknown_answer == get_error_counts(test, 'unknown_targets')
+        assert known_target_answer == get_error_counts(test, 'known_sentiment_known_target')
+        assert unknown_sentiment_answer == get_error_counts(test, 'unknown_sentiment_known_target')
+
+
+
+    for error_split_name in ERROR_SPLIT_SUBSET_NAMES.keys():
+        error_func = error_analysis_wrapper(error_split_name)
+        if error_split_name == 'TSSR':
+            test_tssr(error_func)
+        elif error_split_name == 'NT':
+            test_nt(error_func)
+        elif error_split_name == 'DS':
+            test_ds(error_func)
+        elif error_split_name == 'n-shot':
+            test_n_shot(error_func)
+        elif error_split_name == 'TSR':
+            test_tsr(error_func)
+    with pytest.raises(ValueError):
+        error_analysis_wrapper('error')
