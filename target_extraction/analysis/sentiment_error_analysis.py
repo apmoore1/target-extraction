@@ -7,6 +7,8 @@ import copy
 from collections import defaultdict, Counter
 from typing import List, Callable, Dict, Union, Optional, Any, Tuple
 
+import pandas as pd
+
 from target_extraction.data_types import TargetTextCollection, TargetText
 
 ERROR_SPLIT_SUBSET_NAMES = {'DS': ['distinct_sentiment_1', 'distinct_sentiment_2', 
@@ -1080,3 +1082,120 @@ def error_analysis_wrapper(error_function_name: str
         return n_shot_wrapper
     elif error_function_name == 'TSR':
         return tsr_wrapper
+
+def subset_metrics(target_collection: TargetTextCollection, 
+                   subset_error_key: str,
+                   metric_funcs: List[Callable[[TargetTextCollection, str, str, 
+                                                bool, bool, Optional[int]], 
+                                               Union[float, List[float]]]],
+                   metric_names: List[str], 
+                   metric_kwargs: Dict[str, Union[str,bool,int]]
+                   ) -> Dict[str, Union[List[float], float]]:
+    '''
+    This is most useful to find the metric score of an error subset
+     
+    :param target_collection: TargetTextCollection that contains the 
+                              `subset_error_key` in each TargetText within the 
+                              collection
+    :param subset_error_key: The error key to reduce the collection by. The samples 
+                             left will only be those where the error key is True.
+                             An example of a `subset_error_key` would be 
+                             `zero-shot` from the :py:func:`n_shot_targets`.
+    :param metric_funcs: A list of metric functions from 
+                         `target_extraction.analysis.sentiment_metrics`. Example
+                         metric function is 
+                         :py:func:`target_extraction.analysis.sentiment_metrics.accuracy`
+    :param metric_names: Names to give to each `metric_funcs`
+    :param metric_kwargs: Keywords argument to give to the `metric_funcs` the only 
+                          argument given is the first argument which will always 
+                          be `target_collection`
+    :returns: A dictionary where the keys are the `metric_names` and the values 
+              are the respective metric applied to the reduced/subsetted dataset.
+              Thus if `average` in `metric_kwargs` is True then the return 
+              will be Dict[str, float] where as if `array_scores` is True then 
+              the return will be Dict[str, List[float]].
+    '''
+    true_sentiment_key = metric_kwargs['true_sentiment_key']
+    predicted_sentiment_key = metric_kwargs['predicted_sentiment_key']
+    reduce_keys = ['targets', 'spans', true_sentiment_key, 
+                    predicted_sentiment_key]
+    target_collection = swap_list_dimensions(target_collection, 
+                                             predicted_sentiment_key)
+    target_collection = reduce_collection_by_key_occurrence(target_collection, 
+                                                            subset_error_key, 
+                                                            reduce_keys)
+    target_collection = swap_list_dimensions(target_collection, 
+                                             predicted_sentiment_key)
+    metric_name_score = {}
+    for metric_name, metric_func in zip(metric_names, metric_funcs):
+      metric_score = metric_func(target_collection, **metric_kwargs)
+      metric_name_score[metric_name] = metric_score
+    return metric_name_score
+
+def error_split_df(target_collection: TargetTextCollection, 
+                   prediction_keys: List[str], true_sentiment_key: str, 
+                   error_split_subset_names: Dict[str, List[str]],
+                   metric_func: Callable[[TargetTextCollection, str, str, 
+                                          bool, bool, Optional[int]], 
+                                         Union[float, List[float]]],
+                   assert_number_labels: Optional[int] = None
+                   ) -> pd.DataFrame:
+    '''
+    This will require the `target_collection` having been pre-processed with the
+    relevant error analysis functions within this module. A useful function to 
+    perform the error analysis would be :py:func:`error_analysis_wrapper`
+
+    :param target_collection: The collection where all TargetText's contain 
+                              all `prediction_keys`, `true_sentiment_key`, and 
+                              `subset_names` from the `error_split_subset_names`.
+    :param prediction_keys: A list of keys that contain the predicted sentiment 
+                            scores for each target in the TargetTextCollection
+    :param true_sentiment_key: Key that contains the true sentiment scores 
+                               for each target in the TargetTextCollection
+    :param error_split_subset_names: The keys do not matter but the List values 
+                                     must represent error subset names. An 
+                                     example dictionary would be:
+                                     `ERROR_SPLIT_SUBSET_NAMES`
+    :param metric_func: A Metric function from
+                        `target_extraction.analysis.sentiment_metrics`. Example
+                         metric function is 
+                         :py:func:`target_extraction.analysis.sentiment_metrics.accuracy`
+    :param assert_number_labels: To pass to the `metric_func`.  Whether or not 
+                                 to assert this many number of unique  
+                                 labels must exist in the true sentiment key. 
+                                 If this is None then the assertion is not raised.
+    :returns: A dataframe that is has a multi index of [`prediction key`, `run number`]
+              and the columns are the error split subset names and the values are 
+              the metric associated to those error splits given the prediction 
+              key and the model run (run number)
+    '''
+    pd_run_numbers = []
+    pd_prediction_keys = []
+    pd_subset_names = []
+    pd_metric_values = []
+
+    # Metirc name is only required if there will be more than one metric function 
+    # which at the moment cannot happen but could be a useful future improvement
+    metric_name = 'A Name'
+    metric_kwargs = {'average': False, 'array_scores': True, 
+                    'assert_number_labels': assert_number_labels,
+                    'true_sentiment_key': true_sentiment_key}
+    for prediction_key in prediction_keys:
+        for error_split_name, subset_names in error_split_subset_names.items():
+            for subset_name in subset_names:
+                metric_kwargs['predicted_sentiment_key'] = prediction_key
+                metric_values = subset_metrics(target_collection, subset_name, 
+                                               [metric_func], [f'{metric_name}'], 
+                                               metric_kwargs)
+                metric_scores = metric_values[f'{metric_name}']
+                for run_number, metric_score in enumerate(metric_scores):
+                    pd_run_numbers.append(run_number)
+                    pd_metric_values.append(metric_score)
+                    pd_subset_names.append(subset_name)
+                    pd_prediction_keys.append(prediction_key)
+    data_df = pd.DataFrame({'prediction key': pd_prediction_keys, 
+                            'run number': pd_run_numbers, 
+                            'subset names': pd_subset_names, 
+                            'Metric': pd_metric_values})
+    return pd.pivot_table(data_df, values='Metric', columns='subset names',
+                          index=['prediction key', 'run number'])

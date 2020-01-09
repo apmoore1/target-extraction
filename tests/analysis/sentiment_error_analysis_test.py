@@ -23,7 +23,9 @@ from target_extraction.analysis.sentiment_error_analysis import tssr_subset
 from target_extraction.analysis.sentiment_error_analysis import NoSamplesError
 from target_extraction.analysis.sentiment_error_analysis import error_analysis_wrapper
 from target_extraction.analysis.sentiment_error_analysis import ERROR_SPLIT_SUBSET_NAMES
-
+from target_extraction.analysis.sentiment_error_analysis import subset_metrics
+from target_extraction.analysis.sentiment_metrics import accuracy, macro_f1
+from target_extraction.analysis.sentiment_error_analysis import error_split_df
 
 DATA_DIR = Path(__file__, '..', '..', 'data', 'analysis', 'sentiment_error_analysis').resolve()
 
@@ -1065,3 +1067,66 @@ def test_error_analysis_wrapper():
             test_tsr(error_func)
     with pytest.raises(ValueError):
         error_analysis_wrapper('error')
+
+
+@pytest.mark.parametrize("metric_func_name", ('Accuracy', 'Score'))
+def test_subset_metrics(metric_func_name: str):
+    test_fp = Path(DATA_DIR, 'test.json').resolve()
+    train_fp = Path(DATA_DIR, 'train.json').resolve()
+    test_collection = TargetTextCollection.load_json(test_fp)
+    train_collection = TargetTextCollection.load_json(train_fp)
+    error_func = error_analysis_wrapper('n-shot')
+    error_func(train_collection, test_collection, True)
+
+    # Average version
+    average_kwargs = {'average': True, 'array_scores': False, 
+                      'assert_number_labels': 2, 
+                      'true_sentiment_key': 'target_sentiments',
+                      'predicted_sentiment_key': 'pred_sentiments'}
+    metric_dict = subset_metrics(test_collection, 'low-shot', [accuracy], 
+                                 [metric_func_name], average_kwargs)
+    assert 0.25 == metric_dict[metric_func_name]
+    # Array scores version
+    array_scores_kwargs = average_kwargs
+    array_scores_kwargs['average'] = False
+    array_scores_kwargs['array_scores'] = True
+    metric_dict = subset_metrics(test_collection, 'low-shot', [accuracy], 
+                                 [metric_func_name], average_kwargs)
+    assert [0.5, 0.0] == metric_dict[metric_func_name]
+
+    # Test the case for multiple metrics
+    metric_dict = subset_metrics(test_collection, 'low-shot', [accuracy, macro_f1], 
+                                 [metric_func_name, 'macro'], average_kwargs)
+    assert [0.5, 0.0] == metric_dict[metric_func_name]
+    assert [1/3, 0.0] == metric_dict['macro']
+
+def test_error_split_df():
+    test_fp = Path(DATA_DIR, 'test.json').resolve()
+    train_fp = Path(DATA_DIR, 'train.json').resolve()
+    test_collection = TargetTextCollection.load_json(test_fp)
+    train_collection = TargetTextCollection.load_json(train_fp)
+    for error_func_name in ['n-shot', 'NT']:
+        error_func = error_analysis_wrapper(f'{error_func_name}')
+        test_collection = error_func(train_collection, test_collection, True)
+    error_split_dict = {'n-shot': ['low-shot', 'med-shot'], 
+                        'NT': ['low-targets', 'med-targets']}
+    test_df = error_split_df(test_collection, ['pred_sentiments'], 
+                             'target_sentiments', error_split_dict, 
+                             accuracy, None)
+    low_shot_score = [0.5, 0.0]
+    med_shot_score = [1.0, 1.0]
+    low_targets_score = [2/3, 2/3]
+    med_targets_score = [0.6, 0.8]
+    name_scores = {'low-shot': low_shot_score, 'med-shot': med_shot_score,
+                   'low-targets': low_targets_score, 
+                   'med-targets': med_targets_score}
+
+    index_list = [('pred_sentiments', 0), ('pred_sentiments', 1)]
+    assert index_list == test_df.index.tolist()
+    column_list = list(name_scores.keys())
+    for column_name in column_list:
+        assert column_name in list(test_df.columns)
+    assert len(column_list) == len(list(test_df.columns))
+
+    for column_name, column_score in name_scores.items():
+        assert column_score == test_df[column_name].tolist(), column_name
