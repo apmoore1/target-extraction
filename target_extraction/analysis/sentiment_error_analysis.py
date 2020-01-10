@@ -23,6 +23,7 @@ ERROR_SPLIT_SUBSET_NAMES = {'DS': ['distinct_sentiment_1', 'distinct_sentiment_2
                                     'known_sentiment_known_target'],
                             'n-shot': ['zero-shot', 'low-shot', 
                                        'med-shot', 'high-shot']}
+SUBSET_NAMES_ERROR_SPLIT = {}
 
 class NoSamplesError(Exception):
    '''
@@ -1269,3 +1270,19 @@ def error_split_df(target_collection: TargetTextCollection,
                             'Metric': pd_metric_values})
     return pd.pivot_table(data_df, values='Metric', columns='subset names',
                           index=['prediction key', 'run number'])
+
+def subset_name_to_error_split(subset_name: str) -> str:
+    '''
+    This in affect inverts the `ERROR_SPLIT_SUBSET_NAMES` dictionary and 
+    returns the relevant error split name. It also initialises
+    ERROR_SPLIT_SUBSET_NAMES.
+
+    :param subset_name: Name of the subset you want to know which error split
+                        it has come from.
+    :returns: Associated error split name that the subset name has come from.
+    '''
+    if not SUBSET_NAMES_ERROR_SPLIT:
+        for error_split, subset_names in ERROR_SPLIT_SUBSET_NAMES.items():
+            for _subset_name in subset_names:
+                SUBSET_NAMES_ERROR_SPLIT[_subset_name] = error_split
+    return SUBSET_NAMES_ERROR_SPLIT[subset_name]

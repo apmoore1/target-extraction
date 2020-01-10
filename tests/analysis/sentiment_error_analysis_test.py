@@ -24,6 +24,7 @@ from target_extraction.analysis.sentiment_error_analysis import NoSamplesError
 from target_extraction.analysis.sentiment_error_analysis import error_analysis_wrapper
 from target_extraction.analysis.sentiment_error_analysis import ERROR_SPLIT_SUBSET_NAMES
 from target_extraction.analysis.sentiment_error_analysis import subset_metrics
+from target_extraction.analysis.sentiment_error_analysis import subset_name_to_error_split
 from target_extraction.analysis.sentiment_metrics import accuracy, macro_f1
 from target_extraction.analysis.sentiment_error_analysis import error_split_df
 
@@ -1130,3 +1131,23 @@ def test_error_split_df():
 
     for column_name, column_score in name_scores.items():
         assert column_score == test_df[column_name].tolist(), column_name
+
+def test_subset_name_to_error_split():
+    assert 'DS' == subset_name_to_error_split('distinct_sentiment_1')
+    assert 'DS' == subset_name_to_error_split('distinct_sentiment_2')
+    assert 'DS' == subset_name_to_error_split('distinct_sentiment_3')
+    assert 'NT' == subset_name_to_error_split('1-target')
+    assert 'NT' == subset_name_to_error_split('low-targets')
+    assert 'NT' == subset_name_to_error_split('med-targets')
+    assert 'NT' == subset_name_to_error_split('high-targets')
+    assert 'TSSR' == subset_name_to_error_split('1-TSSR')
+    assert 'TSSR' == subset_name_to_error_split('1-multi-TSSR')
+    assert 'TSSR' == subset_name_to_error_split('low-TSSR')
+    assert 'TSSR' == subset_name_to_error_split('high-TSSR')
+    assert 'TSR' == subset_name_to_error_split('unknown_sentiment_known_target')
+    assert 'TSR' == subset_name_to_error_split('unknown_targets')
+    assert 'TSR' == subset_name_to_error_split('known_sentiment_known_target')
+    assert 'n-shot' == subset_name_to_error_split('zero-shot')
+    assert 'n-shot' == subset_name_to_error_split('low-shot')
+    assert 'n-shot' == subset_name_to_error_split('med-shot')
+    assert 'n-shot' == subset_name_to_error_split('high-shot')
