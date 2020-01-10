@@ -5,7 +5,8 @@ data with respect to some certain property.
 '''
 import copy
 from collections import defaultdict, Counter
-from typing import List, Callable, Dict, Union, Optional, Any, Tuple
+from typing import List, Callable, Dict, Union, Optional, Any, Tuple, Iterable
+from multiprocessing import Pool
 
 import pandas as pd
 
@@ -1132,13 +1133,80 @@ def subset_metrics(target_collection: TargetTextCollection,
       metric_name_score[metric_name] = metric_score
     return metric_name_score
 
+
+def _subset_and_score(arguments: Tuple[TargetTextCollection, str, 
+                                       Callable[[TargetTextCollection, str, str, 
+                                                 bool, bool, Optional[int]], 
+                                                Union[float, List[float]]], 
+                                       Dict[str, List[str]]]
+                      ) -> Tuple[List[float], List[int], List[str], List[str]]:
+    '''
+    :param arguments: A tuple of 1. data, 2. subset name, 3. metric function,
+                      4. Keyword arguments to give to the metric function. The 
+                      metric function should be one from 
+                      `target_extraction.analysis.sentiment_metrics`. The only 
+                      argument given to the metric function is the first argument 
+                      (data collection) as that argument comes from `data`
+                      argument. This function in affect subsets the `data` by 
+                      the `subset name` and then provides the metric scores on
+                      that subset.
+    :returns: A tuple of 1. List of metric scores, 2. List of run numbers,
+              3. List of subset names, 4. List of predictions keys. The
+              run number is essentially range(0,len(metric_scores)). The 
+              list of subset names and prediction keys are the same value 
+              as given just multipled by the number of runs. Thus all of the 
+              list are of the same length.
+    '''
+    # Metirc name is only required if there will be more than one metric function 
+    # which at the moment cannot happen but could be a useful future improvement
+    metric_name = 'A Name'
+    # un-pack arguments
+    data_collection, subset_name, _metric_function, metric_kwargs = arguments
+    prediction_key = metric_kwargs['predicted_sentiment_key']
+    metric_values = subset_metrics(data_collection, subset_name, 
+                                    [_metric_function], 
+                                    [f'{metric_name}'], metric_kwargs)
+    metric_scores = metric_values[f'{metric_name}']
+    pd_run_numbers = []
+    pd_subset_names = []
+    pd_prediction_keys = []
+    for run_number, metric_score in enumerate(metric_scores):
+        pd_run_numbers.append(run_number)
+        pd_subset_names.append(subset_name)
+        pd_prediction_keys.append(prediction_key)
+    return (metric_scores, pd_run_numbers, pd_subset_names, pd_prediction_keys)
+
+def _subset_and_score_args_generator(target_collection: TargetTextCollection,
+                                     prediction_keys: List[str],
+                                     error_split_subset_names: Dict[str, List[str]],
+                                     metric_func: Callable[[TargetTextCollection, str, str, 
+                                                            bool, bool, Optional[int]], 
+                                                           Union[float, List[float]]], 
+                                     metric_kwargs: Dict[str, Union[str,int,bool]]
+                                     ) -> Iterable[Tuple[TargetTextCollection, str, 
+                                                         Callable[[TargetTextCollection, str, str, 
+                                                                   bool, bool, Optional[int]], 
+                                                                  Union[float, List[float]]], 
+                                                         Dict[str, List[str]]]]:
+    '''
+    This is used to generate arguments to pass to the :py:func:`_subset_and_score`
+    '''
+    metric_kwargs_copy = copy.deepcopy(metric_kwargs)
+    for prediction_key in prediction_keys:
+        for error_split_name, subset_names in error_split_subset_names.items():
+            for subset_name in subset_names:
+                metric_kwargs_copy['predicted_sentiment_key'] = prediction_key
+                yield (target_collection, subset_name, 
+                        metric_func, metric_kwargs_copy)
+
 def error_split_df(target_collection: TargetTextCollection, 
                    prediction_keys: List[str], true_sentiment_key: str, 
                    error_split_subset_names: Dict[str, List[str]],
                    metric_func: Callable[[TargetTextCollection, str, str, 
                                           bool, bool, Optional[int]], 
                                          Union[float, List[float]]],
-                   assert_number_labels: Optional[int] = None
+                   assert_number_labels: Optional[int] = None,
+                   num_cpus: Optional[int] = None
                    ) -> pd.DataFrame:
     '''
     This will require the `target_collection` having been pre-processed with the
@@ -1164,6 +1232,10 @@ def error_split_df(target_collection: TargetTextCollection,
                                  to assert this many number of unique  
                                  labels must exist in the true sentiment key. 
                                  If this is None then the assertion is not raised.
+    :param num_cpus: Number of cpus to use for multiprocessing. The task of 
+                     subsetting and metric scoring is split down into one 
+                     task and all tasks are then multiprocessed. This is also 
+                     done in a Lazy fashion.   
     :returns: A dataframe that is has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
@@ -1174,25 +1246,23 @@ def error_split_df(target_collection: TargetTextCollection,
     pd_subset_names = []
     pd_metric_values = []
 
-    # Metirc name is only required if there will be more than one metric function 
-    # which at the moment cannot happen but could be a useful future improvement
-    metric_name = 'A Name'
     metric_kwargs = {'average': False, 'array_scores': True, 
                     'assert_number_labels': assert_number_labels,
                     'true_sentiment_key': true_sentiment_key}
-    for prediction_key in prediction_keys:
-        for error_split_name, subset_names in error_split_subset_names.items():
-            for subset_name in subset_names:
-                metric_kwargs['predicted_sentiment_key'] = prediction_key
-                metric_values = subset_metrics(target_collection, subset_name, 
-                                               [metric_func], [f'{metric_name}'], 
-                                               metric_kwargs)
-                metric_scores = metric_values[f'{metric_name}']
-                for run_number, metric_score in enumerate(metric_scores):
-                    pd_run_numbers.append(run_number)
-                    pd_metric_values.append(metric_score)
-                    pd_subset_names.append(subset_name)
-                    pd_prediction_keys.append(prediction_key)
+
+    with Pool(num_cpus) as p:
+        args_gen = _subset_and_score_args_generator(target_collection, 
+                                                    prediction_keys, 
+                                                    error_split_subset_names, 
+                                                    metric_func, metric_kwargs)
+        results = p.imap(_subset_and_score, args_gen)
+
+        for result in results:
+            pd_metric_values.extend(result[0])
+            pd_run_numbers.extend(result[1])
+            pd_subset_names.extend(result[2])
+            pd_prediction_keys.extend(result[3])
+
     data_df = pd.DataFrame({'prediction key': pd_prediction_keys, 
                             'run number': pd_run_numbers, 
                             'subset names': pd_subset_names, 

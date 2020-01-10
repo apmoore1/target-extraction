@@ -33,6 +33,7 @@ Arguments for all functions in this module:
                     unique true labels does not equal the `assert_number_labels`
                     this is raised.
 '''
+import functools
 from typing import Union, Optional, Callable, Tuple, List, Any
 import statistics
 
@@ -71,6 +72,7 @@ def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool,
     the Errors stated above in the module documentation before the metric 
     functions is called.
     '''
+    @functools.wraps(func)
     def wrapper(target_collection: TargetTextCollection, 
                 true_sentiment_key: str, predicted_sentiment_key: str, 
                 average: bool, array_scores: bool, 
