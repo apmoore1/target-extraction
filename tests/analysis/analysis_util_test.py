@@ -221,8 +221,63 @@ def test_long_format_metrics():
         long_df_scores = long_df[long_df['Metric']==f'{metric_column}']['Metric Score'].tolist()
         combined_df_scores = combined_df[f'{metric_column}'].tolist()
         assert long_df_scores == combined_df_scores
-        
 
+#def test_plot_error_subsets():
+#    # All that will be tested here is that the plots do not raise any error
+#    util.plot_error_subsets
+@pytest.mark.parametrize('true_sentiment_key', ('true_sentiments', None))
+@pytest.mark.parametrize('include_metadata', (True, False))
+def test_get_overall_metric_results(true_sentiment_key: str, 
+                                    include_metadata: bool):
+    if true_sentiment_key is None:
+        true_sentiment_key = 'target_sentiments'
+    model_1_collection = passable_example_multiple_preds(true_sentiment_key, 'model_1')
+    model_2_collection = passable_example_multiple_preds(true_sentiment_key, 'model_2')
+    combined_collection = TargetTextCollection()
     
+    standard_columns = ['Dataset', 'Macro F1', 'Accuracy', 'run number', 
+                        'prediction key']
+    if include_metadata:
+        metadata = {'predicted_target_sentiment_key': {'model_1': {'CWR': True},
+                                                       'model_2': {'CWR': False}}}
+        combined_collection.name = 'name'
+        combined_collection.metadata = metadata
+        standard_columns.append('CWR')
+    number_df_columns = len(standard_columns)
+
+    for key, value in model_1_collection.items():
+        combined_collection.add(value)
+        combined_collection[key]['model_2'] = model_2_collection[key]['model_2']
+    if true_sentiment_key is None:
+        result_df = util.overall_metric_results(combined_collection, 
+                                                ['model_1', 'model_2'])
+    else:
+        result_df = util.overall_metric_results(combined_collection, 
+                                                ['model_1', 'model_2'],
+                                                true_sentiment_key)
+    assert (4, number_df_columns) == result_df.shape
+    assert set(standard_columns) == set(result_df.columns)
+    if include_metadata:
+        assert ['name'] * 4 == result_df['Dataset'].tolist()
+    else:
+        assert [''] * 4 == result_df['Dataset'].tolist()
+    # Test the case where only one model is used
+    if true_sentiment_key is None:
+        result_df = util.overall_metric_results(combined_collection, 
+                                                ['model_1'])
+    else:
+        result_df = util.overall_metric_results(combined_collection, 
+                                                ['model_1'],
+                                                true_sentiment_key)
+    assert (2, number_df_columns) == result_df.shape
+    # Test the case where the model names come from the metadata
+    if include_metadata:
+        result_df = util.overall_metric_results(combined_collection, 
+                                                true_sentiment_key=true_sentiment_key)
+        assert (4, number_df_columns) == result_df.shape
+    else:
+        with pytest.raises(KeyError):
+            util.overall_metric_results(combined_collection, 
+                                        true_sentiment_key=true_sentiment_key)
 
 

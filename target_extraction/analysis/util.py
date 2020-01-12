@@ -1,10 +1,14 @@
 from collections import defaultdict
-from typing import Optional, Callable, Union, List, Dict, Any
+from typing import Optional, Callable, Union, List, Dict, Any, Tuple
 
 import pandas as pd
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from target_extraction.data_types import TargetTextCollection, TargetText
+from target_extraction.analysis import sentiment_metrics
 
 def metric_df(target_collection: TargetTextCollection, 
               metric_function: Callable[[TargetTextCollection, str, str, bool, bool, Optional[int]], 
@@ -191,9 +195,214 @@ def long_format_metrics(metric_df: pd.DataFrame,
     return pd.melt(metric_df, id_vars=columns, value_vars=metric_column_names, 
                    var_name='Metric', value_name='Metric Score')
 
+def overall_metric_results(collection: TargetTextCollection, 
+                           prediction_keys: Optional[List[str]] = None,
+                           true_sentiment_key: str = 'target_sentiments'
+                           ) -> pd.DataFrame:
+    '''
+    :param collection: Dataset that contains all of the results. Furthermore it 
+                       should have the name attribute as something meaningful 
+                       e.g. `Laptop` for the Laptop dataset.
+    :param prediction_keys: A list of prediction keys that you want the results 
+                            for. If None then it will get all of the prediction 
+                            keys from 
+                            `collection.metadatap['predicted_target_sentiment_key']`.
+    :param true_sentiment_key: Key in the `target_collection` targets that 
+                               contains the true sentiment scores for each 
+                               target in the TargetTextCollection.
+    :returns: A pandas dataframe with the following columns: `['prediction key', 
+              'run number', 'Accuracy', 'Macro F1', 'Dataset']`. The `Dataset`
+              column will contain one unique value and that will come from 
+              the `name` attribute of the `collection`. The DataFrame will 
+              also contain columns and values from the associated metadata see
+              :py:func:`add_metadata_to_df` for more details.
+    '''
+    if prediction_keys is None:
+        prediction_keys = list(collection.metadata['predicted_target_sentiment_key'].keys())
+    acc_df = metric_df(collection, sentiment_metrics.accuracy, 
+                       true_sentiment_key, prediction_keys,
+                       array_scores=True, assert_number_labels=3, 
+                       metric_name='Accuracy', average=False, include_run_number=True)
+    acc_df = add_metadata_to_df(acc_df, collection, 'predicted_target_sentiment_key')
+    f1_df = metric_df(collection, sentiment_metrics.macro_f1, 
+                      true_sentiment_key, prediction_keys,
+                      array_scores=True, assert_number_labels=3, 
+                      metric_name='Macro F1', average=False, include_run_number=True)
+    combined_df = combine_metrics(acc_df, f1_df, 'Macro F1')
+    combined_df['Dataset'] = [collection.name] * combined_df.shape[0]
+    return combined_df
 
-    
+
+def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str, 
+                       df_row_name: str, df_x_name: str, df_y_name: str,
+                       df_hue_name: str = 'Model', 
+                       seaborn_plot_name: str = 'pointplot',
+                       seaborn_kwargs: Optional[Dict[str, Any]] = None,
+                       legend_column: Optional[int] = 0,
+                       figsize: Optional[Tuple[float, float]] = None,
+                       legend_bbox_to_anchor: Tuple[float, float] = (-0.13, 1.1),
+                       fontsize: int = 14, legend_fontsize: int = 10,
+                       tick_font_size: int = 12, 
+                       title_on_every_plot: bool = False,
+                       df_overall_metric: Optional[str] = None,
+                       overall_seaborn_plot_name: Optional[str] = None,
+                       overall_seaborn_kwargs: Optional[Dict[str, Any]] = None
+                       ) -> Tuple[matplotlib.figure.Figure, 
+                                  List[List[matplotlib.axes.Axes]]]:
+    '''
+    This function is named what it is as it is a good way to visualise the 
+    different error subsets and thus error splits after running different 
+    error functions from 
+    :py:func`target_extraction.analysis.sentiment_error_analysis.error_analysis_wrapper`
+    and further more if you are exploring them over different datasets. 
+    To create a graph with these different error analysis subsets, Models, and datasets 
+    the following column and row names may be useful: `df_column_name` = `Dataset`,
+    `df_row_name` = `Error Split`, `df_x_name` = `Error Subset`, `df_y_name` 
+    = `Accuracy (%)`, and `df_hue_name` = `Model`.
+
+    :param metric_df: A DataFrame that will 
+    :param df_column_name: Name of the column in `metric_df` that will be used 
+                           to determine the categorical variables to facet the 
+                           column part of the returned figure
+    :param df_row_name: Name of the column in `metric_df` that will be used 
+                        to determine the categorical variables to facet the 
+                        row part of the returned figure
+    :param df_x_name: Name of the column in `metric_df` that will be used to 
+                      represent the X-axis in the figure.
+    :param df_y_name: Name of the column in `metric_df` that will be used to 
+                      represent the Y-axis in the figure.
+    :param df_hue_name: Name of the column in `metric_df` that will be used to 
+                        represent the hue in the figure
+    :param seaborn_plot_name: Name of the seaborn plotting function to use as 
+                              the plots within the figure
+    :param seaborn_kwargs: The key word arguments to give to the seaborn 
+                           plotting function.
+    :param legend_column: Which column in the figure the legend should be 
+                          associated too. The row the legend is associated 
+                          with is fixed at row 0.
+    :param figsize: Size of the figure, this is passed to the 
+                    :py:func:`matplotlib.pyplot.subplots` as an argument.
+    :param legend_bbox_to_anchor: Where the legend box should be within the 
+                                  figure. This is passed as the `bbox_to_anchor`
+                                  argument to 
+                                  :py:func:`matplotlib.pyplot.Axes.legend`
+    :param fontsize: Size of the font for the title, y-axis label, and 
+                     x-axis label.
+    :param legend_fontsize: Size of the font for the legend.
+    :param tick_font_size: Size of the font on the y and x axis ticks.
+    :param title_on_every_plot: Whether or not to have the title above every 
+                                plot in the grid or just over the top row 
+                                of plots.
+    :param df_overall_metric: Name of the column in `metric_df` that stores 
+                              the overall metric score for the entire dataset 
+                              and not just the `subsets`.
+    :param overall_seaborn_plot_name: Same as the `seaborn_plot_name` but for 
+                                      plotting the overall metric
+    :param overall_seaborn_kwargs: Same as the `seaborn_kwargs` but for the 
+                                   overall metric plot.
+    :returns: A tuple of 1. The figure  2. The associated axes within the 
+              figure. The figure will contain N x M plots where N is the number 
+              of unique values in the `metric_df` `df_column_name` column and 
+              M is the number of unique values in the `metric_df` 
+              `df_row_name` column.
+    '''
+    def plot_error_split(df: pd.DataFrame, 
+                        error_axs: List[matplotlib.axes.Axes], 
+                        column_names: List[str],
+                        first_row: bool, last_row: bool,
+                        number_hue_values: int = 1) -> None:
+        for col_index, column_name in enumerate(column_names):
+            _df = df[df[df_column_name]==column_name]
+            ax = error_axs[col_index]
+            getattr(sns, seaborn_plot_name)(x=df_x_name, y=df_y_name, 
+                                            hue=df_hue_name, data=_df, 
+                                            ax=ax, **seaborn_kwargs)
+            # Required if plotting the overall metrics
+            if df_overall_metric:
+                _temp_overall_df: pd.DataFrame = _df.copy(deep=True)
+                _temp_overall_df = _temp_overall_df.drop(columns=df_x_name)
+                _temp_overall_df = _temp_overall_df.rename(columns={df_overall_metric: df_x_name})
+                getattr(sns, overall_seaborn_plot_name)(x=df_x_name, y=df_y_name, 
+                                                        hue=df_hue_name, 
+                                                        data=_temp_overall_df, 
+                                                        ax=ax, 
+                                                        **overall_seaborn_kwargs)
+            
+            # Y axis labelling
+            row_name = _df[df_row_name].unique()
+            row_name_err = ('There should only be one unique row name {row_name} '
+                            f'from the row column {df_row_name}')
+            assert len(row_name) == 1, row_name_err
+            row_name = row_name[0]
+            if col_index != 0:
+                ax.set_ylabel('')
+            else:
+                ax.set_ylabel(f'{df_row_name}={row_name}\n{df_y_name}', 
+                            fontsize=fontsize)
+            # X axis labelling
+            if last_row:
+                ax.set_xlabel(df_x_name, fontsize=fontsize)
+            else:
+                ax.set_xlabel('')
+            # Title
+            if first_row or title_on_every_plot:
+                ax.set_title(f'{df_column_name}={column_name}', fontsize=fontsize)
+            # Legend
+            if col_index == legend_column and first_row:
+                ax.legend(bbox_to_anchor=legend_bbox_to_anchor, 
+                            loc='lower left', fontsize=legend_fontsize, 
+                            ncol=number_hue_values, borderaxespad=0.)
+            else:
+                ax.get_legend().remove()
+    plt.rc('xtick', labelsize=tick_font_size)
+    plt.rc('ytick', labelsize=tick_font_size)
+    # Seaborn plotting options
+    if seaborn_kwargs is None and seaborn_plot_name=='pointplot':
+        seaborn_kwargs = {'join': False, 'ci': 'sd', 'dodge': 0.4, 
+                          'capsize': 0.05}
+    elif seaborn_kwargs is None:
+        seaborn_kwargs = {}
+    # Ensure that all the values in hue column will always be the same
+    hue_values = metric_df[df_hue_name].unique().tolist()
+    number_hue_values = len(hue_values)
+    palette = dict(zip(hue_values, sns.color_palette()))
+    seaborn_kwargs['palette'] = palette
+
+    # Determine the number of rows
+    row_names = metric_df[df_row_name].unique().tolist()
+    num_rows = len(row_names)
+    # Number of columns
+    column_names = metric_df[df_column_name].unique().tolist()
+    number_columns = len(column_names)
+
+    if figsize is None:
+        row_width = num_rows * 5
+        column_length = number_columns * 4
+        figsize = (row_width, column_length)
+    fig, axs = plt.subplots(nrows=num_rows, ncols=number_columns, 
+                            figsize=figsize)
+    # row 
+    if num_rows > 1:
+        # columns
+        for row_index, row_name in enumerate(row_names):
+            row_metric_df = metric_df[metric_df[df_row_name]==row_name]
+            row_axs = axs[row_index]
+            if row_index == (num_rows - 1):
+                plot_error_split(row_metric_df, row_axs, column_names, False, 
+                                    True, number_hue_values)
+            elif row_index == 0:
+                plot_error_split(row_metric_df, row_axs, column_names, True, 
+                                    False, number_hue_values)
+            else:
+                plot_error_split(row_metric_df, row_axs, column_names, False, 
+                                    False, number_hue_values)
+    # Only 1 row but multiple columns
+    else:
+        plot_error_split(metric_df, axs, column_names, True, True, 
+                         number_hue_values)
+    return fig, axs
+
+
             
             
 
-    
