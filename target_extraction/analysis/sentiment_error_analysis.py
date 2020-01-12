@@ -12,6 +12,19 @@ import pandas as pd
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 
+PLOT_SUBSET_ABBREVIATION = {'distinct_sentiment_1' : 'DS1', 
+                            'distinct_sentiment_2': 'DS2', 
+                            'distinct_sentiment_3': 'DS3',
+                            '1-target': '1', 'low-targets': 'Low', 
+                            'med-targets': 'Med', 'high-targets': 'High',
+                            '1-TSSR': '1', '1-multi-TSSR': '1-Multi', 
+                            'low-TSSR': 'Low', 'high-TSSR': 'High',
+                            'unknown_sentiment_known_target': 'USKT', 
+                            'unknown_targets': 'UT', 
+                            'known_sentiment_known_target': 'KSKT',
+                            'zero-shot': 'Zero', 'low-shot': 'Low', 
+                            'med-shot': 'Med', 'high-shot': 'High'}
+
 ERROR_SPLIT_SUBSET_NAMES = {'DS': ['distinct_sentiment_1', 'distinct_sentiment_2', 
                                    'distinct_sentiment_3'],
                             'NT': ['1-target', 'low-targets', 'med-targets', 
@@ -1200,15 +1213,15 @@ def _subset_and_score_args_generator(target_collection: TargetTextCollection,
                 yield (target_collection, subset_name, 
                         metric_func, metric_kwargs_copy)
 
-def error_split_df(target_collection: TargetTextCollection, 
-                   prediction_keys: List[str], true_sentiment_key: str, 
-                   error_split_subset_names: Dict[str, List[str]],
-                   metric_func: Callable[[TargetTextCollection, str, str, 
-                                          bool, bool, Optional[int]], 
-                                         Union[float, List[float]]],
-                   assert_number_labels: Optional[int] = None,
-                   num_cpus: Optional[int] = None
-                   ) -> pd.DataFrame:
+def _error_split_df(target_collection: TargetTextCollection, 
+                    prediction_keys: List[str], true_sentiment_key: str, 
+                    error_split_subset_names: Dict[str, List[str]],
+                    metric_func: Callable[[TargetTextCollection, str, str, 
+                                           bool, bool, Optional[int]], 
+                                          Union[float, List[float]]],
+                    assert_number_labels: Optional[int] = None,
+                    num_cpus: Optional[int] = None
+                    ) -> pd.DataFrame:
     '''
     This will require the `target_collection` having been pre-processed with the
     relevant error analysis functions within this module. A useful function to 
@@ -1237,7 +1250,7 @@ def error_split_df(target_collection: TargetTextCollection,
                      subsetting and metric scoring is split down into one 
                      task and all tasks are then multiprocessed. This is also 
                      done in a Lazy fashion.   
-    :returns: A dataframe that is has a multi index of [`prediction key`, `run number`]
+    :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
               key and the model run (run number)
@@ -1270,6 +1283,63 @@ def error_split_df(target_collection: TargetTextCollection,
                             'Metric': pd_metric_values})
     return pd.pivot_table(data_df, values='Metric', columns='subset names',
                           index=['prediction key', 'run number'])
+
+def error_split_df(train_collection: TargetTextCollection, 
+                   test_collection: TargetTextCollection,
+                   prediction_keys: List[str], true_sentiment_key: str, 
+                   error_split_and_subset_names: Dict[str, List[str]],
+                   metric_func: Callable[[TargetTextCollection, str, str, 
+                                          bool, bool, Optional[int]], 
+                                         Union[float, List[float]]],
+                   assert_number_labels: Optional[int] = None,
+                   num_cpus: Optional[int] = None,
+                   lower_targets: bool = True
+                   ) -> pd.DataFrame:
+    '''
+    This will perform `error_analysis_wrapper` over all `error_split_subset_names`
+    keys and then returns the output from `_error_split_df`
+
+    :param train_collection: The collection that was used to train the models 
+                             that have made the predictions within 
+                             `test_collection`
+    :param test_collection: The collection where all TargetText's contain 
+                            all `prediction_keys`, and `true_sentiment_key`.
+    :param prediction_keys: A list of keys that contain the predicted sentiment 
+                            scores for each target in the TargetTextCollection
+    :param true_sentiment_key: Key that contains the true sentiment scores 
+                               for each target in the TargetTextCollection
+    :param error_split_and_subset_names: The keys do not matter but the List values 
+                                         must represent error subset names. An 
+                                         example dictionary would be:
+                                         `ERROR_SPLIT_SUBSET_NAMES`
+    :param metric_func: A Metric function from
+                        `target_extraction.analysis.sentiment_metrics`. Example
+                         metric function is 
+                         :py:func:`target_extraction.analysis.sentiment_metrics.accuracy`
+    :param assert_number_labels: To pass to the `metric_func`.  Whether or not 
+                                 to assert this many number of unique  
+                                 labels must exist in the true sentiment key. 
+                                 If this is None then the assertion is not raised.
+    :param num_cpus: Number of cpus to use for multiprocessing. The task of 
+                     subsetting and metric scoring is split down into one 
+                     task and all tasks are then multiprocessed. This is also 
+                     done in a Lazy fashion.
+    :param lower_targets: Whether or not the targets should be lowered during the 
+                          `error_analysis_wrapper` function.   
+    :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
+              and the columns are the error split subset names and the values are 
+              the metric associated to those error splits given the prediction 
+              key and the model run (run number)
+    '''
+    for error_split, _ in error_split_and_subset_names.items():
+        error_function = error_analysis_wrapper(error_split)
+        test_collection = error_function(train_collection, test_collection, 
+                                         lower=lower_targets)
+    error_analysis_df = _error_split_df(test_collection, prediction_keys, 
+                                        true_sentiment_key, 
+                                        error_split_and_subset_names, 
+                                        metric_func, assert_number_labels, num_cpus)
+    return error_analysis_df
 
 def subset_name_to_error_split(subset_name: str) -> str:
     '''
