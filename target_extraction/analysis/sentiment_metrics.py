@@ -93,9 +93,17 @@ def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool,
             if total_number_model_predictions == 0:
                 total_number_model_predictions = number_model_predictions
             else:
+                print(target_object)
+                print(total_number_model_predictions)
+                print(number_model_predictions)
                 if total_number_model_predictions != number_model_predictions:
                     raise ValueError('The number of predictions made per '
-                                     'Target within the collection is different')
+                                     'Target within the collection is different'
+                                     f'. This TargetText could have no targets'
+                                     ' within the collection thus this error '
+                                     'will be raise. TargetText that has an error'
+                                     f' {target_object}\nThe number of predcitions'
+                                     f' that this object should have: {total_number_model_predictions}')
         # Cannot have zero predictions
         if total_number_model_predictions == 0:
             raise ValueError('The number of predictions made per target are zero')
@@ -266,12 +274,27 @@ def strict_text_accuracy(target_collection: TargetTextCollection,
     average of the correct predictions.
 
     This metric also assumes that all the texts within the `target_collection`
-    also contains at least one target. If this is not the case then each sentence 
-    that does not contain at least one target will be considered correct and 
-    therefore potentially artifically increase the accuracy metric returned, 
-    this might be espically important when comparing this metric over multiple 
-    datasets.
+    also contains at least one target. If it does not a ValueError will be raised.
     '''
-    for target_text in target_collection.values():
-        return target_text
-    #pass
+    true_values, predicted_values_list = get_labels(target_collection, 
+                                                    true_sentiment_key, 
+                                                    predicted_sentiment_key, 
+                                                    labels_per_text=True)
+    true_values: List[List[Any]]
+    predicted_values_list: List[List[List[Any]]]
+    
+    scores: List[float] = []
+    num_texts = float(len(true_values))
+    for predicted_values in predicted_values_list:
+        score = 0
+        for true_value, predicted_value in zip(true_values, predicted_values):
+            if true_value == predicted_value:
+                score += 1
+        scores.append(float(score) / num_texts)
+    if average:
+        return statistics.mean(scores)
+    elif array_scores:
+        return scores
+    else:
+        assert 1 == len(scores)
+        return scores[0]
