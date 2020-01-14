@@ -123,8 +123,10 @@ def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool,
     return wrapper
 
 def get_labels(target_collection: TargetTextCollection, 
-               true_sentiment_key: str, 
-               predicted_sentiment_key: str) -> Tuple[List[Any], List[List[Any]]]:
+               true_sentiment_key: str, predicted_sentiment_key: str,
+               labels_per_text: bool = False
+               ) -> Tuple[Union[List[Any], List[List[Any]]], 
+                          Union[List[List[Any]], List[List[List[Any]]]]]:
     '''
     :param target_collection: Collection of targets that have true and predicted 
                               sentiment values.
@@ -138,15 +140,24 @@ def get_labels(target_collection: TargetTextCollection,
                                     the inner list is the number of targets to 
                                     predict for, the the second Tuple of the 
                                     example return for an example of this.
+    :param labels_per_text: If True instead of returning a List[Any] it will
+                            return a List[List[Any]] where in the inner list 
+                            represents the predictions per text rather than in 
+                            the normal case where it is all predictions ignoring 
+                            which text they came from.
     :returns: A tuple of 1; true sentiment value 2; predicted sentiment values. 
               where the predicted sentiment values is a list of predicted 
-              sentiment value, one for each models predictions.
+              sentiment value, one for each models predictions. 
+              See `Example of return 2` for an example of what this means 
+              where in that example there are two texts/sentences.
     :raises ValueError: If the number of predicted sentiment values are not 
                         equal to the number true sentiment values.
     :raises ValueError: If the labels in the predicted sentiment values are not 
                         in the true sentiment values.
-    :Example of the return: (['pos', 'neg', 'neu'], [['neg', 'pos', 'neu'], 
+    :Example of return 1: (['pos', 'neg', 'neu'], [['neg', 'pos', 'neu'], 
                              ['neu', 'pos', 'neu']])
+    :Example of return 2: ([['pos'], ['neg', 'neu']], [[['neg'], ['pos', 'neu']], 
+                           [['neu'], ['pos', 'neu']]])
     ''' 
     all_predicted_values: List[List[Any]] = []
     all_true_values: List[Any] = []
@@ -154,7 +165,10 @@ def get_labels(target_collection: TargetTextCollection,
         target_object: TargetText
         
         true_values = target_object[true_sentiment_key]
-        all_true_values.extend(true_values)
+        if labels_per_text:
+            all_true_values.append(true_values)
+        else:
+            all_true_values.extend(true_values)
 
         predicted_values_lists = target_object[predicted_sentiment_key]
         # Create a list per model predictions
@@ -162,7 +176,10 @@ def get_labels(target_collection: TargetTextCollection,
             for _ in predicted_values_lists:
                 all_predicted_values.append([])
         for index, prediction_list in enumerate(predicted_values_lists):
-            all_predicted_values[index].extend(prediction_list)
+            if labels_per_text:
+                all_predicted_values[index].append(prediction_list)
+            else:
+                all_predicted_values[index].extend(prediction_list)
     # Check that the number of values in the predicted values is the same as 
     # the number of values in the true list
     true_number_values = len(all_true_values)
@@ -173,9 +190,15 @@ def get_labels(target_collection: TargetTextCollection,
                              f'Number of targets {true_number_values}. '
                              'These should be the same!')
     # Check that the values in True are the same as those in predicted
-    unique_true_values = set(all_true_values)
+    if labels_per_text:
+        unique_true_values = set([value for values in all_true_values for value in values])
+    else:
+        unique_true_values = set(all_true_values)
     for prediction_list in all_predicted_values:
-        unique_predicted_values = set(prediction_list)
+        if labels_per_text:
+            unique_predicted_values = set([value for values in prediction_list for value in values])
+        else:
+            unique_predicted_values = set(prediction_list)
         if unique_predicted_values.difference(unique_true_values):
             raise ValueError('Values in the predicted sentiment are not in the'
                              ' True sentiment values. Values in predicted '
@@ -230,3 +253,25 @@ def macro_f1(target_collection: TargetTextCollection,
         assert 1 == len(scores)
         return scores[0]
 
+@metric_error_checks
+def strict_text_accuracy(target_collection: TargetTextCollection, 
+                         true_sentiment_key: str, predicted_sentiment_key: str, 
+                         average: bool, array_scores: bool, 
+                         assert_number_labels: Optional[int] = None
+                         ) -> Union[float, List[float]]:
+    '''
+    This is performed at the text/sentence level where a sample is not denoted 
+    as one target but as all targets within a text. A sample is correct if all
+    targets within the text have been predicted correctly. This will return the 
+    average of the correct predictions.
+
+    This metric also assumes that all the texts within the `target_collection`
+    also contains at least one target. If this is not the case then each sentence 
+    that does not contain at least one target will be considered correct and 
+    therefore potentially artifically increase the accuracy metric returned, 
+    this might be espically important when comparing this metric over multiple 
+    datasets.
+    '''
+    for target_text in target_collection.values():
+        return target_text
+    #pass

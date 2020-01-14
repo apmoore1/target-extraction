@@ -7,7 +7,8 @@ from target_extraction.analysis.sentiment_metrics import get_labels, accuracy, L
 from target_extraction.analysis.sentiment_metrics import macro_f1
 
 def passable_example(true_sentiment_key: str, 
-                     predicted_sentiment_key: str
+                     predicted_sentiment_key: str,
+                     labels_per_text: bool = False
                      ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
     example_1 = TargetText(text_id='1', text='some text')
     example_1[true_sentiment_key] = ['pos', 'neg']
@@ -18,6 +19,9 @@ def passable_example(true_sentiment_key: str,
 
     true_labels = ['pos', 'neg', 'pos', 'neg', 'neu']
     pred_labels = [['neg', 'pos', 'neu', 'neg', 'pos']]
+    if labels_per_text:
+        true_labels = [['pos', 'neg'], ['pos', 'neg', 'neu']]
+        pred_labels = [[['neg', 'pos'], ['neu', 'neg', 'pos']]]
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def passable_wrong_example(true_sentiment_key: str, 
@@ -35,7 +39,8 @@ def passable_wrong_example(true_sentiment_key: str,
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def passable_example_multiple_preds(true_sentiment_key: str, 
-                                    predicted_sentiment_key: str
+                                    predicted_sentiment_key: str,
+                                    labels_per_text: bool = False
                                     ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
     example_1 = TargetText(text_id='1', text='some text')
     example_1[true_sentiment_key] = ['pos', 'neg']
@@ -47,6 +52,10 @@ def passable_example_multiple_preds(true_sentiment_key: str,
     true_labels = ['pos', 'neg', 'pos', 'neg', 'neu']
     pred_labels = [['neg', 'pos', 'neu', 'neg', 'pos'], 
                    ['pos', 'neg', 'neg', 'neg', 'pos']]
+    if labels_per_text:
+        true_labels = [['pos', 'neg'], ['pos', 'neg', 'neu']]
+        pred_labels = [[['neg', 'pos'], ['neu', 'neg', 'pos']], 
+                       [['pos', 'neg'], ['neg', 'neg', 'pos']]]
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def passable_example_multiple_wrong_preds(true_sentiment_key: str, 
@@ -79,7 +88,8 @@ def passable_diff_num_labels(true_sentiment_key: str,
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def passable_subset_multiple_preds(true_sentiment_key: str, 
-                                   predicted_sentiment_key: str
+                                   predicted_sentiment_key: str,
+                                   labels_per_text: bool = False
                                    ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
     example_1 = TargetText(text_id='1', text='some text')
     example_1[true_sentiment_key] = ['pos', 'neg']
@@ -91,6 +101,10 @@ def passable_subset_multiple_preds(true_sentiment_key: str,
     true_labels = ['pos', 'neg', 'pos', 'neg', 'neu']
     pred_labels = [['neg', 'neg', 'neu', 'neg', 'neu'], 
                    ['neg', 'neg', 'neg', 'neg', 'neu']]
+    if labels_per_text:
+        true_labels = [['pos', 'neg'], ['pos', 'neg', 'neu']]
+        pred_labels = [[['neg', 'neg'], ['neu', 'neg', 'neu']], 
+                       [['neg', 'neg'], ['neg', 'neg', 'neu']]]
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def passable_subset_multiple_preds_1(true_sentiment_key: str, 
@@ -153,7 +167,8 @@ def wrong_multiple_labels_example(true_sentiment_key: str,
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def empty_preds_examples(true_sentiment_key: str, 
-                         predicted_sentiment_key: str
+                         predicted_sentiment_key: str,
+                         labels_per_text: bool = False
                          ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
     example_1 = TargetText(text_id='1', text='some text')
     example_1[true_sentiment_key] = ['pos', 'neg']
@@ -167,7 +182,8 @@ def empty_preds_examples(true_sentiment_key: str,
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def diff_label_pred_lengths(true_sentiment_key: str, 
-                            predicted_sentiment_key: str
+                            predicted_sentiment_key: str,
+                            labels_per_text: bool = False
                             ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
     example_1 = TargetText(text_id='1', text='some text')
     example_1[true_sentiment_key] = ['pos', 'neg']
@@ -182,7 +198,8 @@ def diff_label_pred_lengths(true_sentiment_key: str,
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def all_diff_label_pred_lengths(true_sentiment_key: str, 
-                                predicted_sentiment_key: str
+                                predicted_sentiment_key: str,
+                                labels_per_text: bool = False
                                 ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
     example_1 = TargetText(text_id='1', text='some text')
     example_1[true_sentiment_key] = ['pos', 'neg']
@@ -197,7 +214,8 @@ def all_diff_label_pred_lengths(true_sentiment_key: str,
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def diff_label_pred_values(true_sentiment_key: str, 
-                           predicted_sentiment_key: str
+                           predicted_sentiment_key: str,
+                           labels_per_text: bool = False
                            ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
     example_1 = TargetText(text_id='1', text='some text')
     example_1[true_sentiment_key] = ['pos', 'neg']
@@ -212,7 +230,8 @@ def diff_label_pred_values(true_sentiment_key: str,
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
 def all_diff_label_pred_values(true_sentiment_key: str, 
-                               predicted_sentiment_key: str
+                               predicted_sentiment_key: str,
+                               labels_per_text: bool = False
                                ) -> Tuple[TargetTextCollection, List[str], List[List[str]]]:
     example_1 = TargetText(text_id='1', text='some text')
     example_1[true_sentiment_key] = ['pos', 'neg']
@@ -256,46 +275,58 @@ def diff_num_preds(true_sentiment_key: str,
 
 @pytest.mark.parametrize("true_sentiment_key", ('target_sentiments', 'true values'))
 @pytest.mark.parametrize("predicted_sentiment_key", ('predictions', 'another'))
-def test_get_labels(true_sentiment_key: str, predicted_sentiment_key: str):
-    normal_examples, true_labels, pred_labels = passable_example(true_sentiment_key, predicted_sentiment_key)
-    labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key)
+@pytest.mark.parametrize("labels_per_text", (True, False))
+def test_get_labels(true_sentiment_key: str, predicted_sentiment_key: str, 
+                    labels_per_text: bool):
+    normal_examples, true_labels, pred_labels = passable_example(true_sentiment_key, 
+                                                                 predicted_sentiment_key, 
+                                                                 labels_per_text)
+    labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key, 
+                        labels_per_text)
     assert true_labels == labels[0]
     assert pred_labels == labels[1]
     # Case where the predictions have more than one set of predictions per target
-    normal_examples, true_labels, pred_labels = passable_example_multiple_preds(true_sentiment_key, predicted_sentiment_key)
-    labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key)
+    normal_examples, true_labels, pred_labels = passable_example_multiple_preds(true_sentiment_key, 
+                                                                                predicted_sentiment_key, 
+                                                                                labels_per_text)
+    labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key, 
+                        labels_per_text)
     assert true_labels == labels[0]
     assert pred_labels == labels[1]
     # Return empty lists
-    labels = get_labels(TargetTextCollection(), true_sentiment_key, predicted_sentiment_key)
-    assert [] == labels[0]
-    assert [] == labels[1]
+    labels = get_labels(TargetTextCollection(), true_sentiment_key, predicted_sentiment_key, labels_per_text)
+    if labels_per_text:
+        assert [] == labels[0]
+        assert [] == labels[1]
+    else:
+        assert [] == labels[0]
+        assert [] == labels[1]
     # Handles the case where the prediction labels are a subset of the True labels
-    normal_examples, true_labels, pred_labels = passable_subset_multiple_preds(true_sentiment_key, predicted_sentiment_key)
-    labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key)
+    normal_examples, true_labels, pred_labels = passable_subset_multiple_preds(true_sentiment_key, predicted_sentiment_key, labels_per_text)
+    labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key, labels_per_text)
     assert true_labels == labels[0]
     assert pred_labels == labels[1]
     # Raise an error as there are no predictions
-    examples, true_labels, pred_labels = empty_preds_examples(true_sentiment_key, predicted_sentiment_key)
+    examples, true_labels, pred_labels = empty_preds_examples(true_sentiment_key, predicted_sentiment_key, labels_per_text)
     with pytest.raises(ValueError):
         get_labels(examples, true_sentiment_key, predicted_sentiment_key)
     # Raises an error as one of the multiple predictions is not the same
-    examples, true_labels, pred_labels = diff_label_pred_lengths(true_sentiment_key, predicted_sentiment_key)
+    examples, true_labels, pred_labels = diff_label_pred_lengths(true_sentiment_key, predicted_sentiment_key, labels_per_text)
     with pytest.raises(ValueError):
         get_labels(examples, true_sentiment_key, predicted_sentiment_key)
     # Raises an error as all of the multiple predictions do not have the same 
     # length as the True labels 
-    examples, true_labels, pred_labels = all_diff_label_pred_lengths(true_sentiment_key, predicted_sentiment_key)
+    examples, true_labels, pred_labels = all_diff_label_pred_lengths(true_sentiment_key, predicted_sentiment_key, labels_per_text)
     with pytest.raises(ValueError):
         get_labels(examples, true_sentiment_key, predicted_sentiment_key)
     # Raises an error as the labels in one of the predictions is different to 
     # the True labels
-    examples, true_labels, pred_labels = diff_label_pred_values(true_sentiment_key, predicted_sentiment_key)
+    examples, true_labels, pred_labels = diff_label_pred_values(true_sentiment_key, predicted_sentiment_key, labels_per_text)
     with pytest.raises(ValueError):
         get_labels(examples, true_sentiment_key, predicted_sentiment_key)
     # Raises an error as the label in all of the predictions are different to 
     # the True labels
-    examples, true_labels, pred_labels = all_diff_label_pred_values(true_sentiment_key, predicted_sentiment_key)
+    examples, true_labels, pred_labels = all_diff_label_pred_values(true_sentiment_key, predicted_sentiment_key, labels_per_text)
     with pytest.raises(ValueError):
         get_labels(examples, true_sentiment_key, predicted_sentiment_key)
 
