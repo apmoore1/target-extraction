@@ -457,7 +457,9 @@ def unknown_sentiment_known_target(test_dataset: TargetTextCollection,
                                  'unknown_sentiment_known_target', error_func)
 
 def distinct_sentiment(dataset: TargetTextCollection, 
-                       separate_labels: bool = False) -> TargetTextCollection:
+                       separate_labels: bool = False,
+                       true_sentiment_key: str = 'target_sentiments'
+                       ) -> TargetTextCollection:
     '''
     :param dataset: The dataset to add the distinct sentiment labels to
     :param separate_labels: If True instead of having one error key 
@@ -475,6 +477,9 @@ def distinct_sentiment(dataset: TargetTextCollection,
                             sentiments then it will contain the following keys 
                             and values: `distinct_sentiment_2`: [1,1] and 
                             `distinct_sentiment_3`: [0,0].
+    :param true_sentiment_key: Key in the `target_collection` targets that 
+                               contains the true sentiment scores for each 
+                               target in the TargetTextCollection.
     :returns: The same dataset but with each TargetText object containing a 
               `distinct_sentiment` or `distinct_sentiment_n` key(s) and 
               associated number of distinct sentiments that are in that 
@@ -492,14 +497,14 @@ def distinct_sentiment(dataset: TargetTextCollection,
     # only used in the separate_labels case
     ds_keys = []
     if separate_labels:
-        for unique_ds in dataset.unique_distinct_sentiments():
+        for unique_ds in dataset.unique_distinct_sentiments(true_sentiment_key):
             ds_keys.append(f'distinct_sentiment_{unique_ds}')
         if len(ds_keys) == 0:
             raise ValueError('There are no Distinct sentiments/sentiments '
                              'in this collection')
         
     for target_data in dataset.values():
-        target_sentiments = target_data['target_sentiments']
+        target_sentiments = target_data[true_sentiment_key]
         distinct_sentiments = []
         if target_sentiments is not None:
             num_unique_sentiments = len(set(target_sentiments))
@@ -987,6 +992,7 @@ def swap_list_dimensions(collection: TargetTextCollection, key: str
     anonymised = False
     for target_object in collection.values():
         target_object: TargetText
+        target_object._key_error(key)
         new_target_object_dict = copy.deepcopy(dict(target_object))
         value_to_change = new_target_object_dict[key]
         new_value = []
@@ -1117,7 +1123,7 @@ def error_analysis_wrapper(error_function_name: str
         return tsr_wrapper
 
 def subset_metrics(target_collection: TargetTextCollection, 
-                   subset_error_key: str,
+                   subset_error_key: Union[str, List[str]],
                    metric_funcs: List[Callable[[TargetTextCollection, str, str, 
                                                 bool, bool, Optional[int]], 
                                                Union[float, List[float]]]],
@@ -1130,10 +1136,13 @@ def subset_metrics(target_collection: TargetTextCollection,
     :param target_collection: TargetTextCollection that contains the 
                               `subset_error_key` in each TargetText within the 
                               collection
-    :param subset_error_key: The error key to reduce the collection by. The samples 
+    :param subset_error_key: The error key(s) to reduce the collection by. The samples 
                              left will only be those where the error key is True.
                              An example of a `subset_error_key` would be 
-                             `zero-shot` from the :py:func:`n_shot_targets`.
+                             `zero-shot` from the :py:func:`n_shot_targets`. This 
+                             can also be a list of keys e.g. 
+                             [`zero-shot`, `low-shot`] from the 
+                             :py:func:`n_shot_targets`.
     :param metric_funcs: A list of metric functions from 
                          `target_extraction.analysis.sentiment_metrics`. Example
                          metric function is 

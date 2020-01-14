@@ -93,9 +93,6 @@ def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool,
             if total_number_model_predictions == 0:
                 total_number_model_predictions = number_model_predictions
             else:
-                print(target_object)
-                print(total_number_model_predictions)
-                print(number_model_predictions)
                 if total_number_model_predictions != number_model_predictions:
                     raise ValueError('The number of predictions made per '
                                      'Target within the collection is different'

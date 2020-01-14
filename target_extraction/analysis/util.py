@@ -1,3 +1,4 @@
+import copy
 from collections import defaultdict
 from typing import Optional, Callable, Union, List, Dict, Any, Tuple
 
@@ -9,6 +10,9 @@ import seaborn as sns
 
 from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.analysis import sentiment_metrics
+from target_extraction.analysis.sentiment_error_analysis import (distinct_sentiment,
+                                                                 swap_list_dimensions,
+                                                                 reduce_collection_by_key_occurrence)
 
 def metric_df(target_collection: TargetTextCollection, 
               metric_function: Callable[[TargetTextCollection, str, str, bool, bool, Optional[int]], 
@@ -147,7 +151,7 @@ def combine_metrics(metric_df: pd.DataFrame, other_metric_df: pd.DataFrame,
     :param other_metric_df: Contains metric scores that are to be added to a copy 
                             of `metric_df`
     :param other_metric_name: Name of the column of the metric scores to be copied
-                            from `other_metric_df`
+                              from `other_metric_df`
     :returns: A copy of the `metric_df` with a new column `other_metric_name`
             that contains the other metric scores.
     :Note: This assumes that the two dataframes come from 
@@ -197,7 +201,8 @@ def long_format_metrics(metric_df: pd.DataFrame,
 
 def overall_metric_results(collection: TargetTextCollection, 
                            prediction_keys: Optional[List[str]] = None,
-                           true_sentiment_key: str = 'target_sentiments'
+                           true_sentiment_key: str = 'target_sentiments',
+                           strict_accuracy_metrics: bool = False
                            ) -> pd.DataFrame:
     '''
     :param collection: Dataset that contains all of the results. Furthermore it 
@@ -210,6 +215,15 @@ def overall_metric_results(collection: TargetTextCollection,
     :param true_sentiment_key: Key in the `target_collection` targets that 
                                contains the true sentiment scores for each 
                                target in the TargetTextCollection.
+    :param strict_accuracy_metrics: If this is True the dataframe will also 
+                                    contain three additional columns: 'STA',
+                                    'STA 1', and 'STA Multi'. Where 'STA'
+                                    is the Strict Target Accuracy (STA) on the 
+                                    whole dataset, 'STA 1' and 'STA Multi' is 
+                                    the STA metric performed on the subset of 
+                                    the dataset that contain either one unique 
+                                    sentiment or more than one unique sentiment 
+                                    per text respectively.
     :returns: A pandas dataframe with the following columns: `['prediction key', 
               'run number', 'Accuracy', 'Macro F1', 'Dataset']`. The `Dataset`
               column will contain one unique value and that will come from 
@@ -217,6 +231,18 @@ def overall_metric_results(collection: TargetTextCollection,
               also contain columns and values from the associated metadata see
               :py:func:`add_metadata_to_df` for more details.
     '''
+    def swap_and_reduce(_collection: TargetTextCollection, 
+                        subset_key: Union[str, List[str]]) -> TargetTextCollection:
+        reduce_keys = ['targets', 'spans', true_sentiment_key] + prediction_keys
+        for prediction_key in prediction_keys:
+            _collection = swap_list_dimensions(_collection, prediction_key)
+        _collection = reduce_collection_by_key_occurrence(_collection, 
+                                                          subset_key, 
+                                                          reduce_keys)
+        for prediction_key in prediction_keys:
+            _collection = swap_list_dimensions(_collection, prediction_key)
+        return _collection
+
     if prediction_keys is None:
         prediction_keys = list(collection.metadata['predicted_target_sentiment_key'].keys())
     acc_df = metric_df(collection, sentiment_metrics.accuracy, 
@@ -229,8 +255,45 @@ def overall_metric_results(collection: TargetTextCollection,
                       array_scores=True, assert_number_labels=3, 
                       metric_name='Macro F1', average=False, include_run_number=True)
     combined_df = combine_metrics(acc_df, f1_df, 'Macro F1')
+    if strict_accuracy_metrics:
+        collection_copy = copy.deepcopy(collection)
+        collection_copy = distinct_sentiment(collection_copy, separate_labels=True, 
+                                             true_sentiment_key=true_sentiment_key)
+        sta_multi_collection = copy.deepcopy(collection_copy)
+        sta_multi_collection = swap_and_reduce(sta_multi_collection, 
+                                               ['distinct_sentiment_2', 'distinct_sentiment_3'])
+        sta_multi = metric_df(sta_multi_collection, sentiment_metrics.strict_text_accuracy, 
+                              true_sentiment_key, prediction_keys,
+                              array_scores=True, assert_number_labels=3, 
+                               metric_name='STA Multi', average=False, 
+                               include_run_number=True)
+        combined_df = combine_metrics(combined_df, sta_multi, 'STA Multi')
+        del sta_multi_collection
+        sta_1_collection = copy.deepcopy(collection_copy)
+        sta_1_collection = swap_and_reduce(sta_1_collection, 
+                                           'distinct_sentiment_1')
+        sta_1 = metric_df(sta_1_collection, sentiment_metrics.strict_text_accuracy, 
+                          true_sentiment_key, prediction_keys,
+                          array_scores=True, assert_number_labels=3, 
+                          metric_name='STA 1', average=False, 
+                          include_run_number=True)
+        combined_df = combine_metrics(combined_df, sta_1, 'STA 1')
+        del sta_1_collection
+        del collection_copy
+        sta = metric_df(collection, sentiment_metrics.strict_text_accuracy, 
+                        true_sentiment_key, prediction_keys,
+                        array_scores=True, assert_number_labels=3, 
+                        metric_name='STA', average=False, 
+                        include_run_number=True)
+        combined_df = combine_metrics(combined_df, sta, 'STA')
+
     combined_df['Dataset'] = [collection.name] * combined_df.shape[0]
     return combined_df
+
+    subset_metrics(laptop_test, ['distinct_sentiment_2', 'distinct_sentiment_3'], 
+               [strict_text_accuracy], ['STA'], {'true_sentiment_key': 'target_sentiments',
+                                                 'predicted_sentiment_key':'predicted_target_sentiment_AE_CWR_None_None',
+                                                 'average':False, 'array_scores':True, 'assert_number_labels':3})
 
 
 def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str, 

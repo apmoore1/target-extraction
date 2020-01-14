@@ -7,14 +7,17 @@ import pandas as pd
 
 from target_extraction.analysis import util, sentiment_metrics
 from target_extraction.data_types import TargetTextCollection, TargetText
+from target_extraction.data_types_util import Span
 
 def passable_example_multiple_preds(true_sentiment_key: str, 
                                     predicted_sentiment_key: str
                                     ) -> TargetTextCollection:
-    example_1 = TargetText(text_id='1', text='some text')
+    example_1 = TargetText(text_id='1', text='some text', targets=['some', 'text'], 
+                           spans=[Span(0,4), Span(5, 9)])
     example_1[true_sentiment_key] = ['pos', 'neg']
     example_1[predicted_sentiment_key] = [['pos', 'neg'], ['pos', 'neg']]
-    example_2 = TargetText(text_id='2', text='some text')
+    example_2 = TargetText(text_id='2', text='some text is', targets=['some', 'text', 'is'], 
+                           spans=[Span(0,4), Span(5, 9), Span(10,12)])
     example_2[true_sentiment_key] = ['pos', 'neg', 'neu']
     if predicted_sentiment_key == 'model_2':
         example_2[predicted_sentiment_key] = [['pos', 'neg', 'neu'], ['neg', 'neg', 'pos']]
@@ -227,16 +230,29 @@ def test_long_format_metrics():
 #    util.plot_error_subsets
 @pytest.mark.parametrize('true_sentiment_key', ('true_sentiments', None))
 @pytest.mark.parametrize('include_metadata', (True, False))
-def test_get_overall_metric_results(true_sentiment_key: str, 
-                                    include_metadata: bool):
+@pytest.mark.parametrize('strict_accuracy_metrics', (True, False))
+def test_overall_metric_results(true_sentiment_key: str, 
+                                include_metadata: bool,
+                                strict_accuracy_metrics: bool):
     if true_sentiment_key is None:
         true_sentiment_key = 'target_sentiments'
     model_1_collection = passable_example_multiple_preds(true_sentiment_key, 'model_1')
+    model_1_collection.add(TargetText(text='a', text_id='200', spans=[Span(0,1)], targets=['a'],
+                                      model_1=[['pos'], ['neg']], **{f'{true_sentiment_key}': ['pos']}))
+    model_1_collection.add(TargetText(text='a', text_id='201', spans=[Span(0,1)], targets=['a'],
+                                      model_1=[['pos'], ['neg']], **{f'{true_sentiment_key}': ['neg']}))
+    model_1_collection.add(TargetText(text='a', text_id='202', spans=[Span(0,1)], targets=['a'],
+                                      model_1=[['pos'], ['neg']], **{f'{true_sentiment_key}': ['neu']}))
+    print(true_sentiment_key)
+    print(model_1_collection['1'])
+    print(model_1_collection['200'])
     model_2_collection = passable_example_multiple_preds(true_sentiment_key, 'model_2')
     combined_collection = TargetTextCollection()
     
     standard_columns = ['Dataset', 'Macro F1', 'Accuracy', 'run number', 
                         'prediction key']
+    if strict_accuracy_metrics:
+        standard_columns = standard_columns + ['STA', 'STA 1', 'STA Multi']
     if include_metadata:
         metadata = {'predicted_target_sentiment_key': {'model_1': {'CWR': True},
                                                        'model_2': {'CWR': False}}}
@@ -246,15 +262,21 @@ def test_get_overall_metric_results(true_sentiment_key: str,
     number_df_columns = len(standard_columns)
 
     for key, value in model_1_collection.items():
+        if key in ['200', '201', '202']:
+            combined_collection.add(value)
+            combined_collection[key]['model_2'] = [['neg'], ['pos']]
+            continue
         combined_collection.add(value)
         combined_collection[key]['model_2'] = model_2_collection[key]['model_2']
     if true_sentiment_key is None:
         result_df = util.overall_metric_results(combined_collection, 
-                                                ['model_1', 'model_2'])
+                                                ['model_1', 'model_2'], 
+                                                strict_accuracy_metrics=strict_accuracy_metrics)
     else:
         result_df = util.overall_metric_results(combined_collection, 
                                                 ['model_1', 'model_2'],
-                                                true_sentiment_key)
+                                                true_sentiment_key, 
+                                                strict_accuracy_metrics=strict_accuracy_metrics)
     assert (4, number_df_columns) == result_df.shape
     assert set(standard_columns) == set(result_df.columns)
     if include_metadata:
@@ -264,20 +286,25 @@ def test_get_overall_metric_results(true_sentiment_key: str,
     # Test the case where only one model is used
     if true_sentiment_key is None:
         result_df = util.overall_metric_results(combined_collection, 
-                                                ['model_1'])
+                                                ['model_1'], 
+                                                strict_accuracy_metrics=strict_accuracy_metrics)
     else:
         result_df = util.overall_metric_results(combined_collection, 
                                                 ['model_1'],
-                                                true_sentiment_key)
+                                                true_sentiment_key, 
+                                                strict_accuracy_metrics=strict_accuracy_metrics)
     assert (2, number_df_columns) == result_df.shape
     # Test the case where the model names come from the metadata
     if include_metadata:
         result_df = util.overall_metric_results(combined_collection, 
-                                                true_sentiment_key=true_sentiment_key)
+                                                true_sentiment_key=true_sentiment_key, 
+                                                strict_accuracy_metrics=strict_accuracy_metrics)
         assert (4, number_df_columns) == result_df.shape
     else:
         with pytest.raises(KeyError):
             util.overall_metric_results(combined_collection, 
-                                        true_sentiment_key=true_sentiment_key)
+                                        true_sentiment_key=true_sentiment_key, 
+                                        strict_accuracy_metrics=strict_accuracy_metrics)
+    
 
 
