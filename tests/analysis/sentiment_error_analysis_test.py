@@ -538,7 +538,30 @@ def test_reduce_collection_by_key_occurrence():
     assert 2 == len(two_case)
     assert 2 == two_case.number_targets()
     assert ['laptop case'] == two_case['0']['targets']
-    
+    # Test the case when the number of `error_key` is more than one i.e. the 
+    # list case
+    test = distinct_sentiment(test, True)
+    three_case = reduce_collection_by_key_occurrence(test, ['same_one_sentiment', 
+                                                            'distinct_sentiment_2'],
+                                                     normal_associated_keys)
+    assert 2 == len(three_case)
+    assert set(['0', '2']) == set(three_case.keys())
+    assert 3 == three_case.number_targets()
+    assert ['laptop case'] == three_case['0']['targets']
+    # The case where the error labels overlap
+    three_case = reduce_collection_by_key_occurrence(test, ['same_one_sentiment', 
+                                                            'distinct_sentiment_1'],
+                                                     normal_associated_keys)
+    assert 3 == len(three_case)
+    assert 3 == three_case.number_targets()
+    assert ['laptop case'] == three_case['0']['targets']
+    # Ensure that the assertion statement will be raised if two error keys do 
+    # not have the same number of values in them
+    test['2']['distinct_sentiment_2'] = [1,1,1]
+    with pytest.raises(AssertionError):
+        reduce_collection_by_key_occurrence(test, ['same_one_sentiment', 
+                                                   'distinct_sentiment_2'],
+                                            normal_associated_keys)
     # All case where all of the samples are errors
     train_sentiments = [[neu], [neu], [neu, neu]]
     test_sentiments = [[neu], [neu], [neu, neu]]
@@ -599,6 +622,7 @@ def test_reduce_collection_by_key_occurrence():
     one_value = reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
                                                     extra_keys)
     assert [3] == one_value['2']['another']  
+
 
 def larger_target_text_examples(target_sentiment_values: List[List[str]]
                                 ) -> List[TargetText]:

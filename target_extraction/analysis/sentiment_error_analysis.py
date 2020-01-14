@@ -71,7 +71,7 @@ def count_error_key_occurrence(dataset: TargetTextCollection,
     return count
 
 def reduce_collection_by_key_occurrence(dataset: TargetTextCollection, 
-                                        error_key: str, 
+                                        error_key: Union[str, List[str]], 
                                         associated_keys: List[str]
                                         ) -> TargetTextCollection:
     '''
@@ -80,13 +80,14 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
                     error analysis class or not. Example function that 
                     produces these error keys are 
                     :func:`target_extraction.error_analysis.same_one_sentiment`
-    :param error_key: Name of the error key e.g. `same_one_sentiment`
+    :param error_key: Name of the error key e.g. `same_one_sentiment`. Or it can 
+                      be a list of error keys.
     :param associated_keys: The keys that are associated to the target that 
                             must be kept and are linked to that target. E.g. 
                             `target_sentiments`, `targets`, and `spans`.
     :returns: A new TargetTextCollection that contains only those targets and 
               relevant `associated_keys` within the TargetText's that the
-              error analysis key were `True` (1 in the one hot encoding). 
+              error analysis key(s) were `True` (1 in the one hot encoding). 
               This could mean that some TargetText's will no longer exist.
     :raises KeyError: If the `error_key` or one or more of the `associated_keys` 
                       does not exist in one or more of the TargetText objects 
@@ -94,7 +95,10 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
     '''
     reduced_collection = []
     anonymised = False
-    key_check_list = [error_key, *associated_keys]
+    if isinstance(error_key, str):
+        error_key = [error_key]
+    error_keys: List[str] = error_key
+    key_check_list = [*associated_keys] + error_keys
     for target_data in dataset.values():
         # Will raise a key error if the TargetText object does not have that 
         # error_key or any of the associated_keys
@@ -107,7 +111,21 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
             del new_target_object[associated_key]
 
         skip_target = True
-        for index, value in enumerate(target_data[error_key]):
+        error_key_values: List[int] = []
+        for error_key in error_keys:
+            error_values = target_data[error_key]
+            if not error_key_values:
+                error_key_values = [0] * len(error_values)
+            else:
+                error_key_error = ('Not all error keys are of the same length, '
+                                   f'of which they should error keys: {error_keys}'
+                                   f' TargetObject {target_data}')
+                assert len(error_key_values) == len(error_values), error_key_error
+            for index, value in enumerate(error_values):
+                if value:
+                    error_key_values[index] = value
+
+        for index, value in enumerate(error_key_values):
             if value:
                 skip_target = False
                 for associated_key in associated_keys:
