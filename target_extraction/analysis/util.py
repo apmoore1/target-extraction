@@ -383,8 +383,8 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
             # Required if plotting the overall metrics
             if df_overall_metric:
                 _temp_overall_df: pd.DataFrame = _df.copy(deep=True)
-                _temp_overall_df = _temp_overall_df.drop(columns=df_x_name)
-                _temp_overall_df = _temp_overall_df.rename(columns={df_overall_metric: df_x_name})
+                _temp_overall_df = _temp_overall_df.drop(columns=df_y_name)
+                _temp_overall_df = _temp_overall_df.rename(columns={df_overall_metric: df_y_name})
                 getattr(sns, overall_seaborn_plot_name)(x=df_x_name, y=df_y_name, 
                                                         hue=df_hue_name, 
                                                         data=_temp_overall_df, 
@@ -439,9 +439,9 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
     number_columns = len(column_names)
 
     if figsize is None:
-        row_width = num_rows * 5
-        column_length = number_columns * 4
-        figsize = (row_width, column_length)
+        length = num_rows * 4
+        width = number_columns * 5
+        figsize = (width, length)
     fig, axs = plt.subplots(nrows=num_rows, ncols=number_columns, 
                             figsize=figsize)
     # row 
