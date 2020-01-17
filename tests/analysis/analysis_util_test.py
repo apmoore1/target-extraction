@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import math
+from pathlib import Path
 
 import pytest
 import numpy as np
@@ -8,6 +9,10 @@ import pandas as pd
 from target_extraction.analysis import util, sentiment_metrics
 from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.data_types_util import Span
+from target_extraction.analysis.sentiment_error_analysis import (ERROR_SPLIT_SUBSET_NAMES,
+                                                                 subset_name_to_error_split)
+
+DATA_DIR = Path(__file__, '..', '..', 'data', 'analysis', 'util').resolve()
 
 def passable_example_multiple_preds(true_sentiment_key: str, 
                                     predicted_sentiment_key: str
@@ -225,9 +230,59 @@ def test_long_format_metrics():
         combined_df_scores = combined_df[f'{metric_column}'].tolist()
         assert long_df_scores == combined_df_scores
 
-#def test_plot_error_subsets():
-#    # All that will be tested here is that the plots do not raise any error
-#    util.plot_error_subsets
+@pytest.mark.parametrize('plotting_one_row', (True, False))
+def test_plot_error_subsets(plotting_one_row: bool):
+    # All that will be tested here is that the plots do not raise any error
+    # this is probably not the best way to test this function.
+    plotting_data = Path(DATA_DIR, 'plotting_data.tsv')
+    plotting_data = pd.read_csv(plotting_data, sep='\t')
+    plotting_data = plotting_data.drop(columns=['index', 'Unnamed: 0'])
+    # The data needs formatting before plotting
+    all_subset_names = [name for subset_names in ERROR_SPLIT_SUBSET_NAMES.values() 
+                        for name in subset_names]
+    plotting_data = util.long_format_metrics(plotting_data, all_subset_names)
+    plotting_data = plotting_data.rename(columns={'Accuracy': 'Overall Accuracy'})
+    plotting_data['Error Split'] = plotting_data.apply(lambda x: subset_name_to_error_split(x['Metric']), 1)
+    plotting_data = plotting_data.rename(columns={'Metric': 'Error Subset'})
+    plotting_data['Accuracy'] = plotting_data['Metric Score']
+    plotting_data = plotting_data.drop(columns=['Metric Score'])
+
+    axs_shape = (5, 3)
+    if plotting_one_row:
+        error_split_name = plotting_data['Error Split'].unique().tolist()[0]
+        plotting_data = plotting_data[plotting_data['Error Split']==error_split_name]
+        axs_shape = (3,)
+    fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                      'Error Subset', 'Accuracy', df_hue_name='Model',
+                                      legend_column=1, title_on_every_plot=True)
+    assert axs_shape == axs.shape
+    # Non-Standard plot
+    fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                      'Error Subset', 'Accuracy', df_hue_name='Model',
+                                      seaborn_plot_name='boxenplot',
+                                      legend_column=1, title_on_every_plot=True)
+    assert axs_shape == axs.shape
+    # Non-Standard plot with kwargs to the plot function
+    fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                      'Error Subset', 'Accuracy', df_hue_name='Model',
+                                      seaborn_plot_name='boxenplot',
+                                      seaborn_kwargs={'dodge': True},
+                                      legend_column=1, title_on_every_plot=True)
+    # with a different figure size and not all plots having titles
+    fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                      'Error Subset', 'Accuracy', df_hue_name='Model',
+                                      figsize=(10,12),
+                                      legend_column=1, title_on_every_plot=False)
+    assert axs_shape == axs.shape
+    # Plotting the overall metric as well. E.g. another plot on each plot 
+    fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                      'Error Subset', 'Accuracy', df_hue_name='Model',
+                                      df_overall_metric='Overall Accuracy',
+                                      overall_seaborn_plot_name='lineplot',
+                                      overall_seaborn_kwargs={'ci': 'sd'},
+                                      legend_column=1, title_on_every_plot=False)
+    assert axs_shape == axs.shape
+
 @pytest.mark.parametrize('true_sentiment_key', ('true_sentiments', None))
 @pytest.mark.parametrize('include_metadata', (True, False))
 @pytest.mark.parametrize('strict_accuracy_metrics', (True, False))
@@ -252,7 +307,7 @@ def test_overall_metric_results(true_sentiment_key: str,
     standard_columns = ['Dataset', 'Macro F1', 'Accuracy', 'run number', 
                         'prediction key']
     if strict_accuracy_metrics:
-        standard_columns = standard_columns + ['STA', 'STA 1', 'STA Multi']
+        standard_columns = standard_columns + ['STAC', 'STAC 1', 'STAC Multi']
     if include_metadata:
         metadata = {'predicted_target_sentiment_key': {'model_1': {'CWR': True},
                                                        'model_2': {'CWR': False}}}
