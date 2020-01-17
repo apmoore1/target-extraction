@@ -268,7 +268,7 @@ def strict_text_accuracy(target_collection: TargetTextCollection,
     This is performed at the text/sentence level where a sample is not denoted 
     as one target but as all targets within a text. A sample is correct if all
     targets within the text have been predicted correctly. This will return the 
-    average of the correct predictions.
+    average of the correct predictions. Strict Text ACcuracy also known as STAC.
 
     This metric also assumes that all the texts within the `target_collection`
     also contains at least one target. If it does not a ValueError will be raised.
