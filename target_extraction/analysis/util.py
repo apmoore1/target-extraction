@@ -459,7 +459,78 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
                          number_hue_values)
     return fig, axs
 
+def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str, 
+                          pivot_table_agg_func: Optional[Callable[[pd.Series], Any]] = None,
+                          font_label_size: int = 10,
+                          cubehelix_palette_kwargs: Optional[Dict[str, Any]] = None,
+                          lines: bool = True, line_color: str = 'k'
+                          ) -> matplotlib.pyplot.Axes:
+    '''
+    :param subset_df: A DataFrame that contains the following columns: 
+                      1. Error Split, 2. Error Subset, 3. Dataset, 
+                      and 4. `value_column`
+    :param value_column: The column that contains the value to be plotted in the 
+                         heatmap.
+    :param pivot_table_agg_func: As a pivot table is created to create the heatmap.
+                                 This allows the replacement default aggregation 
+                                 function (np.mean) with a custom function. The 
+                                 pivot table aggregates the `value_column` by 
+                                 Dataset, Error Split, and Error Subset.
+    :param font_label_size: Font sizes of the labels on the returned plot
+    :param cubehelix_palette_kwargs: Keywords arguments to give to the 
+                                     seaborn.cubehelix_palette
+                                     https://seaborn.pydata.org/generated/seaborn.cubehelix_palette.html.
+                                     Default produces white to dark red.
+    :param lines: Whether or not lines should appear on the plot to define the 
+                  different error splits.
+    :param line_color: Color of the lines if the lines are to be displayed. The 
+                       choice of color names can be found here: 
+                       https://matplotlib.org/3.1.1/gallery/color/named_colors.html#sphx-glr-gallery-color-named-colors-py
+    :returns: A heatmap where the Y-axis represents the datasets, X-axis 
+              represents the Error subsets formatted when appropriate with the 
+              Error split name, and the values come from the `value_column`. The 
+              heatmap assumes the `value_column` contains discrete values as the 
+              color bar is discete rather than continous. If you want a continous 
+              color bar it is recomended that you use Seaborn heatmap.
+    '''
+    df_copy = subset_df.copy(deep=True)
+    format_error_split = lambda x: f'{x["Error Split"]}' if x["Error Split"] != "DS" else ""
+    df_copy['Formatted Error Split'] =  df_copy.apply(format_error_split, 1)
+    combined_split_subset = lambda x: f'{x["Formatted Error Split"]} {x["Error Subset"]}'.strip()
+    df_copy['Combined Error Subset'] = df_copy.apply(combined_split_subset, 1)
+    if pivot_table_agg_func is None:
+        pivot_table_agg_func = np.mean
+    df_copy = pd.pivot_table(data=df_copy, values=value_column, 
+                             columns=['Combined Error Subset'], 
+                             index=['Dataset'], aggfunc=pivot_table_agg_func)
 
-            
-            
+    column_order = ['DS1', 'DS2', 'DS3', 'TSSR 1', 'TSSR 1-Multi', 'TSSR High', 
+                    'TSSR Low', 'NT 1', 'NT Low', 'NT Med', 'NT High', 
+                    'n-shot Zero', 'n-shot Low', 'n-shot Med', 'n-shot High', 
+                    'TSR USKT', 'TSR UT', 'TSR KSKT']
+    df_copy = df_copy.reindex(column_order, axis=1)
 
+    plt.rc('xtick',labelsize=font_label_size)
+    plt.rc('ytick',labelsize=font_label_size)
+    unique_values = np.unique(df_copy.values)
+    num_unique_values = len(unique_values)
+    color_bar_spacing = max(unique_values) / num_unique_values
+    half_bar_spacing = color_bar_spacing / 2
+    colorbar_values = [(i * color_bar_spacing) + half_bar_spacing 
+                       for i in range(len(unique_values))]
+    if cubehelix_palette_kwargs is None:
+        cubehelix_palette_kwargs = {'hue': 1, 'gamma': 2.2, 'light': 1.0, 
+                                    'dark': 0.7}
+    cmap = sns.cubehelix_palette(n_colors=num_unique_values, 
+                                 **cubehelix_palette_kwargs)
+    ax = sns.heatmap(df_copy, linewidths=.5, linecolor='lightgray', 
+                     cmap=matplotlib.colors.ListedColormap(cmap))
+    cb = ax.collections[0].colorbar
+    cb.set_ticks(colorbar_values)
+    cb.set_ticklabels(unique_values)
+    ax.set_xlabel('Error Subset', fontsize=font_label_size)
+    ax.set_ylabel('Dataset', fontsize=font_label_size)
+    if lines:
+        ax.vlines([0,3,7,11,15,18], colors=line_color, *ax.get_ylim())
+        ax.hlines([0,1,2,3], colors=line_color, *ax.get_xlim())
+    return ax
