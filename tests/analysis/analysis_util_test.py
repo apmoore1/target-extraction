@@ -1,8 +1,9 @@
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 import math
 from pathlib import Path
 
 import pytest
+from flaky import flaky
 import numpy as np
 import pandas as pd
 
@@ -10,7 +11,8 @@ from target_extraction.analysis import util, sentiment_metrics
 from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.data_types_util import Span
 from target_extraction.analysis.sentiment_error_analysis import (ERROR_SPLIT_SUBSET_NAMES,
-                                                                 subset_name_to_error_split)
+                                                                 subset_name_to_error_split,
+                                                                 PLOT_SUBSET_ABBREVIATION)
 
 DATA_DIR = Path(__file__, '..', '..', 'data', 'analysis', 'util').resolve()
 
@@ -88,6 +90,43 @@ def test_metric_df(metric_function_name: str, metric_name: str,
             test_model_scores = test_model_scores.to_list()
             assert 1 == len(test_model_scores)
             assert true_model_scores == test_model_scores[0]
+
+@flaky
+@pytest.mark.parametrize('assume_normal', (True, False))
+def test_metric_p_values(assume_normal: bool):
+    # Laptops between the datasets should be no difference but there should be 
+    # a different on the Restaurant dataset
+    datasets = ['Laptop'] * 200
+    datasets = datasets + ['Restaurant'] * 14
+    models = ['TDLSTM'] * 100
+    models = models + ['IAN'] * 100
+    models = models + ['TDLSTM'] * 7
+    models = models + ['IAN'] * 7
+    metric = np.random.normal(loc=2.2, scale=0.1, size=100).tolist()
+    metric = metric + np.random.normal(loc=2.4, scale=0.1, size=100).tolist()
+    metric = metric + np.random.normal(loc=2.5, scale=0.3, size=7).tolist()
+    metric = metric + np.random.normal(loc=1.5, scale=0.3, size=7).tolist()
+    df = pd.DataFrame({'Dataset': datasets, 'Model': models, 'Accuracy': metric})
+    p_value_df = util.metric_p_values(df, 'TDLSTM', ['IAN'], ['Laptop', 'Restaurant'], 
+                                      [('Accuracy', assume_normal)], 
+                                      better_and_compare_column_name='Model')
+    assert (2, 5) == p_value_df.shape
+    columns = set(['Metric', 'Dataset', 'P-Value', 'Compared Model', 'Better Model'])
+    assert columns == set(p_value_df.columns)
+    assert 1 == sum(p_value_df['P-Value'] < 0.05)
+
+    # IAN is never better than TDLSTM
+    p_value_df = util.metric_p_values(df, 'IAN', ['TDLSTM'], ['Laptop', 'Restaurant'], 
+                                      [('Accuracy', assume_normal)], 
+                                      better_and_compare_column_name='Model')
+    assert 1 == sum(p_value_df['P-Value'] > 0.05)
+
+    # Test only having one dataset
+    p_value_df = util.metric_p_values(df, 'IAN', ['TDLSTM'], ['Restaurant'], 
+                                      [('Accuracy', assume_normal)], 
+                                      better_and_compare_column_name='Model')
+    assert 1 == sum(p_value_df['P-Value'] > 0.05)
+    assert (1, 5) == p_value_df.shape
 
 def test_add_metadata_to_df():
     model_1_collection = passable_example_multiple_preds('true_sentiments', 'model_1')
@@ -282,6 +321,62 @@ def test_plot_error_subsets(plotting_one_row: bool):
                                       overall_seaborn_kwargs={'ci': 'sd'},
                                       legend_column=1, title_on_every_plot=False)
     assert axs_shape == axs.shape
+
+@pytest.mark.parametrize('lines', (True, False))
+def test_create_subset_heatmap(lines: bool):
+    # All that will be tested here is that the plots do not raise any error
+    # this is probably not the best way to test this function.
+    all_results = Path(DATA_DIR, 'plotting_data.tsv')
+    all_results = pd.read_csv(all_results, sep='\t')
+    all_results = all_results.drop(columns=['index', 'Unnamed: 0'])
+
+    # Get the subset metric data
+    all_subset_names = [name for subset_names in ERROR_SPLIT_SUBSET_NAMES.values() 
+                        for name in subset_names]
+    all_subset_results = util.long_format_metrics(all_results, all_subset_names)
+    all_subset_results = all_subset_results.rename(columns={'Accuracy': 'Overall Accuracy'})
+    all_subset_results['Overall Accuracy'] = all_subset_results['Overall Accuracy'] * 100
+    all_subset_results = all_subset_results.drop(columns='Macro F1')
+    all_subset_results['Error Split'] = all_subset_results.apply(lambda x: subset_name_to_error_split(x['Metric']), 1)
+    all_subset_results['Accuracy'] = all_subset_results['Metric Score'] * 100
+    all_subset_results = all_subset_results.rename(columns={'Metric': 'Error Subset'})
+    all_subset_results['Error Subset'] = all_subset_results.apply(lambda x: PLOT_SUBSET_ABBREVIATION[x['Error Subset']], 1)
+    all_subset_results = all_subset_results.drop(columns=['Metric Score'])
+
+    metric_assumed_normal = [('Accuracy', True)]
+    dataset_names = ['Laptop', 'Restaurant', 'Election']
+    tdsa_model_names = ['TDLSTM', 'Att-AE', 'IAN']
+    all_error_subset_p_values = []
+    error_splits = all_subset_results['Error Split'].unique().tolist()
+    for error_split in error_splits:
+        error_split_data_df = all_subset_results[all_subset_results['Error Split']==error_split]
+        error_subsets = error_split_data_df['Error Subset'].unique().tolist()
+        for error_subset in error_subsets:
+            error_subset_df = error_split_data_df[error_split_data_df['Error Subset'] == error_subset]
+            for tdsa_model_name in tdsa_model_names:
+                p_value_df = util.metric_p_values(error_subset_df, 
+                                                  f'{tdsa_model_name}', 
+                                                  ['CNN'], dataset_names, 
+                                                  metric_assumed_normal)
+                p_value_df['Error Subset'] = error_subset
+                p_value_df['Error Split'] = error_split
+                all_error_subset_p_values.append(p_value_df)
+    combined_error_subset_p_values = pd.concat(all_error_subset_p_values, sort=False, 
+                                               ignore_index=True)
+    # Normal test case
+    ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines)
+    # Different plot colors
+    ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines,
+                                    cubehelix_palette_kwargs={'light': 0.8})
+    # Custom agg function
+    alpha = 0.05
+    def p_value_count(alpha: float) -> Callable[[pd.Series], float]:
+        def alpha_count(p_values: pd.Series) -> float:
+            significant_p_values = p_values <= alpha
+            return int(np.sum(significant_p_values))
+        return alpha_count
+    ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines,
+                                    pivot_table_agg_func=p_value_count(alpha))
 
 @pytest.mark.parametrize('true_sentiment_key', ('true_sentiments', None))
 @pytest.mark.parametrize('include_metadata', (True, False))

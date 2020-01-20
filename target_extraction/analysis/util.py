@@ -13,7 +13,7 @@ from target_extraction.analysis import sentiment_metrics
 from target_extraction.analysis.sentiment_error_analysis import (distinct_sentiment,
                                                                  swap_list_dimensions,
                                                                  reduce_collection_by_key_occurrence)
-
+from target_extraction.analysis.statistical_analysis import one_tailed_p_value
 def metric_df(target_collection: TargetTextCollection, 
               metric_function: Callable[[TargetTextCollection, str, str, bool, bool, Optional[int]], 
                                         Union[float, List[float]]],
@@ -30,7 +30,7 @@ def metric_df(target_collection: TargetTextCollection,
     :param true_sentiment_key: Key in the `target_collection` targets that 
                                contains the true sentiment scores for each 
                                target in the TargetTextCollection
-    :param predicted_sentiment_keys: The name of the preidcted sentiment keys 
+    :param predicted_sentiment_keys: The name of the predicted sentiment keys 
                                      within the TargetTextCollection for 
                                      which the metric function should be applied
                                      to.
@@ -81,6 +81,68 @@ def metric_df(target_collection: TargetTextCollection,
     if include_run_number:
         df_dict['run number'] = df_run_numbers
     return pd.DataFrame(df_dict)
+
+def metric_p_values(data_split_df: pd.DataFrame, better_split: str, 
+                    compare_splits: List[str], datasets: List[str], 
+                    metric_names_assume_normals: List[Tuple[str, bool]],
+                    better_and_compare_column_name: str = 'Model'
+                    ) -> pd.DataFrame:
+    '''
+    :param data_split_df: The DataFrame that contains at least the following 
+                            columns: 1. value for `better_and_compare_column_name`,
+                            2. `Dataset`, and 3. all `metric name` 
+    :param better_split: The name of the model you are testing if it is better
+                        than all other models in the `compare_splits`
+    :param compare_splits: The name of the models you assume are no different 
+                            in score to the `better_split` model.
+    :param datasets: Datasets to test the hypothesis on.
+    :param metric_names_assume_normals: A list of Tuples that contain 
+                                        (metric name, assumed to be normal)
+                                        where the `assumed to be normal` is False 
+                                        or True based on whether the metric scores 
+                                        from `metric name` column can be assumed to be 
+                                        normal or not. e.g. [(`Accuracy`, True)]
+    :param better_and_compare_column_name: The column that contains the 
+                                            `better_split` and `compare_splits` 
+                                            values.
+    :returns: A DataFrame containing the following columns: 1. Metric, 2. Dataset,
+              3. P-Value, 4. Compared {better_and_compare_column_name}, and 5.
+              Better {better_and_compare_column_name}. Where it tests that one 
+              Model is statistically better than the compare models on each 
+              given dataset for each metric given.
+    '''
+    temp_df = data_split_df.copy(deep=True)
+    better_df = temp_df[temp_df[f'{better_and_compare_column_name}']==f'{better_split}']
+    
+    compare_values = []
+    better_values = []
+    dataset_names = []
+    metric_names = []
+    p_values = []
+
+    for compare_split in compare_splits:
+        compare_df = temp_df[temp_df[f'{better_and_compare_column_name}']==f'{compare_split}']
+        for dataset in datasets:
+            better_dataset_df = better_df[better_df['Dataset']==dataset]
+            compare_dataset_df = compare_df[compare_df['Dataset']==dataset]
+            for metric_name, assume_normal in metric_names_assume_normals:
+                better_scores = better_dataset_df[f'{metric_name}']
+                compare_scores = compare_dataset_df[f'{metric_name}']
+                p_value = one_tailed_p_value(better_scores, compare_scores, 
+                                             assume_normal=assume_normal)
+                
+                p_values.append(p_value)
+                metric_names.append(metric_name)
+                dataset_names.append(dataset)
+                compare_values.append(compare_split)
+                better_values.append(better_split)
+        
+    return pd.DataFrame({f'Compared {better_and_compare_column_name}': compare_values, 
+                         'Metric': metric_names, 
+                         'Dataset': dataset_names, 
+                         'P-Value': p_values,
+                         f'Better {better_and_compare_column_name}': better_values 
+                        })
 
 def add_metadata_to_df(df: pd.DataFrame, target_collection: TargetTextCollection, 
                        metadata_prediction_key: str, 
@@ -490,8 +552,8 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
               represents the Error subsets formatted when appropriate with the 
               Error split name, and the values come from the `value_column`. The 
               heatmap assumes the `value_column` contains discrete values as the 
-              color bar is discete rather than continous. If you want a continous 
-              color bar it is recomended that you use Seaborn heatmap.
+              color bar is discrete rather than continuos. If you want a continuos 
+              color bar it is recommended that you use Seaborn heatmap.
     '''
     df_copy = subset_df.copy(deep=True)
     format_error_split = lambda x: f'{x["Error Split"]}' if x["Error Split"] != "DS" else ""
@@ -525,7 +587,7 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                                  **cubehelix_palette_kwargs)
     ax = sns.heatmap(df_copy, linewidths=.5, linecolor='lightgray', 
                      cmap=matplotlib.colors.ListedColormap(cmap))
-    cb = ax.collections[0].colorbar
+    cb = ax.collections[-1].colorbar
     cb.set_ticks(colorbar_values)
     cb.set_ticklabels(unique_values)
     ax.set_xlabel('Error Subset', fontsize=font_label_size)
