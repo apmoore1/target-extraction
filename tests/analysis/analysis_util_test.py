@@ -323,9 +323,12 @@ def test_plot_error_subsets(plotting_one_row: bool):
                                       legend_column=1, title_on_every_plot=False)
     assert axs_shape == axs.shape
 
+@pytest.mark.parametrize('line_indxes', (True, False))
+@pytest.mark.parametrize('heatmap_kwargs', (True, False))
 @pytest.mark.parametrize('ax', (True, False))
 @pytest.mark.parametrize('lines', (True, False))
-def test_create_subset_heatmap(lines: bool, ax: bool):
+def test_create_subset_heatmap(lines: bool, ax: bool, heatmap_kwargs: bool, 
+                               line_indxes: bool):
     # All that will be tested here is that the plots do not raise any error
     # this is probably not the best way to test this function.
     all_results = Path(DATA_DIR, 'plotting_data.tsv')
@@ -369,13 +372,27 @@ def test_create_subset_heatmap(lines: bool, ax: bool):
         _, axs = plt.subplots(1,3)
     else:
         axs = [None, None, None]
+    if line_indxes:
+        vertical_lines_index = [0,1]
+        horizontal_lines_index = [1]
+    else:
+        vertical_lines_index = None
+        horizontal_lines_index = None
+    if heatmap_kwargs:
+        heatmap_kwargs = {'annot': True}
+    else:
+        heatmap_kwargs = None
     # Normal test case
     ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines,
-                                    ax=axs[0])
+                                    ax=axs[0], heatmap_kwargs=heatmap_kwargs,
+                                    vertical_lines_index=vertical_lines_index,
+                                    horizontal_lines_index=horizontal_lines_index)
     # Different plot colors
     ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines,
                                     cubehelix_palette_kwargs={'light': 0.8},
-                                    ax=axs[1])
+                                    ax=axs[1], heatmap_kwargs=heatmap_kwargs,
+                                    vertical_lines_index=vertical_lines_index,
+                                    horizontal_lines_index=horizontal_lines_index)
     # Custom agg function
     alpha = 0.05
     def p_value_count(alpha: float) -> Callable[[pd.Series], float]:
@@ -385,7 +402,9 @@ def test_create_subset_heatmap(lines: bool, ax: bool):
         return alpha_count
     ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines,
                                     pivot_table_agg_func=p_value_count(alpha),
-                                    ax=axs[2])
+                                    ax=axs[2], heatmap_kwargs=heatmap_kwargs,
+                                    vertical_lines_index=vertical_lines_index,
+                                    horizontal_lines_index=horizontal_lines_index)
 
 @pytest.mark.parametrize('true_sentiment_key', ('true_sentiments', None))
 @pytest.mark.parametrize('include_metadata', (True, False))

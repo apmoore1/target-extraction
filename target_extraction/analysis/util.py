@@ -526,7 +526,10 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                           font_label_size: int = 10,
                           cubehelix_palette_kwargs: Optional[Dict[str, Any]] = None,
                           lines: bool = True, line_color: str = 'k',
-                          ax: Optional[matplotlib.pyplot.Axes] = None
+                          vertical_lines_index: Optional[List[int]] = None,
+                          horizontal_lines_index: Optional[List[int]] = None,
+                          ax: Optional[matplotlib.pyplot.Axes] = None,
+                          heatmap_kwargs: Optional[Dict[str, Any]] = None
                           ) -> matplotlib.pyplot.Axes:
     '''
     :param subset_df: A DataFrame that contains the following columns: 
@@ -549,8 +552,14 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
     :param line_color: Color of the lines if the lines are to be displayed. The 
                        choice of color names can be found here: 
                        https://matplotlib.org/3.1.1/gallery/color/named_colors.html#sphx-glr-gallery-color-named-colors-py
+    :param vertical_lines_index: The index of the lines in vertical/column 
+                                 direction. If None default is [0,3,7,11,15,18]
+    :param horizontal_lines_index: The index of the lines in vertical/column 
+                                   direction. If None default is [0,1,2,3]
     :param ax: A matplotlib Axes to give to the seaborn function to plot the 
                heatmap on to.
+    :param heatmap_kwargs: Keyword arguments to pass to the seaborn.heatmap 
+                           function
     :returns: A heatmap where the Y-axis represents the datasets, X-axis 
               represents the Error subsets formatted when appropriate with the 
               Error split name, and the values come from the `value_column`. The 
@@ -573,6 +582,13 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                     'TSSR Low', 'NT 1', 'NT Low', 'NT Med', 'NT High', 
                     'n-shot Zero', 'n-shot Low', 'n-shot Med', 'n-shot High', 
                     'TSR USKT', 'TSR UT', 'TSR KSKT']
+    # Remove columns in the column order that do not exist as a column
+    temp_column_order = []
+    columns_that_exist = set(df_copy.columns.tolist())
+    for column in column_order:
+        if column in columns_that_exist:
+            temp_column_order.append(column)
+    column_order = temp_column_order
     df_copy = df_copy.reindex(column_order, axis=1)
 
     plt.rc('xtick',labelsize=font_label_size)
@@ -588,18 +604,26 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                                     'dark': 0.7}
     cmap = sns.cubehelix_palette(n_colors=num_unique_values, 
                                  **cubehelix_palette_kwargs)
+    if heatmap_kwargs is None:
+        heatmap_kwargs = {}
     if ax is not None:
         ax = sns.heatmap(df_copy, ax=ax, linewidths=.5, linecolor='lightgray', 
-                         cmap=matplotlib.colors.ListedColormap(cmap))
+                         cmap=matplotlib.colors.ListedColormap(cmap),
+                         **heatmap_kwargs)
     else:
         ax = sns.heatmap(df_copy, linewidths=.5, linecolor='lightgray', 
-                         cmap=matplotlib.colors.ListedColormap(cmap))
+                         cmap=matplotlib.colors.ListedColormap(cmap),
+                         **heatmap_kwargs)
     cb = ax.collections[-1].colorbar
     cb.set_ticks(colorbar_values)
     cb.set_ticklabels(unique_values)
     ax.set_xlabel('Error Subset', fontsize=font_label_size)
     ax.set_ylabel('Dataset', fontsize=font_label_size)
     if lines:
-        ax.vlines([0,3,7,11,15,18], colors=line_color, *ax.get_ylim())
-        ax.hlines([0,1,2,3], colors=line_color, *ax.get_xlim())
+        if vertical_lines_index is None:
+            vertical_lines_index = [0,3,7,11,15,18]
+        ax.vlines(vertical_lines_index, colors=line_color, *ax.get_ylim())
+        if horizontal_lines_index is None:
+            horizontal_lines_index = [0,1,2,3]
+        ax.hlines(horizontal_lines_index, colors=line_color, *ax.get_xlim())
     return ax
