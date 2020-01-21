@@ -525,6 +525,7 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                           pivot_table_agg_func: Optional[Callable[[pd.Series], Any]] = None,
                           font_label_size: int = 10,
                           cubehelix_palette_kwargs: Optional[Dict[str, Any]] = None,
+                          value_range: Optional[List[int]] = None,
                           lines: bool = True, line_color: str = 'k',
                           vertical_lines_index: Optional[List[int]] = None,
                           horizontal_lines_index: Optional[List[int]] = None,
@@ -547,6 +548,9 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                                      seaborn.cubehelix_palette
                                      https://seaborn.pydata.org/generated/seaborn.cubehelix_palette.html.
                                      Default produces white to dark red.
+    :param value_range: This can also be interpreted as the values allowed in 
+                        the color range and should cover at least all unique 
+                        values in `value_column`.
     :param lines: Whether or not lines should appear on the plot to define the 
                   different error splits.
     :param line_color: Color of the lines if the lines are to be displayed. The 
@@ -594,6 +598,8 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
     plt.rc('xtick',labelsize=font_label_size)
     plt.rc('ytick',labelsize=font_label_size)
     unique_values = np.unique(df_copy.values)
+    if value_range is not None:
+        unique_values = value_range
     num_unique_values = len(unique_values)
     color_bar_spacing = max(unique_values) / num_unique_values
     half_bar_spacing = color_bar_spacing / 2
@@ -606,14 +612,16 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                                  **cubehelix_palette_kwargs)
     if heatmap_kwargs is None:
         heatmap_kwargs = {}
+    vmin = min(unique_values) 
+    vmax = max(unique_values)
     if ax is not None:
         ax = sns.heatmap(df_copy, ax=ax, linewidths=.5, linecolor='lightgray', 
                          cmap=matplotlib.colors.ListedColormap(cmap),
-                         **heatmap_kwargs)
+                         vmin=vmin, vmax=vmax, **heatmap_kwargs)
     else:
         ax = sns.heatmap(df_copy, linewidths=.5, linecolor='lightgray', 
                          cmap=matplotlib.colors.ListedColormap(cmap),
-                         **heatmap_kwargs)
+                         vmin=vmin, vmax=vmax, **heatmap_kwargs)
     cb = ax.collections[-1].colorbar
     cb.set_ticks(colorbar_values)
     cb.set_ticklabels(unique_values)
