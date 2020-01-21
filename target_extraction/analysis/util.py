@@ -525,7 +525,8 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                           pivot_table_agg_func: Optional[Callable[[pd.Series], Any]] = None,
                           font_label_size: int = 10,
                           cubehelix_palette_kwargs: Optional[Dict[str, Any]] = None,
-                          lines: bool = True, line_color: str = 'k'
+                          lines: bool = True, line_color: str = 'k',
+                          ax: Optional[matplotlib.pyplot.Axes] = None
                           ) -> matplotlib.pyplot.Axes:
     '''
     :param subset_df: A DataFrame that contains the following columns: 
@@ -548,6 +549,8 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
     :param line_color: Color of the lines if the lines are to be displayed. The 
                        choice of color names can be found here: 
                        https://matplotlib.org/3.1.1/gallery/color/named_colors.html#sphx-glr-gallery-color-named-colors-py
+    :param ax: A matplotlib Axes to give to the seaborn function to plot the 
+               heatmap on to.
     :returns: A heatmap where the Y-axis represents the datasets, X-axis 
               represents the Error subsets formatted when appropriate with the 
               Error split name, and the values come from the `value_column`. The 
@@ -585,8 +588,12 @@ def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str,
                                     'dark': 0.7}
     cmap = sns.cubehelix_palette(n_colors=num_unique_values, 
                                  **cubehelix_palette_kwargs)
-    ax = sns.heatmap(df_copy, linewidths=.5, linecolor='lightgray', 
-                     cmap=matplotlib.colors.ListedColormap(cmap))
+    if ax is not None:
+        ax = sns.heatmap(df_copy, ax=ax, linewidths=.5, linecolor='lightgray', 
+                         cmap=matplotlib.colors.ListedColormap(cmap))
+    else:
+        ax = sns.heatmap(df_copy, linewidths=.5, linecolor='lightgray', 
+                         cmap=matplotlib.colors.ListedColormap(cmap))
     cb = ax.collections[-1].colorbar
     cb.set_ticks(colorbar_values)
     cb.set_ticklabels(unique_values)
