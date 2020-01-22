@@ -1282,7 +1282,8 @@ def _error_split_df(target_collection: TargetTextCollection,
                                            bool, bool, Optional[int]], 
                                           Union[float, List[float]]],
                     assert_number_labels: Optional[int] = None,
-                    num_cpus: Optional[int] = None
+                    num_cpus: Optional[int] = None,
+                    collection_subsetting: Optional[Union[str, List[str]]] = None
                     ) -> pd.DataFrame:
     '''
     This will require the `target_collection` having been pre-processed with the
@@ -1312,6 +1313,10 @@ def _error_split_df(target_collection: TargetTextCollection,
                      subsetting and metric scoring is split down into one 
                      task and all tasks are then multiprocessed. This is also 
                      done in a Lazy fashion.   
+    :param collection_subsetting: A List of error subset names to first reduce 
+                                  the collection by where this list will be 
+                                  fed into `swap_and_reduce` before performing
+                                  metrics. 
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
@@ -1325,7 +1330,9 @@ def _error_split_df(target_collection: TargetTextCollection,
     metric_kwargs = {'average': False, 'array_scores': True, 
                     'assert_number_labels': assert_number_labels,
                     'true_sentiment_key': true_sentiment_key}
-
+    if collection_subsetting is not None:
+        target_collection = swap_and_reduce(target_collection, collection_subsetting, 
+                                            true_sentiment_key, prediction_keys)
     with Pool(num_cpus) as p:
         args_gen = _subset_and_score_args_generator(target_collection, 
                                                     prediction_keys, 
@@ -1355,7 +1362,8 @@ def error_split_df(train_collection: TargetTextCollection,
                                          Union[float, List[float]]],
                    assert_number_labels: Optional[int] = None,
                    num_cpus: Optional[int] = None,
-                   lower_targets: bool = True
+                   lower_targets: bool = True,
+                   collection_subsetting: Optional[Union[str, List[str]]] = None
                    ) -> pd.DataFrame:
     '''
     This will perform `error_analysis_wrapper` over all `error_split_subset_names`
@@ -1388,6 +1396,10 @@ def error_split_df(train_collection: TargetTextCollection,
                      done in a Lazy fashion.
     :param lower_targets: Whether or not the targets should be lowered during the 
                           `error_analysis_wrapper` function.   
+    :param collection_subsetting: A List of error subset names to first reduce 
+                                  the collection by where this list will be 
+                                  fed into `swap_and_reduce` before performing
+                                  metrics. 
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
@@ -1400,7 +1412,8 @@ def error_split_df(train_collection: TargetTextCollection,
     error_analysis_df = _error_split_df(test_collection, prediction_keys, 
                                         true_sentiment_key, 
                                         error_split_and_subset_names, 
-                                        metric_func, assert_number_labels, num_cpus)
+                                        metric_func, assert_number_labels, num_cpus,
+                                        collection_subsetting)
     return error_analysis_df
 
 def subset_name_to_error_split(subset_name: str) -> str:
