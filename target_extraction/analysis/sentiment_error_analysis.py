@@ -81,7 +81,9 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
                     produces these error keys are 
                     :func:`target_extraction.error_analysis.same_one_sentiment`
     :param error_key: Name of the error key e.g. `same_one_sentiment`. Or it can 
-                      be a list of error keys.
+                      be a list of error keys for which this will reduce the 
+                      collection so that it includes all samples that contain 
+                      at least one of these error keys.
     :param associated_keys: The keys that are associated to the target that 
                             must be kept and are linked to that target. E.g. 
                             `target_sentiments`, `targets`, and `spans`.
@@ -144,6 +146,45 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
         new_target_object = TargetText(**new_target_object)
         reduced_collection.append(new_target_object)
     return TargetTextCollection(reduced_collection, anonymised=anonymised)
+
+def swap_and_reduce(_collection: TargetTextCollection, 
+                    subset_key: Union[str, List[str]],
+                    true_sentiment_key: str,
+                    prediction_keys: List[str]) -> TargetTextCollection:
+    '''
+    :param _collection: TargetTextCollection to reduce the samples based on the 
+                        subset_key argument given.
+    :param subset_key: Name of the error key e.g. `same_one_sentiment`. Or it can 
+                       be a list of error keys for which this will reduce the 
+                       collection so that it includes all samples that contain 
+                       at least one of these error keys.
+    :param true_sentiment: The key in each TargetText within the collection 
+                           that contains the true sentiment labels.
+    :param prediction_keys: The list of keys in each TargetText 
+                            where each key contains a list of predicted sentiments.
+                            These predicted sentiments are expected to be in a 
+                            list of a list where the outer list defines the 
+                            number of models trained e.g. number of model runs 
+                            and the inner list is the length of the number of 
+                            predictions required for that text/sentence.
+    :returns: A collection that has been reduced based on the subset_key 
+              argument. This is a helper function for the 
+              `reduce_collection_by_key_occurrence` as this function ensure that 
+              the predicted sentiment keys are changed before and after reducing 
+              the collection so that they are processed properly as the predicted 
+              sentiment labels are of shape (number of model runs, number of sentiments)
+              where as all other lists in the TargetText are of (number of sentiments) 
+              size.
+    '''
+    reduce_keys = ['targets', 'spans', true_sentiment_key] + prediction_keys
+    for prediction_key in prediction_keys:
+        _collection = swap_list_dimensions(_collection, prediction_key)
+    _collection = reduce_collection_by_key_occurrence(_collection, 
+                                                        subset_key, 
+                                                        reduce_keys)
+    for prediction_key in prediction_keys:
+        _collection = swap_list_dimensions(_collection, prediction_key)
+    return _collection
 
 def _pre_post_subsampling(test_dataset: TargetTextCollection, 
                           train_dataset: TargetTextCollection, 
@@ -1159,15 +1200,9 @@ def subset_metrics(target_collection: TargetTextCollection,
     '''
     true_sentiment_key = metric_kwargs['true_sentiment_key']
     predicted_sentiment_key = metric_kwargs['predicted_sentiment_key']
-    reduce_keys = ['targets', 'spans', true_sentiment_key, 
-                    predicted_sentiment_key]
-    target_collection = swap_list_dimensions(target_collection, 
-                                             predicted_sentiment_key)
-    target_collection = reduce_collection_by_key_occurrence(target_collection, 
-                                                            subset_error_key, 
-                                                            reduce_keys)
-    target_collection = swap_list_dimensions(target_collection, 
-                                             predicted_sentiment_key)
+    target_collection = swap_and_reduce(target_collection, subset_error_key, 
+                                        true_sentiment_key, 
+                                        [predicted_sentiment_key])
     metric_name_score = {}
     for metric_name, metric_func in zip(metric_names, metric_funcs):
       metric_score = metric_func(target_collection, **metric_kwargs)

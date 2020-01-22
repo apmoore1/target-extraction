@@ -12,7 +12,8 @@ from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.analysis import sentiment_metrics
 from target_extraction.analysis.sentiment_error_analysis import (distinct_sentiment,
                                                                  swap_list_dimensions,
-                                                                 reduce_collection_by_key_occurrence)
+                                                                 reduce_collection_by_key_occurrence,
+                                                                 swap_and_reduce)
 from target_extraction.analysis.statistical_analysis import one_tailed_p_value
 def metric_df(target_collection: TargetTextCollection, 
               metric_function: Callable[[TargetTextCollection, str, str, bool, bool, Optional[int]], 
@@ -293,17 +294,7 @@ def overall_metric_results(collection: TargetTextCollection,
               also contain columns and values from the associated metadata see
               :py:func:`add_metadata_to_df` for more details.
     '''
-    def swap_and_reduce(_collection: TargetTextCollection, 
-                        subset_key: Union[str, List[str]]) -> TargetTextCollection:
-        reduce_keys = ['targets', 'spans', true_sentiment_key] + prediction_keys
-        for prediction_key in prediction_keys:
-            _collection = swap_list_dimensions(_collection, prediction_key)
-        _collection = reduce_collection_by_key_occurrence(_collection, 
-                                                          subset_key, 
-                                                          reduce_keys)
-        for prediction_key in prediction_keys:
-            _collection = swap_list_dimensions(_collection, prediction_key)
-        return _collection
+    
 
     if prediction_keys is None:
         prediction_keys = list(collection.metadata['predicted_target_sentiment_key'].keys())
@@ -323,7 +314,9 @@ def overall_metric_results(collection: TargetTextCollection,
                                              true_sentiment_key=true_sentiment_key)
         stac_multi_collection = copy.deepcopy(collection_copy)
         stac_multi_collection = swap_and_reduce(stac_multi_collection, 
-                                               ['distinct_sentiment_2', 'distinct_sentiment_3'])
+                                               ['distinct_sentiment_2', 'distinct_sentiment_3'],
+                                               true_sentiment_key, 
+                                               prediction_keys)
         stac_multi = metric_df(stac_multi_collection, sentiment_metrics.strict_text_accuracy, 
                               true_sentiment_key, prediction_keys,
                               array_scores=True, assert_number_labels=3, 
@@ -333,7 +326,9 @@ def overall_metric_results(collection: TargetTextCollection,
         del stac_multi_collection
         stac_1_collection = copy.deepcopy(collection_copy)
         stac_1_collection = swap_and_reduce(stac_1_collection, 
-                                           'distinct_sentiment_1')
+                                           'distinct_sentiment_1',
+                                            true_sentiment_key, 
+                                            prediction_keys)
         stac_1 = metric_df(stac_1_collection, sentiment_metrics.strict_text_accuracy, 
                            true_sentiment_key, prediction_keys,
                            array_scores=True, assert_number_labels=3, 
