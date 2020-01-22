@@ -86,7 +86,8 @@ def reduce_collection_by_key_occurrence(dataset: TargetTextCollection,
                       at least one of these error keys.
     :param associated_keys: The keys that are associated to the target that 
                             must be kept and are linked to that target. E.g. 
-                            `target_sentiments`, `targets`, and `spans`.
+                            `target_sentiments`, `targets`, `spans`, and 
+                            `subset error keys`.
     :returns: A new TargetTextCollection that contains only those targets and 
               relevant `associated_keys` within the TargetText's that the
               error analysis key(s) were `True` (1 in the one hot encoding). 
@@ -152,6 +153,10 @@ def swap_and_reduce(_collection: TargetTextCollection,
                     true_sentiment_key: str,
                     prediction_keys: List[str]) -> TargetTextCollection:
     '''
+    Furthermore the keys that will be reduced won't just be the `targets`, `spans`,
+    `true_sentiment_key` and all `prediction_keys` but any error subset name from 
+    within `PLOT_SUBSET_ABBREVIATION` that is in the TargetTexts in the collection.
+
     :param _collection: TargetTextCollection to reduce the samples based on the 
                         subset_key argument given.
     :param subset_key: Name of the error key e.g. `same_one_sentiment`. Or it can 
@@ -174,9 +179,18 @@ def swap_and_reduce(_collection: TargetTextCollection,
               the collection so that they are processed properly as the predicted 
               sentiment labels are of shape (number of model runs, number of sentiments)
               where as all other lists in the TargetText are of (number of sentiments) 
-              size.
+              size. Furthermore if the reduction causes all any of the TargetText's
+              in the collection to have no Targets then that TargetText will be 
+              removed from the collection, thus you could have a collection of 
+              zero.
     '''
     reduce_keys = ['targets', 'spans', true_sentiment_key] + prediction_keys
+    target_sample = next(_collection.dict_iterator())
+    # Adds the subset error keys to the reduce keys so that the reduction is 
+    # performed correctly.
+    for key in target_sample.keys():
+        if key in PLOT_SUBSET_ABBREVIATION:
+            reduce_keys.append(key)
     for prediction_key in prediction_keys:
         _collection = swap_list_dimensions(_collection, prediction_key)
     _collection = reduce_collection_by_key_occurrence(_collection, 
@@ -184,6 +198,8 @@ def swap_and_reduce(_collection: TargetTextCollection,
                                                         reduce_keys)
     for prediction_key in prediction_keys:
         _collection = swap_list_dimensions(_collection, prediction_key)
+    # Remove TargetTexts from the collection that do not contain a target anymore
+    _collection = _collection.samples_with_targets()
     return _collection
 
 def _pre_post_subsampling(test_dataset: TargetTextCollection, 
@@ -1196,7 +1212,9 @@ def subset_metrics(target_collection: TargetTextCollection,
               are the respective metric applied to the reduced/subsetted dataset.
               Thus if `average` in `metric_kwargs` is True then the return 
               will be Dict[str, float] where as if `array_scores` is True then 
-              the return will be Dict[str, List[float]].
+              the return will be Dict[str, List[float]]. If no targets exist in 
+              the collection through subsetting then the metric returned is 0.0
+              or [0.0] if `array_scores` is true in `metric_kwargs`.
     '''
     true_sentiment_key = metric_kwargs['true_sentiment_key']
     predicted_sentiment_key = metric_kwargs['predicted_sentiment_key']
@@ -1205,8 +1223,17 @@ def subset_metrics(target_collection: TargetTextCollection,
                                         [predicted_sentiment_key])
     metric_name_score = {}
     for metric_name, metric_func in zip(metric_names, metric_funcs):
-      metric_score = metric_func(target_collection, **metric_kwargs)
-      metric_name_score[metric_name] = metric_score
+        if not len(target_collection):
+            if 'array_scores' in metric_kwargs:
+                if metric_kwargs['array_scores']:
+                    metric_score = [0.0]
+                else:
+                    metric_score = 0.0
+            else:
+                metric_score = 0.0
+        else:
+            metric_score = metric_func(target_collection, **metric_kwargs)
+        metric_name_score[metric_name] = metric_score
     return metric_name_score
 
 
@@ -1273,7 +1300,7 @@ def _subset_and_score_args_generator(target_collection: TargetTextCollection,
             for subset_name in subset_names:
                 metric_kwargs_copy['predicted_sentiment_key'] = prediction_key
                 yield (target_collection, subset_name, 
-                        metric_func, metric_kwargs_copy)
+                       metric_func, metric_kwargs_copy)
 
 def _error_split_df(target_collection: TargetTextCollection, 
                     prediction_keys: List[str], true_sentiment_key: str, 
@@ -1283,7 +1310,7 @@ def _error_split_df(target_collection: TargetTextCollection,
                                           Union[float, List[float]]],
                     assert_number_labels: Optional[int] = None,
                     num_cpus: Optional[int] = None,
-                    collection_subsetting: Optional[Union[str, List[str]]] = None
+                    collection_subsetting: Optional[List[List[str]]] = None
                     ) -> pd.DataFrame:
     '''
     This will require the `target_collection` having been pre-processed with the
@@ -1313,14 +1340,21 @@ def _error_split_df(target_collection: TargetTextCollection,
                      subsetting and metric scoring is split down into one 
                      task and all tasks are then multiprocessed. This is also 
                      done in a Lazy fashion.   
-    :param collection_subsetting: A List of error subset names to first reduce 
-                                  the collection by where this list will be 
-                                  fed into `swap_and_reduce` before performing
-                                  metrics. 
+    :param collection_subsetting: A list of lists where the outer list represents 
+                                  the order of subsetting where as the inner list
+                                  specifies the subset names to subset on. For example
+                                  `[['1-TSSR', 'high-shot'], ['distinct_sentiment_2']]`
+                                  would first subset the `test_collection` so that 
+                                  only samples that are within ['1-TSSR', 'high-shot']
+                                  subsets are in the collection and then it would 
+                                  subset that collection further so that only 
+                                  'distinct_sentiment_2' samples exist in the collection.
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
-              key and the model run (run number)
+              key and the model run (run number). If any of the error subsets 
+              do not have any targets that are relevant the accuracy will be 
+              0.0 for the first run and np.nan for the rest.
     '''
     pd_run_numbers = []
     pd_prediction_keys = []
@@ -1331,8 +1365,9 @@ def _error_split_df(target_collection: TargetTextCollection,
                     'assert_number_labels': assert_number_labels,
                     'true_sentiment_key': true_sentiment_key}
     if collection_subsetting is not None:
-        target_collection = swap_and_reduce(target_collection, collection_subsetting, 
-                                            true_sentiment_key, prediction_keys)
+        for subset_names in collection_subsetting:
+            target_collection = swap_and_reduce(target_collection, subset_names, 
+                                                true_sentiment_key, prediction_keys)
     with Pool(num_cpus) as p:
         args_gen = _subset_and_score_args_generator(target_collection, 
                                                     prediction_keys, 
@@ -1363,7 +1398,7 @@ def error_split_df(train_collection: TargetTextCollection,
                    assert_number_labels: Optional[int] = None,
                    num_cpus: Optional[int] = None,
                    lower_targets: bool = True,
-                   collection_subsetting: Optional[Union[str, List[str]]] = None
+                   collection_subsetting: Optional[List[List[str]]] = None
                    ) -> pd.DataFrame:
     '''
     This will perform `error_analysis_wrapper` over all `error_split_subset_names`
@@ -1396,10 +1431,15 @@ def error_split_df(train_collection: TargetTextCollection,
                      done in a Lazy fashion.
     :param lower_targets: Whether or not the targets should be lowered during the 
                           `error_analysis_wrapper` function.   
-    :param collection_subsetting: A List of error subset names to first reduce 
-                                  the collection by where this list will be 
-                                  fed into `swap_and_reduce` before performing
-                                  metrics. 
+    :param collection_subsetting: A list of lists where the outer list represents 
+                                  the order of subsetting where as the inner list
+                                  specifies the subset names to subset on. For example
+                                  `[['1-TSSR', 'high-shot'], ['distinct_sentiment_2']]`
+                                  would first subset the `test_collection` so that 
+                                  only samples that are within ['1-TSSR', 'high-shot']
+                                  subsets are in the collection and then it would 
+                                  subset that collection further so that only 
+                                  'distinct_sentiment_2' samples exist in the collection.
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 

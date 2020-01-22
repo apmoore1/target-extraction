@@ -1157,6 +1157,35 @@ def test__error_split_df():
     for column_name, column_score in name_scores.items():
         assert column_score == test_df[column_name].tolist(), column_name
 
+    test_df = _error_split_df(test_collection, ['pred_sentiments'], 
+                              'target_sentiments', error_split_dict, 
+                              accuracy, None, 
+                              collection_subsetting=[['zero-shot', 'low-shot']])
+    low_shot_score = [0.5, 0.0]
+    import math
+    med_shot_score = [0.0, 0.0]
+    low_targets_score = [2/3, 2/3]
+    med_targets_score = [0.6, 0.8]
+    name_scores = {'low-shot': low_shot_score, 'med-shot': med_shot_score,
+                   'low-targets': low_targets_score, 
+                   'med-targets': med_targets_score}
+    index_list = [('pred_sentiments', 0), ('pred_sentiments', 1)]
+    assert index_list == test_df.index.tolist()
+    column_list = list(name_scores.keys())
+    for column_name in column_list:
+        assert column_name in list(test_df.columns)
+    assert len(column_list) == len(list(test_df.columns))
+
+    for column_name, column_score in name_scores.items():
+        column_values = []
+        for value in test_df[column_name].tolist():
+            print(value)
+            if math.isnan(value):
+                column_values.append(0.0) 
+            else: 
+                column_values.append(value)
+        assert column_score == column_values, column_name
+
 def test_error_split_df():
     test_fp = Path(DATA_DIR, 'test.json').resolve()
     train_fp = Path(DATA_DIR, 'train.json').resolve()
