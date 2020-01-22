@@ -719,8 +719,8 @@ class TargetText(MutableMapping):
                           TargetText instance.
         '''
         if f'{key}' not in self:
-            raise KeyError(f'Requires that this TargetText instance {self}'
-                           f'contians the key `{key}`')
+            raise KeyError(f'Requires that this TargetText contains {key} for '
+                           f'instance {self}')
 
     @check_anonymised
     def get_sequence_indexs(self, sequence_key: str) -> List[List[int]]:
