@@ -1204,12 +1204,7 @@ def test__error_split_df(include_dataset_size: bool):
     assert len(column_list) == len(list(test_df.columns))
 
     for column_name, column_score in name_scores.items():
-        column_values = []
-        for value in test_df[column_name].tolist():
-            if math.isnan(value):
-                column_values.append(0.0) 
-            else: 
-                column_values.append(value)
+        column_values = test_df[column_name].tolist()
         assert column_score == column_values, column_name
 
 def test_error_split_df():

@@ -7,6 +7,7 @@ import copy
 from collections import defaultdict, Counter
 from typing import List, Callable, Dict, Union, Optional, Any, Tuple, Iterable
 from multiprocessing import Pool
+import math
 
 import pandas as pd
 
@@ -1377,7 +1378,7 @@ def _error_split_df(target_collection: TargetTextCollection,
               the metric associated to those error splits given the prediction 
               key and the model run (run number). If any of the error subsets 
               do not have any targets that are relevant the accuracy will be 
-              0.0 for the first run and np.nan for the rest.
+              0.0
     '''
     pd_run_numbers = []
     pd_prediction_keys = []
@@ -1415,12 +1416,13 @@ def _error_split_df(target_collection: TargetTextCollection,
                             'Metric': pd_metric_values})
     if include_dataset_size:
         data_df['Dataset Size'] = pd_dataset_size
-        return pd.pivot_table(data_df, values=['Metric', 'Dataset Size'], 
-                              columns='subset names',
-                              index=['prediction key', 'run number'])
+        table = pd.pivot_table(data_df, values=['Metric', 'Dataset Size'], 
+                               columns='subset names',
+                               index=['prediction key', 'run number'])
     else:
-        return pd.pivot_table(data_df, values='Metric', columns='subset names',
-                              index=['prediction key', 'run number'])
+        table = pd.pivot_table(data_df, values='Metric', columns='subset names',
+                               index=['prediction key', 'run number'])
+    return table.fillna(value=0.0)
 
 def error_split_df(train_collection: TargetTextCollection, 
                    test_collection: TargetTextCollection,
