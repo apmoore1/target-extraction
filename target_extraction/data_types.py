@@ -1914,6 +1914,7 @@ class TargetTextCollection(MutableMapping):
                           you have got around the protected keys.
         '''
         sub_collection = TargetTextCollection()
+        sub_collection.anonymised = self.anonymised
         for target_text in self.values():
             if target_text['spans'] and target_text['targets']:
                 sub_collection.add(target_text)
