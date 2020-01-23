@@ -1185,8 +1185,9 @@ def subset_metrics(target_collection: TargetTextCollection,
                                                 bool, bool, Optional[int]], 
                                                Union[float, List[float]]]],
                    metric_names: List[str], 
-                   metric_kwargs: Dict[str, Union[str,bool,int]]
-                   ) -> Dict[str, Union[List[float], float]]:
+                   metric_kwargs: Dict[str, Union[str,bool,int]],
+                   include_dataset_size: bool = False
+                   ) -> Dict[str, Union[List[float], float, int]]:
     '''
     This is most useful to find the metric score of an error subset
      
@@ -1208,6 +1209,10 @@ def subset_metrics(target_collection: TargetTextCollection,
     :param metric_kwargs: Keywords argument to give to the `metric_funcs` the only 
                           argument given is the first argument which will always 
                           be `target_collection`
+    :param include_dataset_size: If True the returned dictionary will also include 
+                                 a key `dataset size` that will contain an integer
+                                 specifying the size of the dataset the metric(s) 
+                                 was calculated on.
     :returns: A dictionary where the keys are the `metric_names` and the values 
               are the respective metric applied to the reduced/subsetted dataset.
               Thus if `average` in `metric_kwargs` is True then the return 
@@ -1222,6 +1227,8 @@ def subset_metrics(target_collection: TargetTextCollection,
                                         true_sentiment_key, 
                                         [predicted_sentiment_key])
     metric_name_score = {}
+    if include_dataset_size:
+        metric_name_score['dataset size'] = target_collection.number_targets()
     for metric_name, metric_func in zip(metric_names, metric_funcs):
         if not len(target_collection):
             if 'array_scores' in metric_kwargs:
@@ -1241,12 +1248,15 @@ def _subset_and_score(arguments: Tuple[TargetTextCollection, str,
                                        Callable[[TargetTextCollection, str, str, 
                                                  bool, bool, Optional[int]], 
                                                 Union[float, List[float]]], 
-                                       Dict[str, List[str]]]
-                      ) -> Tuple[List[float], List[int], List[str], List[str]]:
+                                       Dict[str, List[str]], bool]
+                      ) -> Union[Tuple[List[float], List[int], List[str], List[str]],
+                                 Tuple[List[float], List[int], List[str], List[str]], List[int]]:
     '''
     :param arguments: A tuple of 1. data, 2. subset name, 3. metric function,
-                      4. Keyword arguments to give to the metric function. The 
-                      metric function should be one from 
+                      4. Keyword arguments to give to the metric function, 5.
+                      include_dataset_size whether or not to return the dataset
+                      size that the metric was performed on. The metric function
+                      should be one from 
                       `target_extraction.analysis.sentiment_metrics`. The only 
                       argument given to the metric function is the first argument 
                       (data collection) as that argument comes from `data`
@@ -1254,7 +1264,8 @@ def _subset_and_score(arguments: Tuple[TargetTextCollection, str,
                       the `subset name` and then provides the metric scores on
                       that subset.
     :returns: A tuple of 1. List of metric scores, 2. List of run numbers,
-              3. List of subset names, 4. List of predictions keys. The
+              3. List of subset names, 4. List of predictions keys, 5. IF
+              include_dataset_size is True then the size of the subset dataset. The
               run number is essentially range(0,len(metric_scores)). The 
               list of subset names and prediction keys are the same value 
               as given just multipled by the number of runs. Thus all of the 
@@ -1264,11 +1275,12 @@ def _subset_and_score(arguments: Tuple[TargetTextCollection, str,
     # which at the moment cannot happen but could be a useful future improvement
     metric_name = 'A Name'
     # un-pack arguments
-    data_collection, subset_name, _metric_function, metric_kwargs = arguments
+    data_collection, subset_name, _metric_function, metric_kwargs, include_dataset_size = arguments
     prediction_key = metric_kwargs['predicted_sentiment_key']
     metric_values = subset_metrics(data_collection, subset_name, 
                                     [_metric_function], 
-                                    [f'{metric_name}'], metric_kwargs)
+                                    [f'{metric_name}'], metric_kwargs, 
+                                    include_dataset_size=include_dataset_size)
     metric_scores = metric_values[f'{metric_name}']
     pd_run_numbers = []
     pd_subset_names = []
@@ -1277,7 +1289,12 @@ def _subset_and_score(arguments: Tuple[TargetTextCollection, str,
         pd_run_numbers.append(run_number)
         pd_subset_names.append(subset_name)
         pd_prediction_keys.append(prediction_key)
-    return (metric_scores, pd_run_numbers, pd_subset_names, pd_prediction_keys)
+    if include_dataset_size:
+        subset_dataset_size = [metric_values['dataset size']] * len(metric_scores)
+        return (metric_scores, pd_run_numbers, pd_subset_names, pd_prediction_keys,
+                subset_dataset_size)
+    else:
+        return (metric_scores, pd_run_numbers, pd_subset_names, pd_prediction_keys)
 
 def _subset_and_score_args_generator(target_collection: TargetTextCollection,
                                      prediction_keys: List[str],
@@ -1285,7 +1302,8 @@ def _subset_and_score_args_generator(target_collection: TargetTextCollection,
                                      metric_func: Callable[[TargetTextCollection, str, str, 
                                                             bool, bool, Optional[int]], 
                                                            Union[float, List[float]]], 
-                                     metric_kwargs: Dict[str, Union[str,int,bool]]
+                                     metric_kwargs: Dict[str, Union[str,int,bool]],
+                                     include_dataset_size: bool = False
                                      ) -> Iterable[Tuple[TargetTextCollection, str, 
                                                          Callable[[TargetTextCollection, str, str, 
                                                                    bool, bool, Optional[int]], 
@@ -1300,7 +1318,8 @@ def _subset_and_score_args_generator(target_collection: TargetTextCollection,
             for subset_name in subset_names:
                 metric_kwargs_copy['predicted_sentiment_key'] = prediction_key
                 yield (target_collection, subset_name, 
-                       metric_func, metric_kwargs_copy)
+                       metric_func, metric_kwargs_copy,
+                       include_dataset_size)
 
 def _error_split_df(target_collection: TargetTextCollection, 
                     prediction_keys: List[str], true_sentiment_key: str, 
@@ -1310,7 +1329,8 @@ def _error_split_df(target_collection: TargetTextCollection,
                                           Union[float, List[float]]],
                     assert_number_labels: Optional[int] = None,
                     num_cpus: Optional[int] = None,
-                    collection_subsetting: Optional[List[List[str]]] = None
+                    collection_subsetting: Optional[List[List[str]]] = None,
+                    include_dataset_size: bool = False
                     ) -> pd.DataFrame:
     '''
     This will require the `target_collection` having been pre-processed with the
@@ -1349,6 +1369,9 @@ def _error_split_df(target_collection: TargetTextCollection,
                                   subsets are in the collection and then it would 
                                   subset that collection further so that only 
                                   'distinct_sentiment_2' samples exist in the collection.
+    :param include_dataset_size: The returned DataFrame will have two values the 
+                                 metric associated with the error splits and the 
+                                 size of the dataset from that subset.
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
@@ -1360,6 +1383,7 @@ def _error_split_df(target_collection: TargetTextCollection,
     pd_prediction_keys = []
     pd_subset_names = []
     pd_metric_values = []
+    pd_dataset_size = []
 
     metric_kwargs = {'average': False, 'array_scores': True, 
                     'assert_number_labels': assert_number_labels,
@@ -1372,7 +1396,8 @@ def _error_split_df(target_collection: TargetTextCollection,
         args_gen = _subset_and_score_args_generator(target_collection, 
                                                     prediction_keys, 
                                                     error_split_subset_names, 
-                                                    metric_func, metric_kwargs)
+                                                    metric_func, metric_kwargs,
+                                                    include_dataset_size=include_dataset_size)
         results = p.imap(_subset_and_score, args_gen)
 
         for result in results:
@@ -1380,13 +1405,22 @@ def _error_split_df(target_collection: TargetTextCollection,
             pd_run_numbers.extend(result[1])
             pd_subset_names.extend(result[2])
             pd_prediction_keys.extend(result[3])
+            if include_dataset_size:
+                pd_dataset_size.extend(result[4])
+
 
     data_df = pd.DataFrame({'prediction key': pd_prediction_keys, 
                             'run number': pd_run_numbers, 
                             'subset names': pd_subset_names, 
                             'Metric': pd_metric_values})
-    return pd.pivot_table(data_df, values='Metric', columns='subset names',
-                          index=['prediction key', 'run number'])
+    if include_dataset_size:
+        data_df['Dataset Size'] = pd_dataset_size
+        return pd.pivot_table(data_df, values=['Metric', 'Dataset Size'], 
+                              columns='subset names',
+                              index=['prediction key', 'run number'])
+    else:
+        return pd.pivot_table(data_df, values='Metric', columns='subset names',
+                              index=['prediction key', 'run number'])
 
 def error_split_df(train_collection: TargetTextCollection, 
                    test_collection: TargetTextCollection,
@@ -1398,7 +1432,8 @@ def error_split_df(train_collection: TargetTextCollection,
                    assert_number_labels: Optional[int] = None,
                    num_cpus: Optional[int] = None,
                    lower_targets: bool = True,
-                   collection_subsetting: Optional[List[List[str]]] = None
+                   collection_subsetting: Optional[List[List[str]]] = None,
+                   include_dataset_size: bool = False
                    ) -> pd.DataFrame:
     '''
     This will perform `error_analysis_wrapper` over all `error_split_subset_names`
@@ -1440,6 +1475,9 @@ def error_split_df(train_collection: TargetTextCollection,
                                   subsets are in the collection and then it would 
                                   subset that collection further so that only 
                                   'distinct_sentiment_2' samples exist in the collection.
+    :param include_dataset_size: The returned DataFrame will have two values the 
+                                 metric associated with the error splits and the 
+                                 size of the dataset from that subset.
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
@@ -1453,7 +1491,8 @@ def error_split_df(train_collection: TargetTextCollection,
                                         true_sentiment_key, 
                                         error_split_and_subset_names, 
                                         metric_func, assert_number_labels, num_cpus,
-                                        collection_subsetting)
+                                        collection_subsetting, 
+                                        include_dataset_size=include_dataset_size)
     return error_analysis_df
 
 def subset_name_to_error_split(subset_name: str) -> str:

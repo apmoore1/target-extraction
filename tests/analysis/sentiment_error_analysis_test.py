@@ -1,5 +1,6 @@
 from typing import List
 from pathlib import Path
+import math
 
 import pytest
 
@@ -1126,7 +1127,17 @@ def test_subset_metrics(metric_func_name: str):
     assert [0.5, 0.0] == metric_dict[metric_func_name]
     assert [1/3, 0.0] == metric_dict['macro']
 
-def test__error_split_df():
+    # Test the dataset size test.
+    metric_dict = subset_metrics(test_collection, 'low-shot', [accuracy, macro_f1], 
+                                 [metric_func_name, 'macro'], average_kwargs,
+                                 include_dataset_size=True)
+    assert [0.5, 0.0] == metric_dict[metric_func_name]
+    assert [1/3, 0.0] == metric_dict['macro']
+    assert test_collection.number_targets() != metric_dict['dataset size']
+    assert 2 == metric_dict['dataset size']
+
+@pytest.mark.parametrize("include_dataset_size", (False, True))
+def test__error_split_df(include_dataset_size: bool):
     test_fp = Path(DATA_DIR, 'test.json').resolve()
     train_fp = Path(DATA_DIR, 'train.json').resolve()
     test_collection = TargetTextCollection.load_json(test_fp)
@@ -1138,7 +1149,8 @@ def test__error_split_df():
                         'NT': ['low-targets', 'med-targets']}
     test_df = _error_split_df(test_collection, ['pred_sentiments'], 
                               'target_sentiments', error_split_dict, 
-                              accuracy, None)
+                              accuracy, None, 
+                              include_dataset_size=include_dataset_size)
     low_shot_score = [0.5, 0.0]
     med_shot_score = [1.0, 1.0]
     low_targets_score = [2/3, 2/3]
@@ -1146,6 +1158,14 @@ def test__error_split_df():
     name_scores = {'low-shot': low_shot_score, 'med-shot': med_shot_score,
                    'low-targets': low_targets_score, 
                    'med-targets': med_targets_score}
+    name_size = {'low-shot': [2, 2], 'med-shot': [2, 2], 'low-targets': [6, 6], 
+                 'med-targets': [5, 5]}
+    if include_dataset_size:
+        temp_name_scores = {}
+        for name, score in name_scores.items():
+            temp_name_scores[('Metric', f'{name}')] = score
+            temp_name_scores[('Dataset Size', f'{name}')] = name_size[name]
+        name_scores = temp_name_scores
 
     index_list = [('pred_sentiments', 0), ('pred_sentiments', 1)]
     assert index_list == test_df.index.tolist()
@@ -1160,15 +1180,22 @@ def test__error_split_df():
     test_df = _error_split_df(test_collection, ['pred_sentiments'], 
                               'target_sentiments', error_split_dict, 
                               accuracy, None, 
-                              collection_subsetting=[['zero-shot', 'low-shot']])
+                              collection_subsetting=[['zero-shot', 'low-shot']],
+                              include_dataset_size=include_dataset_size)
     low_shot_score = [0.5, 0.0]
-    import math
     med_shot_score = [0.0, 0.0]
     low_targets_score = [2/3, 2/3]
     med_targets_score = [0.6, 0.8]
     name_scores = {'low-shot': low_shot_score, 'med-shot': med_shot_score,
                    'low-targets': low_targets_score, 
                    'med-targets': med_targets_score}
+    name_size['med-shot'] = [0, 0]
+    if include_dataset_size:
+        temp_name_scores = {}
+        for name, score in name_scores.items():
+            temp_name_scores[('Metric', f'{name}')] = score
+            temp_name_scores[('Dataset Size', f'{name}')] = name_size[name]
+        name_scores = temp_name_scores
     index_list = [('pred_sentiments', 0), ('pred_sentiments', 1)]
     assert index_list == test_df.index.tolist()
     column_list = list(name_scores.keys())
@@ -1179,7 +1206,6 @@ def test__error_split_df():
     for column_name, column_score in name_scores.items():
         column_values = []
         for value in test_df[column_name].tolist():
-            print(value)
             if math.isnan(value):
                 column_values.append(0.0) 
             else: 
