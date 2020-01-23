@@ -1331,7 +1331,8 @@ def _error_split_df(target_collection: TargetTextCollection,
                     assert_number_labels: Optional[int] = None,
                     num_cpus: Optional[int] = None,
                     collection_subsetting: Optional[List[List[str]]] = None,
-                    include_dataset_size: bool = False
+                    include_dataset_size: bool = False,
+                    table_format_return: bool = True
                     ) -> pd.DataFrame:
     '''
     This will require the `target_collection` having been pre-processed with the
@@ -1373,6 +1374,12 @@ def _error_split_df(target_collection: TargetTextCollection,
     :param include_dataset_size: The returned DataFrame will have two values the 
                                  metric associated with the error splits and the 
                                  size of the dataset from that subset.
+    :param table_format_return: If this is True then the return will not be a 
+                                pivot table but the raw dataframe. This can be 
+                                more useful as a return format if `include_dataset_size`
+                                is True. The columns for the DataFrame will be 
+                                1. `prediction key`, 2. `run number`, 3. `subset names`
+                                4. `Metric` and 5. Optional `Dataset Size`
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
@@ -1422,7 +1429,9 @@ def _error_split_df(target_collection: TargetTextCollection,
     else:
         table = pd.pivot_table(data_df, values='Metric', columns='subset names',
                                index=['prediction key', 'run number'])
-    return table.fillna(value=0.0)
+    if table_format_return:
+        return table.fillna(value=0.0)
+    return data_df
 
 def error_split_df(train_collection: TargetTextCollection, 
                    test_collection: TargetTextCollection,
@@ -1435,7 +1444,8 @@ def error_split_df(train_collection: TargetTextCollection,
                    num_cpus: Optional[int] = None,
                    lower_targets: bool = True,
                    collection_subsetting: Optional[List[List[str]]] = None,
-                   include_dataset_size: bool = False
+                   include_dataset_size: bool = False,
+                   table_format_return: bool = True
                    ) -> pd.DataFrame:
     '''
     This will perform `error_analysis_wrapper` over all `error_split_subset_names`
@@ -1480,6 +1490,10 @@ def error_split_df(train_collection: TargetTextCollection,
     :param include_dataset_size: The returned DataFrame will have two values the 
                                  metric associated with the error splits and the 
                                  size of the dataset from that subset.
+    :param table_format_return: If this is True then the return will not be a 
+                                pivot table but the raw dataframe. This can be 
+                                more useful as a return format if `include_dataset_size`
+                                is True.
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
@@ -1494,7 +1508,8 @@ def error_split_df(train_collection: TargetTextCollection,
                                         error_split_and_subset_names, 
                                         metric_func, assert_number_labels, num_cpus,
                                         collection_subsetting, 
-                                        include_dataset_size=include_dataset_size)
+                                        include_dataset_size=include_dataset_size,
+                                        table_format_return=table_format_return)
     return error_analysis_df
 
 def subset_name_to_error_split(subset_name: str) -> str:
