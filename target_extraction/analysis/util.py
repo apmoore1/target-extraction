@@ -16,11 +16,13 @@ from target_extraction.analysis.sentiment_error_analysis import (distinct_sentim
                                                                  swap_and_reduce)
 from target_extraction.analysis.statistical_analysis import one_tailed_p_value
 def metric_df(target_collection: TargetTextCollection, 
-              metric_function: Callable[[TargetTextCollection, str, str, bool, bool, Optional[int]], 
+              metric_function: Callable[[TargetTextCollection, str, str, bool, 
+                                         bool, Optional[int], bool], 
                                         Union[float, List[float]]],
               true_sentiment_key: str, predicted_sentiment_keys: List[str], 
               average: bool, array_scores: bool, 
-              assert_number_labels: Optional[int] = None, 
+              assert_number_labels: Optional[int] = None,
+              ignore_label_differences: bool = True, 
               metric_name: str = 'metric', 
               include_run_number: bool = False) -> pd.DataFrame:
     '''
@@ -43,6 +45,9 @@ def metric_df(target_collection: TargetTextCollection,
     :param assert_number_labels: Whether or not to assert this many number of unique  
                                  labels must exist in the true sentiment key. 
                                  If this is None then the assertion is not raised.
+    :param ignore_label_differences: If True then the ValueError will not be 
+                                     raised if the predicted sentiment values 
+                                     are not in the true sentiment values.
     :param metric_name: The name to give to the metric value column.
     :param include_run_number: If `array_scores` is True then this will add an 
                                extra column to the returned dataframe (`run number`) 
@@ -68,7 +73,8 @@ def metric_df(target_collection: TargetTextCollection,
         metric_scroes = metric_function(target_collection, true_sentiment_key, 
                                         predicted_sentiment_key, average=average, 
                                         array_scores=array_scores, 
-                                        assert_number_labels=assert_number_labels)
+                                        assert_number_labels=assert_number_labels,
+                                        ignore_label_differences=ignore_label_differences)
         if isinstance(metric_scroes, list):
             for metric_index, metric_score in enumerate(metric_scroes):
                 df_metric_values.append(metric_score)
@@ -360,7 +366,14 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
                        title_on_every_plot: bool = False,
                        df_overall_metric: Optional[str] = None,
                        overall_seaborn_plot_name: Optional[str] = None,
-                       overall_seaborn_kwargs: Optional[Dict[str, Any]] = None
+                       overall_seaborn_kwargs: Optional[Dict[str, Any]] = None,
+                       df_dataset_size: Optional[str] = None,
+                       dataset_h_line_offset: float = 0.2,
+                       dataset_h_line_color: str = 'k',
+                       h_line_legend_name: str = 'Dataset Size (Number of Samples)',
+                       h_line_legend_bbox_to_anchor: Optional[Tuple[float, float]] = None,
+                       dataset_y_label: str = 'Dataset Size\n(Number of Samples)',
+                       gridspec_kw: Optional[Dict[str, Any]] = None
                        ) -> Tuple[matplotlib.figure.Figure, 
                                   List[List[matplotlib.axes.Axes]]]:
     '''
@@ -414,6 +427,20 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
                                       plotting the overall metric
     :param overall_seaborn_kwargs: Same as the `seaborn_kwargs` but for the 
                                    overall metric plot.
+    :param df_dataset_size: Name of the column in `metric_df` that stores 
+                            the dataset size for one of the X-axis. If 
+                            this is given it will create h_lines for each 
+                            X-axis representing the dataset size
+    :param dataset_h_line_offset: +/- offsets indicating the length of each 
+                                  hline
+    :param dataset_h_line_color: Color of the hline
+    :param h_line_legend_name: Name to give to the h_line legend.
+    :param h_line_legend_bbox_to_anchor: Where the h line legend box should be within the 
+                                         figure. This is passed as the `bbox_to_anchor`
+                                         argument to 
+                                         :py:func:`matplotlib.pyplot.Axes.legend`
+    :param dataset_y_label: The Y-Label for the right hand side Y-axis.
+    :param gridspec_kw: :py:func:`matplotlib.pyplot.subplots` `gridspec_kw` argument
     :returns: A tuple of 1. The figure  2. The associated axes within the 
               figure. The figure will contain N x M plots where N is the number 
               of unique values in the `metric_df` `df_column_name` column and 
@@ -424,7 +451,8 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
                         error_axs: List[matplotlib.axes.Axes], 
                         column_names: List[str],
                         first_row: bool, last_row: bool,
-                        number_hue_values: int = 1) -> None:
+                        number_hue_values: int = 1,
+                        h_line_legend_bbox_to_anchor: Optional[Tuple[float, float]] = None) -> None:
         for col_index, column_name in enumerate(column_names):
             _df = df[df[df_column_name]==column_name]
             ax = error_axs[col_index]
@@ -464,10 +492,43 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
             # Legend
             if col_index == legend_column and first_row:
                 ax.legend(bbox_to_anchor=legend_bbox_to_anchor, 
-                            loc='lower left', fontsize=legend_fontsize, 
-                            ncol=number_hue_values, borderaxespad=0.)
+                          loc='lower left', fontsize=legend_fontsize, 
+                          ncol=number_hue_values, borderaxespad=0.)
             else:
                 ax.get_legend().remove()
+            
+            if df_dataset_size:
+                dataset_ax = ax.twinx()
+                # only if it is the last column
+                if col_index == (len(column_names) - 1):
+                    dataset_ax.set_ylabel(dataset_y_label, fontsize=fontsize)
+                dataset_sizes = []
+                x_values = [x_tick_label.get_text() 
+                            for x_tick_label in ax.get_xticklabels()]
+                for x_value in x_values:
+                    dataset_size = _df.loc[_df[df_x_name]==x_value][df_dataset_size].unique()
+                    dataset_size = dataset_size.tolist()
+                    assert 1 == len(dataset_size)
+                    dataset_sizes.append(dataset_size)
+    
+                for index, dataset_size in enumerate(dataset_sizes):
+                    x_indexes = (index - dataset_h_line_offset, 
+                                 index + dataset_h_line_offset)
+                    if index == 0 and col_index == legend_column and first_row:
+                        dataset_ax.hlines(dataset_size, x_indexes[0], x_indexes[1], 
+                                          linestyles='dashed', color=dataset_h_line_color,
+                                          label=h_line_legend_name)
+                        if h_line_legend_bbox_to_anchor is None:
+                            h_line_legend_bbox_0, h_line_legend_bbox_1 = legend_bbox_to_anchor
+                            h_line_legend_bbox_1 = h_line_legend_bbox_1 + 0.1
+                            h_line_legend_bbox_to_anchor = (h_line_legend_bbox_0, h_line_legend_bbox_1)
+                        dataset_ax.legend(bbox_to_anchor=h_line_legend_bbox_to_anchor, 
+                                          loc='lower left', fontsize=legend_fontsize, 
+                                          borderaxespad=0.)
+                    else:
+                        dataset_ax.hlines(dataset_size, x_indexes[0], x_indexes[1], 
+                                          linestyles='dashed', 
+                                          color=dataset_h_line_color)
     plt.rc('xtick', labelsize=tick_font_size)
     plt.rc('ytick', labelsize=tick_font_size)
     # Seaborn plotting options
@@ -493,8 +554,13 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
         length = num_rows * 4
         width = number_columns * 5
         figsize = (width, length)
+    if gridspec_kw is None:
+        if df_dataset_size is not None:
+            gridspec_kw = {'wspace': 0.3}
+        else:
+            gridspec_kw = {}
     fig, axs = plt.subplots(nrows=num_rows, ncols=number_columns, 
-                            figsize=figsize)
+                            figsize=figsize, gridspec_kw=gridspec_kw)
     # row 
     if num_rows > 1:
         # columns
@@ -503,17 +569,17 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
             row_axs = axs[row_index]
             if row_index == (num_rows - 1):
                 plot_error_split(row_metric_df, row_axs, column_names, False, 
-                                    True, number_hue_values)
+                                    True, number_hue_values, h_line_legend_bbox_to_anchor)
             elif row_index == 0:
                 plot_error_split(row_metric_df, row_axs, column_names, True, 
-                                    False, number_hue_values)
+                                    False, number_hue_values, h_line_legend_bbox_to_anchor)
             else:
                 plot_error_split(row_metric_df, row_axs, column_names, False, 
-                                    False, number_hue_values)
+                                    False, number_hue_values, h_line_legend_bbox_to_anchor)
     # Only 1 row but multiple columns
     else:
         plot_error_split(metric_df, axs, column_names, True, True, 
-                         number_hue_values)
+                         number_hue_values, h_line_legend_bbox_to_anchor)
     return fig, axs
 
 def create_subset_heatmap(subset_df: pd.DataFrame, value_column: str, 

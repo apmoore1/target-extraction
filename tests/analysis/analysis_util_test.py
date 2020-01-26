@@ -270,8 +270,9 @@ def test_long_format_metrics():
         combined_df_scores = combined_df[f'{metric_column}'].tolist()
         assert long_df_scores == combined_df_scores
 
+@pytest.mark.parametrize('gridspec_kw', (None, True))
 @pytest.mark.parametrize('plotting_one_row', (True, False))
-def test_plot_error_subsets(plotting_one_row: bool):
+def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
     # All that will be tested here is that the plots do not raise any error
     # this is probably not the best way to test this function.
     plotting_data = Path(DATA_DIR, 'plotting_data.tsv')
@@ -292,36 +293,61 @@ def test_plot_error_subsets(plotting_one_row: bool):
         error_split_name = plotting_data['Error Split'].unique().tolist()[0]
         plotting_data = plotting_data[plotting_data['Error Split']==error_split_name]
         axs_shape = (3,)
+    
+    if gridspec_kw:
+        gridspec_kw = {'wspace': 0.1}
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
-                                      'Error Subset', 'Accuracy', df_hue_name='Model',
-                                      legend_column=1, title_on_every_plot=True)
+                                       'Error Subset', 'Accuracy', df_hue_name='Model',
+                                       legend_column=1, title_on_every_plot=True,
+                                       gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
     # Non-Standard plot
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
-                                      'Error Subset', 'Accuracy', df_hue_name='Model',
-                                      seaborn_plot_name='boxenplot',
-                                      legend_column=1, title_on_every_plot=True)
+                                       'Error Subset', 'Accuracy', df_hue_name='Model',
+                                       seaborn_plot_name='boxenplot',
+                                       legend_column=1, title_on_every_plot=True,
+                                       gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
     # Non-Standard plot with kwargs to the plot function
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
-                                      'Error Subset', 'Accuracy', df_hue_name='Model',
-                                      seaborn_plot_name='boxenplot',
-                                      seaborn_kwargs={'dodge': True},
-                                      legend_column=1, title_on_every_plot=True)
+                                       'Error Subset', 'Accuracy', df_hue_name='Model',
+                                       seaborn_plot_name='boxenplot',
+                                       seaborn_kwargs={'dodge': True},
+                                       legend_column=1, title_on_every_plot=True,
+                                       gridspec_kw=gridspec_kw)
     # with a different figure size and not all plots having titles
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
-                                      'Error Subset', 'Accuracy', df_hue_name='Model',
-                                      figsize=(10,12),
-                                      legend_column=1, title_on_every_plot=False)
+                                       'Error Subset', 'Accuracy', df_hue_name='Model',
+                                       figsize=(10,12),
+                                       legend_column=1, title_on_every_plot=False,
+                                       gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
     # Plotting the overall metric as well. E.g. another plot on each plot 
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
-                                      'Error Subset', 'Accuracy', df_hue_name='Model',
-                                      df_overall_metric='Overall Accuracy',
-                                      overall_seaborn_plot_name='lineplot',
-                                      overall_seaborn_kwargs={'ci': 'sd'},
-                                      legend_column=1, title_on_every_plot=False)
+                                       'Error Subset', 'Accuracy', df_hue_name='Model',
+                                       df_overall_metric='Overall Accuracy',
+                                       overall_seaborn_plot_name='lineplot',
+                                       overall_seaborn_kwargs={'ci': 'sd'},
+                                       legend_column=1, title_on_every_plot=False,
+                                       gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
+    # Plotting the dataset size
+    df_dataset_size = 'Data Size'
+    plotting_data['Data Size'] = 200
+    fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                       'Error Subset', 'Accuracy', df_hue_name='Model',
+                                       figsize=(10,12),
+                                       legend_column=1, title_on_every_plot=False,
+                                       gridspec_kw=gridspec_kw,
+                                       df_dataset_size=df_dataset_size)
+    assert axs_shape == axs.shape
+    fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                       'Error Subset', 'Accuracy', df_hue_name='Model',
+                                       figsize=(10,12),
+                                       legend_column=1, title_on_every_plot=False,
+                                       gridspec_kw=gridspec_kw,
+                                       df_dataset_size=df_dataset_size,
+                                       h_line_legend_bbox_to_anchor=(0.13,0.2))
 
 @pytest.mark.parametrize('value_range', (True, False))
 @pytest.mark.parametrize('line_indxes', (True, False))
@@ -390,11 +416,13 @@ def test_create_subset_heatmap(lines: bool, ax: bool, heatmap_kwargs: bool,
     # Normal test case
     ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines,
                                     ax=axs[0], heatmap_kwargs=heatmap_kwargs,
+                                    value_range=value_range,
                                     vertical_lines_index=vertical_lines_index,
                                     horizontal_lines_index=horizontal_lines_index)
     # Different plot colors
     ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines,
                                     cubehelix_palette_kwargs={'light': 0.8},
+                                    value_range=value_range,
                                     ax=axs[1], heatmap_kwargs=heatmap_kwargs,
                                     vertical_lines_index=vertical_lines_index,
                                     horizontal_lines_index=horizontal_lines_index)
@@ -407,6 +435,7 @@ def test_create_subset_heatmap(lines: bool, ax: bool, heatmap_kwargs: bool,
         return alpha_count
     ax = util.create_subset_heatmap(combined_error_subset_p_values, 'P-Value', lines=lines,
                                     pivot_table_agg_func=p_value_count(alpha),
+                                    value_range=value_range,
                                     ax=axs[2], heatmap_kwargs=heatmap_kwargs,
                                     vertical_lines_index=vertical_lines_index,
                                     horizontal_lines_index=horizontal_lines_index)

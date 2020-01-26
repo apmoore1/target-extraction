@@ -1136,9 +1136,14 @@ def test_subset_metrics(metric_func_name: str):
     assert test_collection.number_targets() != metric_dict['dataset size']
     assert 2 == metric_dict['dataset size']
 
+@pytest.mark.parametrize("ignore_label_differences", (False, True, None))
 @pytest.mark.parametrize("table_format_return", (False, True))
 @pytest.mark.parametrize("include_dataset_size", (False, True))
-def test__error_split_df(include_dataset_size: bool, table_format_return: bool):
+def test__error_split_df(include_dataset_size: bool, table_format_return: bool,
+                         ignore_label_differences: bool):
+    metric_kwargs = None
+    if ignore_label_differences is not None:
+        metric_kwargs = {'ignore_label_differences': ignore_label_differences}
     test_fp = Path(DATA_DIR, 'test.json').resolve()
     train_fp = Path(DATA_DIR, 'train.json').resolve()
     test_collection = TargetTextCollection.load_json(test_fp)
@@ -1150,7 +1155,7 @@ def test__error_split_df(include_dataset_size: bool, table_format_return: bool):
                         'NT': ['low-targets', 'med-targets']}
     test_df = _error_split_df(test_collection, ['pred_sentiments'], 
                               'target_sentiments', error_split_dict, 
-                              accuracy, None, 
+                              accuracy, metric_kwargs=metric_kwargs, 
                               include_dataset_size=include_dataset_size,
                               table_format_return=table_format_return)
     low_shot_score = [0.5, 0.0]
@@ -1193,7 +1198,7 @@ def test__error_split_df(include_dataset_size: bool, table_format_return: bool):
 
     test_df = _error_split_df(test_collection, ['pred_sentiments'], 
                               'target_sentiments', error_split_dict, 
-                              accuracy, None, 
+                              accuracy, metric_kwargs=metric_kwargs, 
                               collection_subsetting=[['zero-shot', 'low-shot']],
                               include_dataset_size=include_dataset_size,
                               table_format_return=table_format_return)
@@ -1246,7 +1251,7 @@ def test_error_split_df():
     test_df = error_split_df(train_collection, test_collection, 
                              ['pred_sentiments'], 
                              'target_sentiments', error_split_dict, 
-                              accuracy, None)
+                              accuracy)
     low_shot_score = [0.5, 0.0]
     med_shot_score = [1.0, 1.0]
     low_targets_score = [2/3, 2/3]

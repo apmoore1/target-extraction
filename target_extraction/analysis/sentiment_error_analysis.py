@@ -1183,7 +1183,7 @@ def error_analysis_wrapper(error_function_name: str
 def subset_metrics(target_collection: TargetTextCollection, 
                    subset_error_key: Union[str, List[str]],
                    metric_funcs: List[Callable[[TargetTextCollection, str, str, 
-                                                bool, bool, Optional[int]], 
+                                                bool, bool, Optional[int], bool], 
                                                Union[float, List[float]]]],
                    metric_names: List[str], 
                    metric_kwargs: Dict[str, Union[str,bool,int]],
@@ -1247,7 +1247,7 @@ def subset_metrics(target_collection: TargetTextCollection,
 
 def _subset_and_score(arguments: Tuple[TargetTextCollection, str, 
                                        Callable[[TargetTextCollection, str, str, 
-                                                 bool, bool, Optional[int]], 
+                                                 bool, bool, Optional[int], bool], 
                                                 Union[float, List[float]]], 
                                        Dict[str, List[str]], bool]
                       ) -> Union[Tuple[List[float], List[int], List[str], List[str]],
@@ -1301,13 +1301,13 @@ def _subset_and_score_args_generator(target_collection: TargetTextCollection,
                                      prediction_keys: List[str],
                                      error_split_subset_names: Dict[str, List[str]],
                                      metric_func: Callable[[TargetTextCollection, str, str, 
-                                                            bool, bool, Optional[int]], 
+                                                            bool, bool, Optional[int], bool], 
                                                            Union[float, List[float]]], 
                                      metric_kwargs: Dict[str, Union[str,int,bool]],
                                      include_dataset_size: bool = False
                                      ) -> Iterable[Tuple[TargetTextCollection, str, 
                                                          Callable[[TargetTextCollection, str, str, 
-                                                                   bool, bool, Optional[int]], 
+                                                                   bool, bool, Optional[int], bool], 
                                                                   Union[float, List[float]]], 
                                                          Dict[str, List[str]]]]:
     '''
@@ -1326,9 +1326,9 @@ def _error_split_df(target_collection: TargetTextCollection,
                     prediction_keys: List[str], true_sentiment_key: str, 
                     error_split_subset_names: Dict[str, List[str]],
                     metric_func: Callable[[TargetTextCollection, str, str, 
-                                           bool, bool, Optional[int]], 
+                                           bool, bool, Optional[int], bool], 
                                           Union[float, List[float]]],
-                    assert_number_labels: Optional[int] = None,
+                    metric_kwargs: Optional[Dict[str, Any]] = None,
                     num_cpus: Optional[int] = None,
                     collection_subsetting: Optional[List[List[str]]] = None,
                     include_dataset_size: bool = False,
@@ -1354,10 +1354,10 @@ def _error_split_df(target_collection: TargetTextCollection,
                         `target_extraction.analysis.sentiment_metrics`. Example
                          metric function is 
                          :py:func:`target_extraction.analysis.sentiment_metrics.accuracy`
-    :param assert_number_labels: To pass to the `metric_func`.  Whether or not 
-                                 to assert this many number of unique  
-                                 labels must exist in the true sentiment key. 
-                                 If this is None then the assertion is not raised.
+    :param metric_kwargs: Keyword arguments to give to the `metric_func` the 
+                          arguments given are: 1. `target_collection`, 2. `true_sentiment_key`,
+                          3. `predicted_sentiment_key`, 4. `average`, and 
+                          5. `array_scores`
     :param num_cpus: Number of cpus to use for multiprocessing. The task of 
                      subsetting and metric scoring is split down into one 
                      task and all tasks are then multiprocessed. This is also 
@@ -1393,9 +1393,12 @@ def _error_split_df(target_collection: TargetTextCollection,
     pd_metric_values = []
     pd_dataset_size = []
 
-    metric_kwargs = {'average': False, 'array_scores': True, 
-                    'assert_number_labels': assert_number_labels,
-                    'true_sentiment_key': true_sentiment_key}
+    if metric_kwargs is None:
+        metric_kwargs = {}
+    metric_kwargs['average'] = False
+    metric_kwargs['array_scores'] = True
+    metric_kwargs['true_sentiment_key'] = true_sentiment_key
+
     if collection_subsetting is not None:
         for subset_names in collection_subsetting:
             target_collection = swap_and_reduce(target_collection, subset_names, 
@@ -1438,9 +1441,9 @@ def error_split_df(train_collection: TargetTextCollection,
                    prediction_keys: List[str], true_sentiment_key: str, 
                    error_split_and_subset_names: Dict[str, List[str]],
                    metric_func: Callable[[TargetTextCollection, str, str, 
-                                          bool, bool, Optional[int]], 
+                                          bool, bool, Optional[int], bool], 
                                          Union[float, List[float]]],
-                   assert_number_labels: Optional[int] = None,
+                   metric_kwargs: Optional[Dict[str, Any]] = None,
                    num_cpus: Optional[int] = None,
                    lower_targets: bool = True,
                    collection_subsetting: Optional[List[List[str]]] = None,
@@ -1468,10 +1471,10 @@ def error_split_df(train_collection: TargetTextCollection,
                         `target_extraction.analysis.sentiment_metrics`. Example
                          metric function is 
                          :py:func:`target_extraction.analysis.sentiment_metrics.accuracy`
-    :param assert_number_labels: To pass to the `metric_func`.  Whether or not 
-                                 to assert this many number of unique  
-                                 labels must exist in the true sentiment key. 
-                                 If this is None then the assertion is not raised.
+    :param metric_kwargs: Keyword arguments to give to the `metric_func` the 
+                          arguments given are: 1. `target_collection`, 2. `true_sentiment_key`,
+                          3. `predicted_sentiment_key`, 4. `average`, and 
+                          5. `array_scores`
     :param num_cpus: Number of cpus to use for multiprocessing. The task of 
                      subsetting and metric scoring is split down into one 
                      task and all tasks are then multiprocessed. This is also 
@@ -1493,7 +1496,7 @@ def error_split_df(train_collection: TargetTextCollection,
     :param table_format_return: If this is True then the return will not be a 
                                 pivot table but the raw dataframe. This can be 
                                 more useful as a return format if `include_dataset_size`
-                                is True.
+                                is True. 
     :returns: A dataframe that has a multi index of [`prediction key`, `run number`]
               and the columns are the error split subset names and the values are 
               the metric associated to those error splits given the prediction 
@@ -1506,7 +1509,7 @@ def error_split_df(train_collection: TargetTextCollection,
     error_analysis_df = _error_split_df(test_collection, prediction_keys, 
                                         true_sentiment_key, 
                                         error_split_and_subset_names, 
-                                        metric_func, assert_number_labels, num_cpus,
+                                        metric_func, metric_kwargs, num_cpus,
                                         collection_subsetting, 
                                         include_dataset_size=include_dataset_size,
                                         table_format_return=table_format_return)

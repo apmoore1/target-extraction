@@ -19,6 +19,9 @@ Arguments for all functions in this module:
 6. assert_number_labels -- Whether or not to assert this many number of unique  
    labels must exist in the true sentiment key. If this is None then the 
    assertion is not raised.
+7. ignore_label_differences -- If True then the ValueError will not be 
+   raised if the predicted sentiment values are not in the true 
+   sentiment values. See :py:func:`get_labels` for more details.
 
 :raises ValueError: If the the prediction model has ran *N* times where 
                     *N>1* and `average` or `array_scores` are either both 
@@ -62,10 +65,10 @@ class LabelError(Exception):
         super().__init__(error_string)
 
 def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool, 
-                                        bool, Optional[int]], 
+                                        bool, Optional[int], bool], 
                                        Union[float, np.ndarray]]
                         ) -> Callable[[TargetTextCollection, str, str, bool,
-                                       bool, Optional[int]],
+                                       bool, Optional[int], bool],
                                       Union[float, np.ndarray]]:
     '''
     Decorator for the metric functions within this module. Will raise any of 
@@ -76,7 +79,8 @@ def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool,
     def wrapper(target_collection: TargetTextCollection, 
                 true_sentiment_key: str, predicted_sentiment_key: str, 
                 average: bool, array_scores: bool, 
-                assert_number_labels: Optional[int] = None
+                assert_number_labels: Optional[int] = None,
+                ignore_label_differences: bool = True
                 ) -> Union[float, np.ndarray]:
         # Check that the TargetTextCollection contains both the true and 
         # predicted sentiment keys
@@ -124,12 +128,13 @@ def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool,
                                  'to be True but not both.') 
         return func(target_collection, true_sentiment_key, 
                     predicted_sentiment_key, average, array_scores, 
-                    assert_number_labels)
+                    assert_number_labels, ignore_label_differences)
     return wrapper
 
 def get_labels(target_collection: TargetTextCollection, 
                true_sentiment_key: str, predicted_sentiment_key: str,
-               labels_per_text: bool = False
+               labels_per_text: bool = False,
+               ignore_label_differences: bool = True
                ) -> Tuple[Union[List[Any], List[List[Any]]], 
                           Union[List[List[Any]], List[List[List[Any]]]]]:
     '''
@@ -150,6 +155,9 @@ def get_labels(target_collection: TargetTextCollection,
                             represents the predictions per text rather than in 
                             the normal case where it is all predictions ignoring 
                             which text they came from.
+    :param ignore_label_differences: If True then the ValueError will not be 
+                                     raised if the predicted sentiment values 
+                                     are not in the true sentiment values.
     :returns: A tuple of 1; true sentiment value 2; predicted sentiment values. 
               where the predicted sentiment values is a list of predicted 
               sentiment value, one for each models predictions. 
@@ -204,8 +212,9 @@ def get_labels(target_collection: TargetTextCollection,
             unique_predicted_values = set([value for values in prediction_list for value in values])
         else:
             unique_predicted_values = set(prediction_list)
-        if unique_predicted_values.difference(unique_true_values):
-            raise ValueError('Values in the predicted sentiment are not in the'
+        if (unique_predicted_values.difference(unique_true_values) and 
+            not ignore_label_differences):
+            raise ValueError(f'Values in the predicted sentiment are not in the'
                              ' True sentiment values. Values in predicted '
                              f'{unique_predicted_values}, values in True '
                              f'{unique_true_values}')
@@ -216,14 +225,18 @@ def get_labels(target_collection: TargetTextCollection,
 def accuracy(target_collection: TargetTextCollection, 
              true_sentiment_key: str, predicted_sentiment_key: str, 
              average: bool, array_scores: bool, 
-             assert_number_labels: Optional[int] = None
+             assert_number_labels: Optional[int] = None,
+             ignore_label_differences: bool = True
              ) -> Union[float, List[float]]:
     '''
+    :param ignore_label_differences: See :py:func:`get_labels`
+
     Accuracy score. Description at top of module explains arguments.
     '''
     true_values, predicted_values_list = get_labels(target_collection, 
                                                     true_sentiment_key, 
-                                                    predicted_sentiment_key)
+                                                    predicted_sentiment_key,
+                                                    ignore_label_differences=ignore_label_differences)
     scores: List[float] = []
     for predicted_values in predicted_values_list:
         scores.append(accuracy_score(true_values, predicted_values))
@@ -239,14 +252,18 @@ def accuracy(target_collection: TargetTextCollection,
 def macro_f1(target_collection: TargetTextCollection, 
              true_sentiment_key: str, predicted_sentiment_key: str, 
              average: bool, array_scores: bool, 
-             assert_number_labels: Optional[int] = None
+             assert_number_labels: Optional[int] = None,
+             ignore_label_differences: bool = True
              ) -> Union[float, List[float]]:
     '''
+    :param ignore_label_differences: See :py:func:`get_labels`
+
     Macro F1 score. Description at top of module explains arguments.
     '''
     true_values, predicted_values_list = get_labels(target_collection, 
                                                     true_sentiment_key, 
-                                                    predicted_sentiment_key)
+                                                    predicted_sentiment_key,
+                                                    ignore_label_differences=ignore_label_differences)
     scores: List[float] = []
     for predicted_values in predicted_values_list:
         scores.append(f1_score(true_values, predicted_values, average='macro'))
@@ -262,7 +279,8 @@ def macro_f1(target_collection: TargetTextCollection,
 def strict_text_accuracy(target_collection: TargetTextCollection, 
                          true_sentiment_key: str, predicted_sentiment_key: str, 
                          average: bool, array_scores: bool, 
-                         assert_number_labels: Optional[int] = None
+                         assert_number_labels: Optional[int] = None,
+                         ignore_label_differences: bool = True
                          ) -> Union[float, List[float]]:
     '''
     This is performed at the text/sentence level where a sample is not denoted 
@@ -272,11 +290,14 @@ def strict_text_accuracy(target_collection: TargetTextCollection,
 
     This metric also assumes that all the texts within the `target_collection`
     also contains at least one target. If it does not a ValueError will be raised.
+
+    :param ignore_label_differences: See :py:func:`get_labels`
     '''
     true_values, predicted_values_list = get_labels(target_collection, 
                                                     true_sentiment_key, 
                                                     predicted_sentiment_key, 
-                                                    labels_per_text=True)
+                                                    labels_per_text=True,
+                                                    ignore_label_differences=ignore_label_differences)
     true_values: List[List[Any]]
     predicted_values_list: List[List[List[Any]]]
     

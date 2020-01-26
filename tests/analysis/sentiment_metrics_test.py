@@ -273,16 +273,17 @@ def diff_num_preds(true_sentiment_key: str,
                    ['pos', 'neg', 'neg', 'neg', 'poss']]
     return TargetTextCollection([example_1, example_2]), true_labels, pred_labels
 
+@pytest.mark.parametrize("ignore_label_differences", (True, False))
 @pytest.mark.parametrize("true_sentiment_key", ('target_sentiments', 'true values'))
 @pytest.mark.parametrize("predicted_sentiment_key", ('predictions', 'another'))
 @pytest.mark.parametrize("labels_per_text", (True, False))
 def test_get_labels(true_sentiment_key: str, predicted_sentiment_key: str, 
-                    labels_per_text: bool):
+                    labels_per_text: bool, ignore_label_differences: bool):
     normal_examples, true_labels, pred_labels = passable_example(true_sentiment_key, 
                                                                  predicted_sentiment_key, 
                                                                  labels_per_text)
     labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key, 
-                        labels_per_text)
+                        labels_per_text, ignore_label_differences=ignore_label_differences)
     assert true_labels == labels[0]
     assert pred_labels == labels[1]
     # Case where the predictions have more than one set of predictions per target
@@ -290,11 +291,12 @@ def test_get_labels(true_sentiment_key: str, predicted_sentiment_key: str,
                                                                                 predicted_sentiment_key, 
                                                                                 labels_per_text)
     labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key, 
-                        labels_per_text)
+                        labels_per_text, ignore_label_differences=ignore_label_differences)
     assert true_labels == labels[0]
     assert pred_labels == labels[1]
     # Return empty lists
-    labels = get_labels(TargetTextCollection(), true_sentiment_key, predicted_sentiment_key, labels_per_text)
+    labels = get_labels(TargetTextCollection(), true_sentiment_key, predicted_sentiment_key, 
+                        labels_per_text, ignore_label_differences=ignore_label_differences)
     if labels_per_text:
         assert [] == labels[0]
         assert [] == labels[1]
@@ -303,32 +305,46 @@ def test_get_labels(true_sentiment_key: str, predicted_sentiment_key: str,
         assert [] == labels[1]
     # Handles the case where the prediction labels are a subset of the True labels
     normal_examples, true_labels, pred_labels = passable_subset_multiple_preds(true_sentiment_key, predicted_sentiment_key, labels_per_text)
-    labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key, labels_per_text)
+    labels = get_labels(normal_examples, true_sentiment_key, predicted_sentiment_key, 
+                        labels_per_text, ignore_label_differences=ignore_label_differences)
     assert true_labels == labels[0]
     assert pred_labels == labels[1]
     # Raise an error as there are no predictions
     examples, true_labels, pred_labels = empty_preds_examples(true_sentiment_key, predicted_sentiment_key, labels_per_text)
     with pytest.raises(ValueError):
-        get_labels(examples, true_sentiment_key, predicted_sentiment_key)
+        get_labels(examples, true_sentiment_key, predicted_sentiment_key,
+                   ignore_label_differences=ignore_label_differences)
     # Raises an error as one of the multiple predictions is not the same
     examples, true_labels, pred_labels = diff_label_pred_lengths(true_sentiment_key, predicted_sentiment_key, labels_per_text)
     with pytest.raises(ValueError):
-        get_labels(examples, true_sentiment_key, predicted_sentiment_key)
+        get_labels(examples, true_sentiment_key, predicted_sentiment_key,
+                   ignore_label_differences=ignore_label_differences)
     # Raises an error as all of the multiple predictions do not have the same 
     # length as the True labels 
     examples, true_labels, pred_labels = all_diff_label_pred_lengths(true_sentiment_key, predicted_sentiment_key, labels_per_text)
     with pytest.raises(ValueError):
-        get_labels(examples, true_sentiment_key, predicted_sentiment_key)
+        get_labels(examples, true_sentiment_key, predicted_sentiment_key,
+                   ignore_label_differences=ignore_label_differences)
     # Raises an error as the labels in one of the predictions is different to 
     # the True labels
     examples, true_labels, pred_labels = diff_label_pred_values(true_sentiment_key, predicted_sentiment_key, labels_per_text)
-    with pytest.raises(ValueError):
-        get_labels(examples, true_sentiment_key, predicted_sentiment_key)
+    if not ignore_label_differences:
+        with pytest.raises(ValueError):
+            get_labels(examples, true_sentiment_key, predicted_sentiment_key,
+                       ignore_label_differences=ignore_label_differences)
+    else:
+        get_labels(examples, true_sentiment_key, predicted_sentiment_key,
+                   ignore_label_differences=ignore_label_differences)
     # Raises an error as the label in all of the predictions are different to 
     # the True labels
     examples, true_labels, pred_labels = all_diff_label_pred_values(true_sentiment_key, predicted_sentiment_key, labels_per_text)
-    with pytest.raises(ValueError):
-        get_labels(examples, true_sentiment_key, predicted_sentiment_key)
+    if not ignore_label_differences:
+        with pytest.raises(ValueError):
+            get_labels(examples, true_sentiment_key, predicted_sentiment_key,
+                       ignore_label_differences=ignore_label_differences)
+    else:
+        get_labels(examples, true_sentiment_key, predicted_sentiment_key,
+                   ignore_label_differences=ignore_label_differences)
 
 @pytest.mark.parametrize("true_sentiment_key", ('target_sentiments', 'true values'))
 @pytest.mark.parametrize("predicted_sentiment_key", ('predictions', 'another'))
@@ -409,13 +425,17 @@ def test_metric_error_checks_and_accuracy(true_sentiment_key: str,
     example, _, _ = wrong_labels_example(true_sentiment_key, predicted_sentiment_key)
     with pytest.raises(ValueError):
         accuracy(example, true_sentiment_key, predicted_sentiment_key, 
-                 False, False, None)
+                 False, False, None, ignore_label_differences=False)
+    assert 0.0 == accuracy(example, true_sentiment_key, predicted_sentiment_key, 
+                           False, False, None)
     # Test label error when the prediction labels in one set of predictions do 
     # not match the true labels
     example, _, _ = wrong_multiple_labels_example(true_sentiment_key, predicted_sentiment_key)
     with pytest.raises(ValueError):
         accuracy(example, true_sentiment_key, predicted_sentiment_key, 
-                 True, False, None)
+                 True, False, None, ignore_label_differences=False)
+    assert 0.5 == accuracy(example, true_sentiment_key, predicted_sentiment_key, 
+                           True, False, None)
     # Test the case for multiple predictions where the average and array_scores 
     # are both True or both False
     # Test assert labels for the multiple sentiment case
@@ -449,6 +469,25 @@ def test_metric_error_checks_and_accuracy(true_sentiment_key: str,
     with pytest.raises(ValueError):
         accuracy(example, true_sentiment_key, predicted_sentiment_key, 
                  False, False, None)
+    # Tets the case where there are a different number of labels between the 
+    # predictions and the true.
+    example, _, _ = diff_label_pred_values(true_sentiment_key, 
+                                           predicted_sentiment_key)
+    with pytest.raises(ValueError):
+        accuracy(example, true_sentiment_key, predicted_sentiment_key, 
+                 True, False, None, ignore_label_differences=False)
+    assert 0.4 == accuracy(example, true_sentiment_key, predicted_sentiment_key, 
+                           True, False, None, ignore_label_differences=True)
+    example, _, _ = all_diff_label_pred_values(true_sentiment_key, 
+                                               predicted_sentiment_key)
+    with pytest.raises(ValueError):
+        accuracy(example, true_sentiment_key, predicted_sentiment_key, 
+                 False, True, None, ignore_label_differences=False)
+    assert [0.2, 0.6] == accuracy(example, true_sentiment_key, predicted_sentiment_key, 
+                                  False, True, None, ignore_label_differences=True)
+    # Test default ignore_label_differences value
+    assert [0.2, 0.6] == accuracy(example, true_sentiment_key, 
+                                  predicted_sentiment_key, False, True, None)
 
 @pytest.mark.parametrize("true_sentiment_key", ('target_sentiments', 'true values'))
 @pytest.mark.parametrize("predicted_sentiment_key", ('predictions', 'another'))
