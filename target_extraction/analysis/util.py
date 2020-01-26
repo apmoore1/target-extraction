@@ -373,7 +373,9 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
                        h_line_legend_name: str = 'Dataset Size (Number of Samples)',
                        h_line_legend_bbox_to_anchor: Optional[Tuple[float, float]] = None,
                        dataset_y_label: str = 'Dataset Size\n(Number of Samples)',
-                       gridspec_kw: Optional[Dict[str, Any]] = None
+                       gridspec_kw: Optional[Dict[str, Any]] = None,
+                       row_order: Optional[List[Any]] = None,
+                       column_order: Optional[List[Any]] = None
                        ) -> Tuple[matplotlib.figure.Figure, 
                                   List[List[matplotlib.axes.Axes]]]:
     '''
@@ -441,6 +443,10 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
                                          :py:func:`matplotlib.pyplot.Axes.legend`
     :param dataset_y_label: The Y-Label for the right hand side Y-axis.
     :param gridspec_kw: :py:func:`matplotlib.pyplot.subplots` `gridspec_kw` argument
+    :param row_order: A list of all unique `df_row_name` values in the order 
+                      the rows should appear in.
+    :param column_order: A list of all unique `df_column_name` values in the order 
+                         the columns should appear in.
     :returns: A tuple of 1. The figure  2. The associated axes within the 
               figure. The figure will contain N x M plots where N is the number 
               of unique values in the `metric_df` `df_column_name` column and 
@@ -546,9 +552,22 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
     # Determine the number of rows
     row_names = metric_df[df_row_name].unique().tolist()
     num_rows = len(row_names)
+    if row_order is not None:
+        row_order_error = (f'The `row_order` argument {row_order} should contain'
+                           'the same values as the unique values in the '
+                           f'`df_row_name` {df_row_name} column which are {row_names}')
+        assert set(row_order) == set(row_names), row_order_error
+        row_names = row_order
     # Number of columns
     column_names = metric_df[df_column_name].unique().tolist()
     number_columns = len(column_names)
+    if column_order is not None:
+        column_order_error = (f'The `column_order` argument {column_order} '
+                              'should contain the same values as the unique '
+                              f'values in the `df_column_name` {df_column_name} '
+                              f'column which are {column_names}')
+        assert set(column_order) == set(column_names), column_order_error
+        column_names = column_order
 
     if figsize is None:
         length = num_rows * 4
@@ -569,13 +588,13 @@ def plot_error_subsets(metric_df: pd.DataFrame, df_column_name: str,
             row_axs = axs[row_index]
             if row_index == (num_rows - 1):
                 plot_error_split(row_metric_df, row_axs, column_names, False, 
-                                    True, number_hue_values, h_line_legend_bbox_to_anchor)
+                                 True, number_hue_values, h_line_legend_bbox_to_anchor)
             elif row_index == 0:
                 plot_error_split(row_metric_df, row_axs, column_names, True, 
-                                    False, number_hue_values, h_line_legend_bbox_to_anchor)
+                                 False, number_hue_values, h_line_legend_bbox_to_anchor)
             else:
                 plot_error_split(row_metric_df, row_axs, column_names, False, 
-                                    False, number_hue_values, h_line_legend_bbox_to_anchor)
+                                 False, number_hue_values, h_line_legend_bbox_to_anchor)
     # Only 1 row but multiple columns
     else:
         plot_error_split(metric_df, axs, column_names, True, True, 

@@ -308,6 +308,39 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        legend_column=1, title_on_every_plot=True,
                                        gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
+    # Custom row order
+    if not plotting_one_row:
+        fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                        'Error Subset', 'Accuracy', df_hue_name='Model',
+                                        seaborn_plot_name='boxenplot',
+                                        legend_column=1, title_on_every_plot=True,
+                                        gridspec_kw=gridspec_kw, 
+                                        row_order=['TSR', 'n-shot', 'NT', 'DS', 'TSSR'])
+        assert axs_shape == axs.shape
+    else:
+        fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                        'Error Subset', 'Accuracy', df_hue_name='Model',
+                                        seaborn_plot_name='boxenplot',
+                                        legend_column=1, title_on_every_plot=True,
+                                        gridspec_kw=gridspec_kw, 
+                                        row_order=['DS'])
+        assert axs_shape == axs.shape
+    # Custom column order
+    fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                       'Error Subset', 'Accuracy', df_hue_name='Model',
+                                       seaborn_plot_name='boxenplot',
+                                       legend_column=1, title_on_every_plot=True,
+                                       gridspec_kw=gridspec_kw, 
+                                       column_order=['Laptop', 'Restaurant', 'Election'])
+    assert axs_shape == axs.shape
+    # When a value does not exist in the column values but does in the column order
+    with pytest.raises(AssertionError):
+        util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
+                                'Error Subset', 'Accuracy', df_hue_name='Model',
+                                seaborn_plot_name='boxenplot',
+                                legend_column=1, title_on_every_plot=True,
+                                gridspec_kw=gridspec_kw, 
+                                column_order=['Laptop', 'Restaurant', 'Election', 'Something'])
     # Non-Standard plot with kwargs to the plot function
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
                                        'Error Subset', 'Accuracy', df_hue_name='Model',
