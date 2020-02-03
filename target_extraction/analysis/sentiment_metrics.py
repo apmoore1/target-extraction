@@ -80,7 +80,8 @@ def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool,
                 true_sentiment_key: str, predicted_sentiment_key: str, 
                 average: bool, array_scores: bool, 
                 assert_number_labels: Optional[int] = None,
-                ignore_label_differences: bool = True
+                ignore_label_differences: bool = True,
+                **kwargs
                 ) -> Union[float, np.ndarray]:
         # Check that the TargetTextCollection contains both the true and 
         # predicted sentiment keys
@@ -128,7 +129,8 @@ def metric_error_checks(func: Callable[[TargetTextCollection, str, str, bool,
                                  'to be True but not both.') 
         return func(target_collection, true_sentiment_key, 
                     predicted_sentiment_key, average, array_scores, 
-                    assert_number_labels, ignore_label_differences)
+                    assert_number_labels, ignore_label_differences,
+                    **kwargs)
     return wrapper
 
 def get_labels(target_collection: TargetTextCollection, 
@@ -253,10 +255,18 @@ def macro_f1(target_collection: TargetTextCollection,
              true_sentiment_key: str, predicted_sentiment_key: str, 
              average: bool, array_scores: bool, 
              assert_number_labels: Optional[int] = None,
-             ignore_label_differences: bool = True
+             ignore_label_differences: bool = True,
+             **kwargs
              ) -> Union[float, List[float]]:
     '''
     :param ignore_label_differences: See :py:func:`get_labels`
+    :param **kwargs: These are the keyword arguments to give to the underlying 
+                     scikit learn :py:func:`f1_metric`. Note that the only argument
+                     that cannot be changed that is given to :py:func:`f1_metric`
+                     is `average`. If you want the F1 score for one label this 
+                     can still be done by providing the `labels` argument where 
+                     the value would be the label you want the F1 score for e.g.
+                     `labels` = [`positive`].
 
     Macro F1 score. Description at top of module explains arguments.
     '''
@@ -266,7 +276,8 @@ def macro_f1(target_collection: TargetTextCollection,
                                                     ignore_label_differences=ignore_label_differences)
     scores: List[float] = []
     for predicted_values in predicted_values_list:
-        scores.append(f1_score(true_values, predicted_values, average='macro'))
+        kwargs['average'] = 'macro'
+        scores.append(f1_score(true_values, predicted_values, **kwargs))
     if average:
         return statistics.mean(scores)
     elif array_scores:

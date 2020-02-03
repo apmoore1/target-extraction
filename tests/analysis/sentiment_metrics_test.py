@@ -507,7 +507,18 @@ def test_macro_f1(true_sentiment_key: str, predicted_sentiment_key: str):
     score = macro_f1(example, true_sentiment_key, predicted_sentiment_key, 
                      False, True, None)
     assert [(0.5 / 3.0), (1.3 / 3)] == score
-
+    # Test that the method can handle passing kwargs to the underlying f1_score 
+    # metric at https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
+    example, _, _ = passable_example(true_sentiment_key, predicted_sentiment_key)
+    score = macro_f1(example, true_sentiment_key, predicted_sentiment_key, 
+                     False, False, None, ignore_label_differences=True, 
+                     labels=['pos'])
+    assert 0 == score
+    example, _, _ = passable_example_multiple_preds(true_sentiment_key, predicted_sentiment_key)
+    score = macro_f1(example, true_sentiment_key, predicted_sentiment_key, 
+                     False, True, None, ignore_label_differences=True, 
+                     labels=['neg'])
+    assert [(2 * ((0.5 * 0.5) / 1)), round((2 * ((2/3) / (5/3))), 1)] == score
 
 @pytest.mark.parametrize("true_sentiment_key", ('target_sentiments', 'true values'))
 @pytest.mark.parametrize("predicted_sentiment_key", ('predictions', 'another'))
