@@ -1920,20 +1920,23 @@ class TargetTextCollection(MutableMapping):
                 sub_collection.add(target_text)
         return sub_collection
 
-    def target_count(self, lower: bool = False) -> Dict[str, int]:
+    def target_count(self, lower: bool = False, 
+                     target_key: str = 'targets') -> Dict[str, int]:
         '''
         :Note: The target can not exist e.g. be a `None` target as the target 
                can be combined with the category like in the SemEval 2016 
                Restaurant dataset. In these case we do not include these 
                in the target_count.
         :param lower: Whether or not to lower the target text.
+        :param target_key: The key in each TargetText sample that contains the 
+                           list of target words.
         :returns: A dictionary of target text as key and values as the number 
                   of times the target text occurs in this TargetTextCollection
         '''
         target_count: Dict[str, int] = Counter()
         for target_dict in self.values():
-            if target_dict['targets']:
-                for target in target_dict['targets']:
+            if target_dict[target_key]:
+                for target in target_dict[target_key]:
                     if target is None:
                         continue
                     if lower:

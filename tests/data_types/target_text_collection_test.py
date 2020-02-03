@@ -915,8 +915,8 @@ class TestTargetTextCollection:
 
     @pytest.mark.parametrize("lower", (False, True))
     @pytest.mark.parametrize("incl_none_targets", (False, True))
-    def test_target_count_andnumber_targets(self, lower: bool,
-                                            incl_none_targets: bool):
+    def test_target_count_and_number_targets(self, lower: bool,
+                                             incl_none_targets: bool):
         # Start with an empty collection
         test_collection = TargetTextCollection()
         nothing = test_collection.target_count(lower)
@@ -990,6 +990,9 @@ class TestTargetTextCollection:
             assert test_collection.number_targets(incl_none_targets) == 5
         else:
             assert test_collection.number_targets(incl_none_targets) == 4
+        # Should raise a KeyError if the `target_key` does not exist
+        with pytest.raises(KeyError):
+            test_collection.target_count(lower, target_key='does not exist')
 
     def test_category_count_and_numbers(self):
         # Start with an empty collection
