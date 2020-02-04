@@ -7,7 +7,8 @@
           "lowercase_tokens": true
         },
         "token_characters": {
-            "type": "characters"
+            "type": "characters",
+            "min_padding_length": 1
         }
       }
     },
@@ -37,8 +38,7 @@
                 "bidirectional": true,
                 "input_size": 5,
                 "hidden_size": 5,
-                "num_layers": 1,
-                "dropout": 0.5
+                "num_layers": 1
             }
             }
       }

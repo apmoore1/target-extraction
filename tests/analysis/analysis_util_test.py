@@ -301,6 +301,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        legend_column=1, title_on_every_plot=True,
                                        gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
+    plt.close(fig)
     # Non-Standard plot
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
                                        'Error Subset', 'Accuracy', df_hue_name='Model',
@@ -308,6 +309,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        legend_column=1, title_on_every_plot=True,
                                        gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
+    plt.close(fig)
     # Custom row order
     if not plotting_one_row:
         fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
@@ -317,6 +319,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                         gridspec_kw=gridspec_kw, 
                                         row_order=['TSR', 'n-shot', 'NT', 'DS', 'TSSR'])
         assert axs_shape == axs.shape
+        plt.close(fig)
     else:
         fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
                                         'Error Subset', 'Accuracy', df_hue_name='Model',
@@ -325,6 +328,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                         gridspec_kw=gridspec_kw, 
                                         row_order=['DS'])
         assert axs_shape == axs.shape
+        plt.close(fig)
     # Custom column order
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
                                        'Error Subset', 'Accuracy', df_hue_name='Model',
@@ -333,6 +337,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        gridspec_kw=gridspec_kw, 
                                        column_order=['Laptop', 'Restaurant', 'Election'])
     assert axs_shape == axs.shape
+    plt.close(fig)
     # When a value does not exist in the column values but does in the column order
     with pytest.raises(AssertionError):
         util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
@@ -348,6 +353,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        seaborn_kwargs={'dodge': True},
                                        legend_column=1, title_on_every_plot=True,
                                        gridspec_kw=gridspec_kw)
+    plt.close(fig)
     # with a different figure size and not all plots having titles
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
                                        'Error Subset', 'Accuracy', df_hue_name='Model',
@@ -355,6 +361,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        legend_column=1, title_on_every_plot=False,
                                        gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
+    plt.close(fig)
     # Plotting the overall metric as well. E.g. another plot on each plot 
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
                                        'Error Subset', 'Accuracy', df_hue_name='Model',
@@ -364,6 +371,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        legend_column=1, title_on_every_plot=False,
                                        gridspec_kw=gridspec_kw)
     assert axs_shape == axs.shape
+    plt.close(fig)
     # Plotting the dataset size
     df_dataset_size = 'Data Size'
     plotting_data['Data Size'] = 200
@@ -374,6 +382,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        gridspec_kw=gridspec_kw,
                                        df_dataset_size=df_dataset_size)
     assert axs_shape == axs.shape
+    plt.close(fig)
     fig, axs = util.plot_error_subsets(plotting_data, 'Dataset', 'Error Split', 
                                        'Error Subset', 'Accuracy', df_hue_name='Model',
                                        figsize=(10,12),
@@ -381,6 +390,7 @@ def test_plot_error_subsets(plotting_one_row: bool, gridspec_kw: bool):
                                        gridspec_kw=gridspec_kw,
                                        df_dataset_size=df_dataset_size,
                                        h_line_legend_bbox_to_anchor=(0.13,0.2))
+    plt.close(fig)
 
 @pytest.mark.parametrize('value_range', (True, False))
 @pytest.mark.parametrize('line_indxes', (True, False))
