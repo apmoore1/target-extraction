@@ -5,6 +5,8 @@ overall statistics.
 from collections import defaultdict
 from typing import Dict, Any, List, Union, Callable
 
+import pandas as pd
+
 from target_extraction.data_types import TargetTextCollection
 from target_extraction.tokenizers import spacy_tokenizer
 
@@ -99,10 +101,26 @@ def tokens_per_target(collection: TargetTextCollection,
         lengths = temp_lengths
     return lengths
 
+def _statistics_to_dataframe(collection_statistics: List[Dict[str, Union[str,int,float]]]
+                             ) -> pd.DataFrame:
+    '''
+    :param collection_statistics: The dictionaries to be converted into 
+                                  a single dataframe.
+    :returns: The collection statistics given into a dataframe where all columns 
+              are the key names and the values are the associated values in the 
+              keys from the list of dictionaries.
+    '''
+    pd_dict = defaultdict(list)
+    for collection_statistic in collection_statistics:
+        for stat_key, stat_value in collection_statistic.items():
+            pd_dict[stat_key].append(stat_value)
+    return pd.DataFrame(pd_dict)
+
 def dataset_target_extraction_statistics(collections: List[TargetTextCollection],
                                          lower_target: bool = True,
                                          target_key: str = 'targets',
-                                         tokeniser: Callable[[str], List[str]]=spacy_tokenizer()
+                                         tokeniser: Callable[[str], List[str]]=spacy_tokenizer(),
+                                         dataframe_format: bool = False
                                          ) -> List[Dict[str, Union[str,int,float]]]:
     '''
     :param collections: A list of collections
@@ -115,6 +133,8 @@ def dataset_target_extraction_statistics(collections: List[TargetTextCollection]
                       for a module of comptabile tokenisers 
                       :py:mod:`target_extraction.tokenizers`. This is required 
                       to give statistics on target length.
+    :param dataframe_format: If True instead of a list of dictionaries the 
+                             return will be a pandas dataframe
     :returns: A list of dictionaries each containing the statistics for the 
               associated collection. Each dictionary will have the following 
               keys:
@@ -146,25 +166,31 @@ def dataset_target_extraction_statistics(collections: List[TargetTextCollection]
         collection_stats['ATS(t)'] = average_target_per_sentences(collection, True)
         
         target_lengths = tokens_per_target(collection, target_key, tokeniser, normalise=True)
-        collection_stats['TL (1)'] = target_lengths[1]
-        collection_stats['TL (2)'] = target_lengths[2]
+        collection_stats['TL 1 %'] = round(target_lengths[1] * 100, 2)
+        collection_stats['TL 2 %'] = round(target_lengths[2] * 100, 2)
         three_plus = sum([fraction for token_length, fraction in target_lengths.items() 
                           if token_length > 2])
-        collection_stats['TL (3+)'] = three_plus
+        collection_stats['TL 3+ %'] = round(three_plus * 100, 2)
         dataset_stats.append(collection_stats)
+    if dataframe_format:
+        return _statistics_to_dataframe(dataset_stats)
     return dataset_stats
 
 def dataset_target_sentiment_statistics(collections: List[TargetTextCollection],
                                         lower_target: bool = True,
                                         target_key: str = 'targets',
                                         tokeniser: Callable[[str], List[str]]=spacy_tokenizer(),
-                                        sentiment_key: str = 'target_sentiments'
-                                        ) -> List[Dict[str, Union[str,int,float]]]:
+                                        sentiment_key: str = 'target_sentiments',
+                                        dataframe_format: bool = False
+                                        ) -> Union[List[Dict[str, Union[str,int,float]]], 
+                                                   pd.DataFrame]:
     '''
     :param collections: A list of collections
     :param lower_target: Whether to lower case the targets before counting them
     :param sentiment_key: The key in each TargetText within each collection that 
                           contains the True sentiment value.
+    :param dataframe_format: If True instead of a list of dictionaries the 
+                             return will be a pandas dataframe
     :returns: A list of dictionaries each containing the statistics for the 
               associated collection. Each dictionary will have the keys from 
               :py:func:`dataset_target_extraction_statistics` and the following 
@@ -176,15 +202,18 @@ def dataset_target_sentiment_statistics(collections: List[TargetTextCollection],
     initial_dataset_stats = dataset_target_extraction_statistics(collections, 
                                                                  lower_target=lower_target, 
                                                                  target_key=target_key, 
-                                                                 tokeniser=tokeniser)
+                                                                 tokeniser=tokeniser,
+                                                                 dataframe_format=False)
     dataset_stats = []
     for collection, collection_stats in zip(collections, initial_dataset_stats):
         sentiment_count = get_sentiment_counts(collection, normalised=True, 
                                                sentiment_key=sentiment_key)
-        collection_stats['POS %'] = sentiment_count['positive'] * 100
-        collection_stats['NEU %'] = sentiment_count['neutral'] * 100
-        collection_stats['NEG %'] = sentiment_count['negative'] * 100
+        collection_stats['POS %'] = round(sentiment_count['positive'] * 100, 2)
+        collection_stats['NEU %'] = round(sentiment_count['neutral'] * 100, 2)
+        collection_stats['NEG %'] = round(sentiment_count['negative'] * 100, 2)
         dataset_stats.append(collection_stats)
+    if dataframe_format:
+        return _statistics_to_dataframe(dataset_stats)
     return dataset_stats
 
 
