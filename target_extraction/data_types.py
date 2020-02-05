@@ -1455,6 +1455,11 @@ class TargetTextCollection(MutableMapping):
        the given json file.
     3. combine -- Returns a TargetTextCollection that is the combination of all 
        of those given.
+    4. same_data -- Given a List of TargetTextCollections it will return a list 
+       of tuples specifying the overlap between the collections based on the 
+       samples `text_id` and `text` key values. If it returns an empty list 
+       then there are no overlap between the collections. This is useful to 
+       find duplicates beyond the `text_id` as it checks the `text` value as well.
     '''
     def __init__(self, target_texts: Optional[List['TargetText']] = None,
                  name: Optional[str] = None, 
@@ -2398,6 +2403,33 @@ class TargetTextCollection(MutableMapping):
             for target in collection.values():
                 target_objects.append(target)
         return TargetTextCollection(target_objects)
+
+    @staticmethod
+    def same_data(collections: List['TargetTextCollection']
+                  ) -> List[Tuple[List[Tuple['TargetText', 'TargetText']], Tuple[str, str]]]:
+        '''
+        :param collections: A list of TargetTextCollections to test if there are 
+                            any duplicates based on `text_id` and `text` key 
+                            values.
+        :returns: If the list is empty then there are no duplicates. Else a list of
+                  tuples containing 1. A list of tuples of duplicate TargetText instances 
+                  2. A tuple of collection names that the TargetText have come stating 
+                  the names of the collections that have the duplicates.
+        '''
+        all_matches = []
+        for collection_index, collection in enumerate(collections):
+            
+            for other_collection in collections[collection_index + 1:]:
+                same_targets = []
+                for target_text in collection.values():
+                    for other_target_text in other_collection.values():
+                        if target_text['text_id'] == other_target_text['text_id']:
+                            same_targets.append((target_text, other_target_text))
+                        elif target_text['text'] == other_target_text['text']:
+                            same_targets.append((target_text, other_target_text))
+                if same_targets:
+                    all_matches.append((same_targets, (collection.name, other_collection.name)))
+        return all_matches
 
 
     def __setitem__(self, key: str, value: 'TargetText') -> None:

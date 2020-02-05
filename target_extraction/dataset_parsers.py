@@ -498,7 +498,7 @@ def multi_aspect_multi_sentiment_atsa(dataset: str,
                 raise ValueError(f'This tag {data.tag} should not occur '
                                  'within a sentence tag')
         target_text_kwargs = {'targets': targets, 'spans': spans, 
-                              'text_id': str(sentence_id),
+                              'text_id': f'{dataset}${str(sentence_id)}',
                               'target_sentiments': target_sentiments,
                               'categories': None, 'text': text, 
                               'category_sentiments': None}
@@ -571,7 +571,7 @@ def multi_aspect_multi_sentiment_acsa(dataset: str,
                 raise ValueError(f'This tag {data.tag} should not occur '
                                  'within a sentence tag')
         category_text_kwargs = {'targets': None, 'spans': None, 
-                                'text_id': str(sentence_id),
+                                'text_id': f'{dataset}${str(sentence_id)}',
                                 'target_sentiments': None,
                                 'categories': categories, 'text': text, 
                                 'category_sentiments': category_sentiments}

@@ -1719,6 +1719,33 @@ class TestTargetTextCollection:
                     assert text_sentiment_key not in target_text
                 else:
                     assert answer == target_text[text_sentiment_key]
+    
+    def test_same_data(self):
+        # Testing based on the same text
+        a_1 = TargetText(text_id='1', text='something other')
+        b_1 = TargetText(text_id='2', text='something other')
+        b_2 = TargetText(text_id='3', text='something another')
+        c_1 = TargetText(text_id='4', text='done')
+        
+        a = TargetTextCollection([a_1])
+        a.name = 'a'
+        b = TargetTextCollection([b_1, b_2])
+        b.name = 'b'
+        c = TargetTextCollection([c_1])
+        c.name = 'c'
+
+        assert not TargetTextCollection.same_data([a, c])
+        assert [([(a_1, b_1)], ('a', 'b'))] == TargetTextCollection.same_data([a, b])
+        assert [([(b_1, a_1)], ('b', 'a'))] == TargetTextCollection.same_data([b, c, a])
+
+        # Testing based on ID
+        c_2 = TargetText(text_id='1', text=None)
+        c.add(c_2)
+        assert [([(a_1, c_2)], ('a', 'c'))] == TargetTextCollection.same_data([a, c])
+
+        # Testing the combination
+        assert [([(b_1, a_1)], ('b', 'a')), 
+                ([(a_1, c_2)], ('a', 'c'))] == TargetTextCollection.same_data([b, a, c])
 
         
 
