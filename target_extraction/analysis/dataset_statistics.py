@@ -195,9 +195,9 @@ def dataset_target_sentiment_statistics(collections: List[TargetTextCollection],
               associated collection. Each dictionary will have the keys from 
               :py:func:`dataset_target_extraction_statistics` and the following 
               in addition:
-              1. Pos % -- Percentage of positive targets
-              2. Neu % -- Percentage of neutral targets
-              3. Neg % -- Percentage of Negative targets
+              1. POS (%) -- Number (Percentage) of positive targets
+              2. NEU (%) -- Number (Percentage) of neutral targets
+              3. NEG (%) -- Number (Percentage) of Negative targets
     '''
     initial_dataset_stats = dataset_target_extraction_statistics(collections, 
                                                                  lower_target=lower_target, 
@@ -206,11 +206,18 @@ def dataset_target_sentiment_statistics(collections: List[TargetTextCollection],
                                                                  dataframe_format=False)
     dataset_stats = []
     for collection, collection_stats in zip(collections, initial_dataset_stats):
-        sentiment_count = get_sentiment_counts(collection, normalised=True, 
+        sentiment_percent = get_sentiment_counts(collection, normalised=True, 
+                                                 sentiment_key=sentiment_key)
+        sentiment_percent = {sentiment_name: round((fraction * 100), 2) 
+                             for sentiment_name, fraction in sentiment_percent.items()}
+        sentiment_count = get_sentiment_counts(collection, normalised=False, 
                                                sentiment_key=sentiment_key)
-        collection_stats['POS %'] = round(sentiment_count['positive'] * 100, 2)
-        collection_stats['NEU %'] = round(sentiment_count['neutral'] * 100, 2)
-        collection_stats['NEG %'] = round(sentiment_count['negative'] * 100, 2)
+        pos_value = f'{sentiment_count["positive"]} ({sentiment_percent["positive"]})'
+        collection_stats['POS (%)'] = pos_value 
+        neu_value = f'{sentiment_count["neutral"]} ({sentiment_percent["neutral"]})'
+        collection_stats['NEU (%)'] = neu_value
+        neg_value = f'{sentiment_count["negative"]} ({sentiment_percent["negative"]})'
+        collection_stats['NEG (%)'] = neg_value
         dataset_stats.append(collection_stats)
     if dataframe_format:
         return _statistics_to_dataframe(dataset_stats)

@@ -175,15 +175,25 @@ def test_dataset_target_sentiment_statistics(lower: bool):
                                                  lower_target=lower)
     else:
         target_stats = dataset_target_sentiment_statistics([TRAIN_COLLECTION])
-    pos_percent = get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY)['positive'] * 100
-    neu_percent = get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY)['neutral'] * 100
-    neg_percent = get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY)['negative'] * 100
+    
+    pos_percent = round(get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY)['positive'] * 100, 2)
+    pos_count = get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY, normalised=False)['positive']
+    pos_count_percent = f'{pos_count} ({pos_percent})'
+
+    neu_percent = round(get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY)['neutral'] * 100, 2)
+    neu_count = get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY, normalised=False)['neutral']
+    neu_count_percent = f'{neu_count} ({neu_percent})'
+
+    neg_percent = round(get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY)['negative'] * 100, 2)
+    neg_count = get_sentiment_counts(TRAIN_COLLECTION, SENTIMENT_KEY, normalised=False)['negative']
+    neg_count_percent = f'{neg_count} ({neg_percent})'
+
     tl_1 = round((17/19.0) * 100, 2)
     tl_2 = round((2/19.0) * 100, 2)
     true_stats = {'Name': 'train', 'No. Sentences': 6, 'No. Sentences(t)': 5,
                   'No. Targets': 19, 'No. Uniq Targets': 13, 'ATS': 19/6.0,
-                  'ATS(t)': 19/5.0, 'POS %': round(pos_percent, 2), 
-                  'NEG %': round(neg_percent, 2), 'NEU %': round(neu_percent, 2), 
+                  'ATS(t)': 19/5.0, 'POS (%)': pos_count_percent, 
+                  'NEG (%)': neg_count_percent, 'NEU (%)': neu_count_percent, 
                   'TL 1 %': tl_1, 'TL 2 %': tl_2, 'TL 3+ %': 0.0}
     if lower == False:
         true_stats['No. Uniq Targets'] = 14
@@ -207,15 +217,24 @@ def test_dataset_target_sentiment_statistics(lower: bool):
     else:
         target_stats = dataset_target_sentiment_statistics([subcollection, TRAIN_COLLECTION])
     
-    pos_percent = get_sentiment_counts(subcollection, SENTIMENT_KEY)['positive'] * 100
-    neu_percent = get_sentiment_counts(subcollection, SENTIMENT_KEY)['neutral'] * 100
-    neg_percent = get_sentiment_counts(subcollection, SENTIMENT_KEY)['negative'] * 100
+    pos_percent = round(get_sentiment_counts(subcollection, SENTIMENT_KEY)['positive'] * 100, 2)
+    pos_count = get_sentiment_counts(subcollection, SENTIMENT_KEY, normalised=False)['positive']
+    pos_count_percent = f'{pos_count} ({pos_percent})'
+
+    neu_percent = round(get_sentiment_counts(subcollection, SENTIMENT_KEY)['neutral'] * 100, 2)
+    neu_count = get_sentiment_counts(subcollection, SENTIMENT_KEY, normalised=False)['neutral']
+    neu_count_percent = f'{neu_count} ({neu_percent})'
+
+    neg_percent = round(get_sentiment_counts(subcollection, SENTIMENT_KEY)['negative'] * 100, 2)
+    neg_count = get_sentiment_counts(subcollection, SENTIMENT_KEY, normalised=False)['negative']
+    neg_count_percent = f'{neg_count} ({neg_percent})'
+
     tl_1 = round((6/7.0) * 100, 2)
     tl_2 = round((1/7.0) * 100, 2)
     sub_stats = {'Name': 'sub', 'No. Sentences': 2, 'No. Sentences(t)': 2,
                  'No. Targets': 7, 'No. Uniq Targets': 7, 'ATS': 7/2.0,
-                 'ATS(t)': 7/2.0, 'POS %': round(pos_percent, 2), 
-                 'NEG %': round(neg_percent, 2), 'NEU %': round(neu_percent, 2), 
+                 'ATS(t)': 7/2.0, 'POS (%)': pos_count_percent, 
+                 'NEG (%)': neg_count_percent, 'NEU (%)': neu_count_percent,
                  'TL 1 %': tl_1, 'TL 2 %': tl_2, 'TL 3+ %': 0.0}
     true_stats = [sub_stats, true_stats]
     assert len(true_stats) == len(target_stats)
@@ -227,10 +246,3 @@ def test_dataset_target_sentiment_statistics(lower: bool):
                 assert math.isclose(stat_value, test_stat[stat_name], rel_tol=0.001)
             else:
                 assert stat_value == test_stat[stat_name], stat_name
-
-
-["immigration", "patients", "immigration", "NHS", "Tory"]
-["Ed Balls", "@politics_co_uk", "SNPout", "osborne"]
-["BattleForNumber10", "NHS", "immigration", "spending cuts"]
-["Police", "crime", "Conservatives"]
-["police", "crime", "Conservatives"]
