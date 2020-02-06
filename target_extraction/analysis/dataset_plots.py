@@ -40,10 +40,11 @@ def target_length_plot(collections: List[TargetTextCollection],
     dataset_names = []
     token_lengths = []
     length_percentage = []
+    normalise = False if cumulative_percentage else True
     for collection in collections:
         name = collection.name
         token_length_percent = tokens_per_target(collection, target_key, 
-                                                 tokeniser, normalise=True, 
+                                                 tokeniser, normalise=normalise, 
                                                  cumulative_percentage=cumulative_percentage)
         for token_length, length_percent in token_length_percent.items():
             dataset_names.append(name)
