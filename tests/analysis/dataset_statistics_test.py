@@ -13,6 +13,7 @@ from target_extraction.analysis.dataset_statistics import dataset_target_sentime
 from target_extraction.analysis.dataset_statistics import tokens_per_target
 from target_extraction.analysis.dataset_statistics import dataset_target_extraction_statistics
 from target_extraction.analysis.dataset_statistics import _statistics_to_dataframe
+from target_extraction.analysis.dataset_statistics import tokens_per_sentence
 from target_extraction.tokenizers import whitespace
 
 DATA_DIR = Path(__file__, '..', '..', 'data', 'analysis', 'sentiment_error_analysis').resolve()
@@ -20,10 +21,6 @@ TRAIN_COLLECTION =  TargetTextCollection.load_json(Path(DATA_DIR, 'train_with_bl
 TRAIN_COLLECTION.name = 'train'
 SENTIMENT_KEY = 'target_sentiments'
 
-["neutral", "neutral", "neutral", "neutral", "negative"]
-["negative", "neutral", "neutral", "neutral"]
-["neutral", "negative", "negative", "negative"]
-["neutral", "positive", "neutral"]
 def test_get_sentiment_counts():
     num_pos = 2
     num_neu = 12
@@ -55,15 +52,29 @@ def test_average_target_per_sentences():
     assert true_ats == average_target_per_sentences(TRAIN_COLLECTION, 
                                                     sentence_must_contain_targets=True)
 
+def test_tokens_per_sentence():
+    # Test the case where they would have to tokenize
+    true_sentence_length = {13: 3, 23: 1, 21: 1, 9: 1}
+    sentence_length = tokens_per_sentence(TRAIN_COLLECTION, whitespace())
+    assert len(true_sentence_length) == len(sentence_length)
+    for length, count in true_sentence_length.items():
+        assert count == sentence_length[length]
+    # Test the case when it does not need to be tokenised
+    sentence_length = tokens_per_sentence(TRAIN_COLLECTION, whitespace())
+    assert len(true_sentence_length) == len(sentence_length)
+    for length, count in true_sentence_length.items():
+        assert count == sentence_length[length]
+
 def test__statistics_to_dataframe():
     # Test with just one collection
     target_stats = dataset_target_extraction_statistics([TRAIN_COLLECTION])
     tl_1 = round((17/19.0) * 100, 2)
     tl_2 = round((2/19.0) * 100, 2)
     true_stats = {'Name': 'train', 'No. Sentences': 6, 'No. Sentences(t)': 5,
-                  'No. Targets': 19, 'No. Uniq Targets': 13, 'ATS': 19/6.0,
-                  'ATS(t)': 19/5.0, 'TL 1 %': tl_1, 'TL 2 %': tl_2,
-                  'TL 3+ %': 0}
+                  'No. Targets': 19, 'No. Uniq Targets': 13, 'ATS': round(19/6.0,2),
+                  'ATS(t)': round(19/5.0,2), 'TL 1 %': tl_1, 'TL 2 %': tl_2,
+                  'TL 3+ %': 0, 'Mean Sentence Length': 15.33,
+                  'Mean Sentence Length(t)': 16.6}
     true_stats_list = {key: [value] for key, value in true_stats.items()}
     true_stats_df = pd.DataFrame(true_stats_list)
     test_stats_df =  _statistics_to_dataframe(target_stats)
@@ -76,9 +87,10 @@ def test__statistics_to_dataframe():
     tl_1 = round((6/7.0) * 100, 2)
     tl_2 = round((1/7.0) * 100, 2)
     sub_stats = {'Name': 'sub', 'No. Sentences': 2, 'No. Sentences(t)': 2,
-                 'No. Targets': 7, 'No. Uniq Targets': 7, 'ATS': 7/2.0,
-                 'ATS(t)': 7/2.0, 
-                 'TL 1 %': tl_1, 'TL 2 %': tl_2, 'TL 3+ %': 0}
+                 'No. Targets': 7, 'No. Uniq Targets': 7, 'ATS': round(7/2.0, 2),
+                 'ATS(t)': round(7/2.0, 2), 
+                 'TL 1 %': tl_1, 'TL 2 %': tl_2, 'TL 3+ %': 0, 
+                 'Mean Sentence Length': 13, 'Mean Sentence Length(t)': 13}
     true_stats_list = {key: [value, true_stats[key]] 
                        for key, value in sub_stats.items()}
     true_stats_df = pd.DataFrame(true_stats_list)
@@ -120,9 +132,10 @@ def test_dataset_target_extraction_statistics(lower: bool):
     tl_1 = round((17/19.0) * 100, 2)
     tl_2 = round((2/19.0) * 100, 2)
     true_stats = {'Name': 'train', 'No. Sentences': 6, 'No. Sentences(t)': 5,
-                  'No. Targets': 19, 'No. Uniq Targets': 13, 'ATS': 19/6.0,
-                  'ATS(t)': 19/5.0, 'TL 1 %': tl_1, 'TL 2 %': tl_2,
-                  'TL 3+ %': 0.0}
+                  'No. Targets': 19, 'No. Uniq Targets': 13, 'ATS': round(19/6.0, 2),
+                  'ATS(t)': round(19/5.0, 2), 'TL 1 %': tl_1, 'TL 2 %': tl_2,
+                  'TL 3+ %': 0.0, 'Mean Sentence Length': 15.33, 
+                  'Mean Sentence Length(t)': 16.6}
     if lower == False:
         true_stats['No. Uniq Targets'] = 14
     assert 1 == len(target_stats)
@@ -144,6 +157,7 @@ def test_dataset_target_extraction_statistics(lower: bool):
                              target_sentiments=['positive', 'negative'], 
                              text_id='100')
     subcollection.add(long_target)
+    subcollection.tokenize(whitespace())
     if lower is not None:
         target_stats = dataset_target_extraction_statistics([subcollection, TRAIN_COLLECTION], 
                                                             lower_target=lower)
@@ -154,9 +168,10 @@ def test_dataset_target_extraction_statistics(lower: bool):
     tl_2 = round((1/9.0) * 100, 2)
     tl_3 = round((2/9.0) * 100, 2)
     sub_stats = {'Name': 'sub', 'No. Sentences': 3, 'No. Sentences(t)': 3,
-                 'No. Targets': 9, 'No. Uniq Targets': 9, 'ATS': 9/3.0,
-                 'ATS(t)': 9/3.0, 'TL 1 %': tl_1, 'TL 2 %': tl_2,
-                 'TL 3+ %': tl_3}
+                 'No. Targets': 9, 'No. Uniq Targets': 9, 'ATS': round(9/3.0, 2),
+                 'ATS(t)': round(9/3.0, 2), 'TL 1 %': tl_1, 'TL 2 %': tl_2,
+                 'TL 3+ %': tl_3, 'Mean Sentence Length': 11.67,
+                 'Mean Sentence Length(t)': 11.67}
     true_stats = [sub_stats, true_stats]
     assert len(true_stats) == len(target_stats)
     for stat_index, stat in enumerate(true_stats):
@@ -191,10 +206,11 @@ def test_dataset_target_sentiment_statistics(lower: bool):
     tl_1 = round((17/19.0) * 100, 2)
     tl_2 = round((2/19.0) * 100, 2)
     true_stats = {'Name': 'train', 'No. Sentences': 6, 'No. Sentences(t)': 5,
-                  'No. Targets': 19, 'No. Uniq Targets': 13, 'ATS': 19/6.0,
-                  'ATS(t)': 19/5.0, 'POS (%)': pos_count_percent, 
+                  'No. Targets': 19, 'No. Uniq Targets': 13, 'ATS': round(19/6.0, 2),
+                  'ATS(t)': round(19/5.0, 2), 'POS (%)': pos_count_percent, 
                   'NEG (%)': neg_count_percent, 'NEU (%)': neu_count_percent, 
-                  'TL 1 %': tl_1, 'TL 2 %': tl_2, 'TL 3+ %': 0.0}
+                  'TL 1 %': tl_1, 'TL 2 %': tl_2, 'TL 3+ %': 0.0,
+                  'Mean Sentence Length': 15.33, 'Mean Sentence Length(t)': 16.6}
     if lower == False:
         true_stats['No. Uniq Targets'] = 14
     print(target_stats)
@@ -232,10 +248,11 @@ def test_dataset_target_sentiment_statistics(lower: bool):
     tl_1 = round((6/7.0) * 100, 2)
     tl_2 = round((1/7.0) * 100, 2)
     sub_stats = {'Name': 'sub', 'No. Sentences': 2, 'No. Sentences(t)': 2,
-                 'No. Targets': 7, 'No. Uniq Targets': 7, 'ATS': 7/2.0,
-                 'ATS(t)': 7/2.0, 'POS (%)': pos_count_percent, 
+                 'No. Targets': 7, 'No. Uniq Targets': 7, 'ATS': round(7/2.0, 2),
+                 'ATS(t)': round(7/2.0, 2), 'POS (%)': pos_count_percent, 
                  'NEG (%)': neg_count_percent, 'NEU (%)': neu_count_percent,
-                 'TL 1 %': tl_1, 'TL 2 %': tl_2, 'TL 3+ %': 0.0}
+                 'TL 1 %': tl_1, 'TL 2 %': tl_2, 'TL 3+ %': 0.0,
+                 'Mean Sentence Length': 13, 'Mean Sentence Length(t)': 13}
     true_stats = [sub_stats, true_stats]
     assert len(true_stats) == len(target_stats)
     for stat_index, stat in enumerate(true_stats):

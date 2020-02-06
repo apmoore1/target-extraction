@@ -4,6 +4,7 @@ overall statistics.
 '''
 from collections import defaultdict
 from typing import Dict, Any, List, Union, Callable
+import statistics
 
 import pandas as pd
 
@@ -101,6 +102,30 @@ def tokens_per_target(collection: TargetTextCollection,
         lengths = temp_lengths
     return lengths
 
+def tokens_per_sentence(collection: TargetTextCollection, 
+                        tokeniser: Callable[[str], List[str]]) -> Dict[int, int]:
+    '''
+    :param collection: The collection to generate the statistic for.
+    :param tokeniser: The tokenizer to use to split the sentences/texts into 
+                      tokens. If the collection has already been tokenised then 
+                      it will use the tokens in the `tokenized_text` key within 
+                      each sample in the collection else it will produce the 
+                      tokens within this function and save them to that key as 
+                      well. For a module of comptabile tokenisers 
+                      :py:mod:`target_extraction.tokenizers`
+    :returns: A dictionary of sentence lengths and their frequency.
+              **This is a defaultdict where the value will be 0 if the key 
+              does not exist.**
+    '''
+    if_tokenised = 'tokenized_text' in next(collection.dict_iterator())
+    if not if_tokenised:
+        collection.tokenize(tokeniser)
+    length_count = defaultdict(lambda: 0)
+    for target_text in collection.values():
+        length_count[len(target_text['tokenized_text'])] += 1
+    return length_count
+    
+
 def _statistics_to_dataframe(collection_statistics: List[Dict[str, Union[str,int,float]]]
                              ) -> pd.DataFrame:
     '''
@@ -153,6 +178,12 @@ def dataset_target_extraction_statistics(collections: List[TargetTextCollection]
                  number of tokens.
               10. TL (3+) -- Percentage of targets that are length 3+ based on the 
                   number of tokens.
+              11. Mean Sent L -- Mean sentence length based on the tokens provided 
+                  by the `tokenized_text` key in each TargetText within the 
+                  collections. If this key does not exist then the collection
+                  will be tokenized using the given tokeniser argument.
+              12. Mean Sent L(t) -- `Mean Sent L` but where all sentences in 
+                  the collection must contain at least one target.
     '''
     dataset_stats: List[Dict[str, Union[str,int,float]]] = []
     for collection in collections:
@@ -162,8 +193,8 @@ def dataset_target_extraction_statistics(collections: List[TargetTextCollection]
         collection_stats['No. Sentences(t)'] = len(collection.samples_with_targets())
         collection_stats['No. Targets'] = collection.number_targets()
         collection_stats['No. Uniq Targets'] = len(collection.target_count(lower=lower_target))
-        collection_stats['ATS'] = average_target_per_sentences(collection, False)
-        collection_stats['ATS(t)'] = average_target_per_sentences(collection, True)
+        collection_stats['ATS'] = round(average_target_per_sentences(collection, False), 2)
+        collection_stats['ATS(t)'] = round(average_target_per_sentences(collection, True), 2)
         
         target_lengths = tokens_per_target(collection, target_key, tokeniser, normalise=True)
         collection_stats['TL 1 %'] = round(target_lengths[1] * 100, 2)
@@ -171,6 +202,22 @@ def dataset_target_extraction_statistics(collections: List[TargetTextCollection]
         three_plus = sum([fraction for token_length, fraction in target_lengths.items() 
                           if token_length > 2])
         collection_stats['TL 3+ %'] = round(three_plus * 100, 2)
+
+        for samples_with_targets_only in [False, True]:
+            if samples_with_targets_only:
+                sentence_lengths = tokens_per_sentence(collection.samples_with_targets(),
+                                                       tokeniser)
+            else:
+                sentence_lengths = tokens_per_sentence(collection, tokeniser)
+            sentence_lengths_flattened = []
+            for length, count in sentence_lengths.items():
+                sentence_lengths_flattened.extend([length] * count)
+            mean_sentence_length = round(statistics.mean(sentence_lengths_flattened), 2)
+            
+            if samples_with_targets_only:
+                collection_stats['Mean Sentence Length(t)'] = mean_sentence_length
+            else: 
+                collection_stats['Mean Sentence Length'] = mean_sentence_length
         dataset_stats.append(collection_stats)
     if dataframe_format:
         return _statistics_to_dataframe(dataset_stats)
