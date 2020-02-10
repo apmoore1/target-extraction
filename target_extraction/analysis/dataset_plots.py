@@ -10,6 +10,7 @@ import pandas as pd
 
 from target_extraction.data_types import TargetTextCollection
 from target_extraction.analysis.dataset_statistics import tokens_per_target
+from target_extraction.analysis.dataset_statistics import tokens_per_sentence
 
 def target_length_plot(collections: List[TargetTextCollection],
                        target_key: str, 
@@ -64,3 +65,58 @@ def target_length_plot(collections: List[TargetTextCollection],
         target_length_df = target_length_df[target_length_df['Target Length'] <= max_target_length]
     return sns.pointplot(data=target_length_df, hue='Dataset', x='Target Length', 
                          y=y_axis_label, dodge=0.4, ax=ax)
+
+
+def sentence_length_plot(collections: List[TargetTextCollection], 
+                         tokeniser: Callable[[str], List[str]],
+                         as_percentage: bool = True,
+                         sentences_with_targets_only: bool = True,
+                         ax: Optional[plt.Axes] = None) -> plt.Axes:
+    '''
+    :param collections: A list of collections to generate sentence length plots
+                        for.
+    :param tokenizer: The tokenizer to use to split the sentences into tokens. See 
+                      for a module of comptabile tokenisers 
+                      :py:mod:`target_extraction.tokenizers`
+    :param as_percentage: The frequency of the sentence lengths should be 
+                          normalised with respect to the number of sentences in 
+                          the relevent dataset and then as a percentage.
+    :param sentences_with_targets_only: Only use the sentences that have targets 
+                                        within them.
+    :param ax: Optional Axes to plot on too.
+    :returns: A line plot where the X-axis represents that sentence length, 
+              Y-axis the frequency of the sentence length, and the color 
+              represents the collection.
+    '''
+    if sentences_with_targets_only:
+        temp_collections = []
+        for collection in collections:
+            name = collection.name
+            target_collection = collection.samples_with_targets()
+            target_collection.name = name
+            temp_collections.append(target_collection)
+        collections = temp_collections
+    
+    dataset_names = []
+    sentence_length = []
+    length_frequencies = []
+
+    for collection in collections:
+        length_frequency = tokens_per_sentence(collection, tokeniser=tokeniser)
+        if as_percentage:
+            num_sentences = float(sum(length_frequency.values()))
+            length_frequency = {length: 100 * (frequency / num_sentences) 
+                                for length, frequency in length_frequency.items()}
+        for length, frequency in length_frequency.items():
+            sentence_length.append(length)
+            length_frequencies.append(frequency)
+            dataset_names.append(collection.name)
+    
+    y_axis_name = 'Frequency'
+    if as_percentage:
+        y_axis_name = 'Percentage'
+    
+    df = pd.DataFrame({'Dataset': dataset_names, 'Sentence Length': sentence_length, 
+                        y_axis_name: length_frequencies})
+    return sns.lineplot(data=df, x='Sentence Length', hue='Dataset', 
+                        y=y_axis_name, ax=ax)

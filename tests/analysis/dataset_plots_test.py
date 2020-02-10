@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from target_extraction.data_types import TargetTextCollection, TargetText
 from target_extraction.tokenizers import whitespace
 from target_extraction.analysis.dataset_plots import target_length_plot
+from target_extraction.analysis.dataset_plots import sentence_length_plot
 
 DATA_DIR = Path(__file__, '..', '..', 'data', 'analysis', 'sentiment_error_analysis').resolve()
 TRAIN_COLLECTION =  TargetTextCollection.load_json(Path(DATA_DIR, 'train_with_blank.json'))
@@ -47,3 +48,28 @@ def test_target_length_plot():
     assert alt_ax != ax
     del alt_ax
     del ax
+
+def test_sentence_length_plot():
+    # Normal case
+    ax = sentence_length_plot([TRAIN_COLLECTION], whitespace())
+    del ax
+    # Not as percentages
+    ax = sentence_length_plot([TRAIN_COLLECTION], whitespace(), 
+                              as_percentage=False)
+    del ax
+    # Give the function as Axes
+    fig, alt_ax = plt.subplots(1,1)
+    ax = sentence_length_plot([TRAIN_COLLECTION], whitespace(), ax=alt_ax)
+    assert ax == alt_ax
+    del ax 
+    plt.close(fig)
+    # All sentences
+    ax = sentence_length_plot([TRAIN_COLLECTION], whitespace(), 
+                              sentences_with_targets_only=False)
+    assert alt_ax != ax
+    del alt_ax
+    del ax
+    
+    
+    
+    
