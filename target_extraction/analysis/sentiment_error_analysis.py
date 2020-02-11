@@ -71,6 +71,69 @@ def count_error_key_occurrence(dataset: TargetTextCollection,
         count += sum(target_data[error_key])
     return count
 
+def reduce_collection_by_sentiment_class(dataset: TargetTextCollection,
+                                         reduce_sentiment: str,
+                                         associated_keys: List[str],
+                                         sentiment_key: str = 'target_sentiments'
+                                         ) -> TargetTextCollection:
+    '''
+    :param dataset: The dataset that is to be reduced so that it only contains
+                    the given sentiment class.
+    :param reduce_sentiment: The sentiment class that the target must be associated 
+                             with to be returned in this TargetTextCollection.
+    :param associated_keys: The keys that are associated to the target that 
+                            must be kept and are linked to that target. E.g. 
+                            `target_sentiments`, `targets`, `spans`, and 
+                            `subset error keys`.
+    :param sentiment_key: The key in the TargetText samples within the collection
+                          that contains the sentiment values to reduce by.
+    :returns: A new TargetTextCollection that contains only those targets and 
+              relevant `associated_keys` within the TargetText's that contains
+              the given sentiment.
+    :raises KeyError: If the `error_key` or one or more of the `associated_keys` 
+                      does not exist in one or more of the TargetText objects 
+                      within the `dataset`
+    '''
+    reduced_collection = []
+    anonymised = False
+    key_check_list = list(set([*associated_keys] + [sentiment_key]))
+    for target_data in dataset.values():
+        for _key in key_check_list:
+            target_data._key_error(_key)
+        
+        new_target_object = copy.deepcopy(dict(target_data))
+        # remove the associated values
+        for associated_key in associated_keys:
+            del new_target_object[associated_key]
+
+        skip_target = True
+        
+        sentiment_values = target_data[sentiment_key]
+        relevent_sentiment_indexes = [0] * len(sentiment_values)
+        for index, sentiment_value in enumerate(sentiment_values):
+            if sentiment_value == reduce_sentiment:
+                relevent_sentiment_indexes[index] = 1
+
+        for index, value in enumerate(relevent_sentiment_indexes):
+            if value:
+                skip_target = False
+                for associated_key in associated_keys:
+                    associated_value = target_data[associated_key][index]
+                    if associated_key in new_target_object:
+                        new_target_object[associated_key].append(associated_value)
+                    else:
+                        new_target_object[associated_key] = [associated_value]
+        if skip_target:
+            continue
+        if 'text' not in new_target_object:
+            new_target_object['text'] = None
+        if new_target_object['text'] is None:
+            anonymised = True
+            new_target_object['anonymised'] = True
+        new_target_object = TargetText(**new_target_object)
+        reduced_collection.append(new_target_object)
+    return TargetTextCollection(reduced_collection, anonymised=anonymised)
+
 def reduce_collection_by_key_occurrence(dataset: TargetTextCollection, 
                                         error_key: Union[str, List[str]], 
                                         associated_keys: List[str]

@@ -29,6 +29,7 @@ from target_extraction.analysis.sentiment_error_analysis import subset_name_to_e
 from target_extraction.analysis.sentiment_metrics import accuracy, macro_f1
 from target_extraction.analysis.sentiment_error_analysis import error_split_df
 from target_extraction.analysis.sentiment_error_analysis import _error_split_df
+from target_extraction.analysis.sentiment_error_analysis import reduce_collection_by_sentiment_class
 
 DATA_DIR = Path(__file__, '..', '..', 'data', 'analysis', 'sentiment_error_analysis').resolve()
 
@@ -623,6 +624,24 @@ def test_reduce_collection_by_key_occurrence():
     one_value = reduce_collection_by_key_occurrence(test, 'same_one_sentiment',
                                                     extra_keys)
     assert [3] == one_value['2']['another']  
+
+@pytest.mark.parametrize("anonymised", (False, True))
+def test_reduce_collection_by_sentiment_class(anonymised: bool):
+    train_fp = Path(DATA_DIR, 'train.json').resolve()
+    train_collection = TargetTextCollection.load_json(train_fp)
+    if anonymised:
+        train_collection.anonymised = True
+    sentiments = ['neutral', 'positive', 'negative']
+    num_targets = [10, 1, 5]
+    num_sentences = [4, 1, 3]
+    for sentiment, num_target, num_sentence in zip(sentiments, num_targets, num_sentences):
+        test_collection = reduce_collection_by_sentiment_class(train_collection, sentiment, 
+                                                               ['target_sentiments', 'targets', 
+                                                                'spans'])
+        assert num_sentence == len(test_collection)
+        assert num_target == test_collection.number_targets()
+        if sentiment == 'positive':
+            assert ['crime'] == test_collection['81207500663427072']['targets']
 
 
 def larger_target_text_examples(target_sentiment_values: List[List[str]]
