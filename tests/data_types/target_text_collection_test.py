@@ -640,22 +640,29 @@ class TestTargetTextCollection:
             assert test_collection[target_key]['text'] == perfect_text
             assert test_collection[target_key]['spans'] == perfect_spans
 
+    @pytest.mark.parametrize("label_key", (None, 'target_sentiments'))
     @pytest.mark.parametrize("return_errors", (False, True))
-    def test_sequence_labels(self, return_errors: bool):
+    def test_sequence_labels(self, return_errors: bool, label_key: str):
         # Test the single case
         test_collection = TargetTextCollection([self._target_text_example()])
         test_collection.tokenize(spacy_tokenizer())
-        returned_errors = test_collection.sequence_labels(return_errors)
+        returned_errors = test_collection.sequence_labels(return_errors, 
+                                                          label_key=label_key)
         assert not returned_errors
         correct_sequence = ['O', 'B', 'I', 'O', 'O', 'O', 'B', 'O', 'O']
+        if label_key is not None:
+            correct_sequence = ['O', 'B-0', 'I-0', 'O', 'O', 'O', 'B-1', 'O', 'O']
         assert test_collection['2']['sequence_labels'] == correct_sequence
 
         # Test the multiple case
         test_collection = TargetTextCollection(self._target_text_examples())
         test_collection.tokenize(spacy_tokenizer())
-        returned_errors = test_collection.sequence_labels(return_errors)
+        returned_errors = test_collection.sequence_labels(return_errors, 
+                                                          label_key=label_key)
         assert not returned_errors
         correct_sequence = ['O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O']
+        if label_key is not None:
+            correct_sequence = ['O', 'O', 'O', 'O', 'O', 'O', 'B-1', 'O', 'O']
         assert test_collection['another_id']['sequence_labels'] == correct_sequence
 
         # Test the case where you can have multiple sequence labels
@@ -678,9 +685,11 @@ class TestTargetTextCollection:
         test_collection.tokenize(spacy_tokenizer())
         if not return_errors:
             with pytest.raises(ValueError):
-                test_collection.sequence_labels(return_errors)
+                test_collection.sequence_labels(return_errors, 
+                                                label_key=label_key)
         else:
-            returned_errors = test_collection.sequence_labels(return_errors)
+            returned_errors = test_collection.sequence_labels(return_errors, 
+                                                              label_key=label_key)
             assert len(returned_errors) == 1
             assert returned_errors[0]['text_id'] == '78895626198466562'
 

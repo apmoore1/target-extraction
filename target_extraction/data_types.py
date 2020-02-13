@@ -633,7 +633,8 @@ class TargetText(MutableMapping):
         self['tokenized_text'] = tokens
 
     @check_anonymised
-    def sequence_labels(self, per_target: bool = False) -> None:
+    def sequence_labels(self, per_target: bool = False, 
+                        label_key: Optional[str] = None) -> None:
         '''
         Adds the `sequence_labels` key to this TargetText instance which can 
         be used to train a machine learning algorthim to detect targets. The 
@@ -643,7 +644,12 @@ class TargetText(MutableMapping):
         The `force_targets` method might come in useful here for training 
         and validation data to ensure that more of the targets are not 
         affected by tokenization error as only tokens that are fully within 
-        the target span are labelled with `B` or `I` tags.
+        the target span are labelled with `B` or `I` tags. Another use for the 
+        `force_targets` is so to ensure that targets are not affected by 
+        tokenisation and therefore can be used to state where the targets are 
+        in the sequence for sentiment classification e.g. in the case of 
+        getting contextualised target tokens or to create [TD-BERT 
+        Gao et al. 2019](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8864964).
 
         Currently the only sequence labels supported is IOB-2 labels for the 
         targets only. Future plans look into different sequence label order
@@ -656,9 +662,23 @@ class TargetText(MutableMapping):
                            of the targets False. Or if True should be a list 
                            of a labels per target where the labels will only 
                            be associated to the represented target.
+        :param label_key: Optional label key. Where the key represents a list of 
+                          values that are associated with each token. These list 
+                          of values are then the class labels to attach to 
+                          each `B`, `I`, `O` tag. E.g. the label key could be 
+                          `target_sentiments` therefore creating the sequence 
+                          labelling task of target extraction and predicting 
+                          sentiment. For example if the label key is `target_sentiments`
+                          it would make the `B`, `I`, `O` task extraction 
+                          and sentiment prediction.
         :raises AnonymisedError: If the object has been anonymised then this 
                                  method cannot be used.
-        :raises KeyError: If the current TargetText has not been tokenized.
+        :raises KeyError: If the current TargetText has not been tokenized. Or 
+                          if `label_key` is not None then `label_key` must be 
+                          a key in self else KeyError.
+        :raises ValueError: If `label_key` not None. Raises if number of labels 
+                            does not match the number of targets that the labels 
+                            should be associated too.
         :raises ValueError: If two targets overlap the same token(s) e.g 
                             `Laptop cover was great` if `Laptop` and 
                             `Laptop cover` are two separate targets this should 
@@ -672,6 +692,7 @@ class TargetText(MutableMapping):
         self.sanitize()
         tokens = self['tokenized_text']
         sequence_labels = ['O' for _ in range(len(tokens))]
+
         if per_target:
             sequence_labels = [sequence_labels]
         # This is the case where there are no targets thus all sequence labels 
@@ -684,8 +705,21 @@ class TargetText(MutableMapping):
             sequence_labels = []
             for _ in self['targets']:
                 sequence_labels.append(['O' for _ in range(len(tokens))])
-        
+
+        # Setting up the labels that might be part of the sequence labels
         target_spans: List[Span] = self['spans']
+        labels = None
+        if label_key is not None:
+            self._key_error(label_key)
+            labels = self[label_key]
+            number_targets = len(target_spans)
+            number_labels = len(labels)
+            if number_labels != number_targets:
+                raise ValueError(f'The number of labels {number_labels} does '
+                                 f'not match the number of targets {number_targets}.'
+                                 f' Labels {labels}, target spans {target_spans}.'
+                                 f' For {self}')
+        
         tokens_index = token_index_alignment(text, tokens)
 
         for target_index, target_span in enumerate(target_spans):
@@ -698,7 +732,7 @@ class TargetText(MutableMapping):
                 token_start, token_end = token_index
                 token_end = token_end - 1
                 if (token_start in target_span_range and
-                        token_end in target_span_range):
+                    token_end in target_span_range):
                     if current_sequence_labels[sequence_index] != 'O':
                         err_msg = ('Cannot have two sequence labels for one '
                                     f'token, text {text}\ntokens {tokens}\n'
@@ -707,8 +741,14 @@ class TargetText(MutableMapping):
                         raise ValueError(err_msg)
                     if same_target:
                         current_sequence_labels[sequence_index] = 'I'
+                        if label_key is not None:
+                            label = labels[target_index]
+                            current_sequence_labels[sequence_index] = f'I-{label}'
                     else:
                         current_sequence_labels[sequence_index] = 'B'
+                        if label_key is not None:
+                            label = labels[target_index]
+                            current_sequence_labels[sequence_index] = f'B-{label}'
                     same_target = True
         self['sequence_labels'] = sequence_labels
 
@@ -1788,7 +1828,8 @@ class TargetTextCollection(MutableMapping):
         for target_text_instance in self.values():
             target_text_instance.force_targets()
 
-    def sequence_labels(self, return_errors: bool = False
+    def sequence_labels(self, return_errors: bool = False, 
+                        **target_sequence_label_kwargs
                         ) -> List['TargetText']:
         '''
         This applies the TargetText.sequence_labels method across all of 
@@ -1796,6 +1837,9 @@ class TargetTextCollection(MutableMapping):
 
         :param return_errors: Returns TargetText objects that have caused 
                               the ValueError to be raised.
+        :param target_sequence_label_kwargs: Any Keyword arguments to give to 
+                                             the TargetText `sequence_labels`
+                                             function.
         :returns: A list of TargetText objects that have caused the ValueError 
                   to be raised if `return_errors` is True else an empty list 
                   will be returned. 
@@ -1811,11 +1855,11 @@ class TargetTextCollection(MutableMapping):
         for target_text_instance in self.values():
             if return_errors:
                 try:
-                    target_text_instance.sequence_labels()
+                    target_text_instance.sequence_labels(**target_sequence_label_kwargs)
                 except ValueError:
                     errored_targets.append(target_text_instance)
             else:
-                target_text_instance.sequence_labels()
+                target_text_instance.sequence_labels(**target_sequence_label_kwargs)
         return errored_targets
 
 
