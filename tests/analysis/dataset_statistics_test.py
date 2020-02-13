@@ -122,13 +122,17 @@ def test_tokens_per_target():
         assert math.isclose(dist * 100, length_dist[length], rel_tol=0.01)
 
 
+@pytest.mark.parametrize("incl_sentence_statistics", (False, True))
 @pytest.mark.parametrize("lower", (False, None))
-def test_dataset_target_extraction_statistics(lower: bool):
+def test_dataset_target_extraction_statistics(lower: bool,
+                                              incl_sentence_statistics: bool):
     if lower is not None:
         target_stats = dataset_target_extraction_statistics([TRAIN_COLLECTION], 
-                                                            lower_target=lower)
+                                                            lower_target=lower,
+                                                            incl_sentence_statistics=incl_sentence_statistics)
     else:
-        target_stats = dataset_target_extraction_statistics([TRAIN_COLLECTION])
+        target_stats = dataset_target_extraction_statistics([TRAIN_COLLECTION],
+                                                            incl_sentence_statistics=incl_sentence_statistics)
     tl_1 = round((17/19.0) * 100, 2)
     tl_2 = round((2/19.0) * 100, 2)
     true_stats = {'Name': 'train', 'No. Sentences': 6, 'No. Sentences(t)': 5,
@@ -136,6 +140,9 @@ def test_dataset_target_extraction_statistics(lower: bool):
                   'ATS(t)': round(19/5.0, 2), 'TL 1 %': tl_1, 'TL 2 %': tl_2,
                   'TL 3+ %': 0.0, 'Mean Sentence Length': 15.33, 
                   'Mean Sentence Length(t)': 16.6}
+    if not incl_sentence_statistics:
+        del true_stats['Mean Sentence Length(t)']
+        del true_stats['Mean Sentence Length']
     if lower == False:
         true_stats['No. Uniq Targets'] = 14
     assert 1 == len(target_stats)
@@ -160,9 +167,11 @@ def test_dataset_target_extraction_statistics(lower: bool):
     subcollection.tokenize(whitespace())
     if lower is not None:
         target_stats = dataset_target_extraction_statistics([subcollection, TRAIN_COLLECTION], 
-                                                            lower_target=lower)
+                                                            lower_target=lower,
+                                                            incl_sentence_statistics=incl_sentence_statistics)
     else:
-        target_stats = dataset_target_extraction_statistics([subcollection, TRAIN_COLLECTION])
+        target_stats = dataset_target_extraction_statistics([subcollection, TRAIN_COLLECTION],
+                                                            incl_sentence_statistics=incl_sentence_statistics)
     
     tl_1 = round((6/9.0) * 100, 2)
     tl_2 = round((1/9.0) * 100, 2)
@@ -172,6 +181,9 @@ def test_dataset_target_extraction_statistics(lower: bool):
                  'ATS(t)': round(9/3.0, 2), 'TL 1 %': tl_1, 'TL 2 %': tl_2,
                  'TL 3+ %': tl_3, 'Mean Sentence Length': 11.67,
                  'Mean Sentence Length(t)': 11.67}
+    if not incl_sentence_statistics:
+        del sub_stats['Mean Sentence Length(t)']
+        del sub_stats['Mean Sentence Length']
     true_stats = [sub_stats, true_stats]
     assert len(true_stats) == len(target_stats)
     for stat_index, stat in enumerate(true_stats):

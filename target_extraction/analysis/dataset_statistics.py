@@ -145,7 +145,8 @@ def dataset_target_extraction_statistics(collections: List[TargetTextCollection]
                                          lower_target: bool = True,
                                          target_key: str = 'targets',
                                          tokeniser: Callable[[str], List[str]]=spacy_tokenizer(),
-                                         dataframe_format: bool = False
+                                         dataframe_format: bool = False,
+                                         incl_sentence_statistics: bool = True
                                          ) -> List[Dict[str, Union[str,int,float]]]:
     '''
     :param collections: A list of collections
@@ -160,6 +161,10 @@ def dataset_target_extraction_statistics(collections: List[TargetTextCollection]
                       to give statistics on target length.
     :param dataframe_format: If True instead of a list of dictionaries the 
                              return will be a pandas dataframe
+    :param incl_sentence_statistics: If False statistics about the sentence
+                                     will not be included. This is so that 
+                                     the statistics can still be created for 
+                                     datasets that have been anonymised.
     :returns: A list of dictionaries each containing the statistics for the 
               associated collection. Each dictionary will have the following 
               keys:
@@ -203,6 +208,10 @@ def dataset_target_extraction_statistics(collections: List[TargetTextCollection]
                           if token_length > 2])
         collection_stats['TL 3+ %'] = round(three_plus * 100, 2)
 
+        if not incl_sentence_statistics:
+            dataset_stats.append(collection_stats)
+            continue
+
         for samples_with_targets_only in [False, True]:
             if samples_with_targets_only:
                 sentence_lengths = tokens_per_sentence(collection.samples_with_targets(),
@@ -228,16 +237,29 @@ def dataset_target_sentiment_statistics(collections: List[TargetTextCollection],
                                         target_key: str = 'targets',
                                         tokeniser: Callable[[str], List[str]]=spacy_tokenizer(),
                                         sentiment_key: str = 'target_sentiments',
-                                        dataframe_format: bool = False
+                                        dataframe_format: bool = False,
+                                        incl_sentence_statistics: bool = True
                                         ) -> Union[List[Dict[str, Union[str,int,float]]], 
                                                    pd.DataFrame]:
     '''
     :param collections: A list of collections
     :param lower_target: Whether to lower case the targets before counting them
+    :param target_key: The key within each sample in each collection that contains 
+                       the list of targets to be analysed. This can also be the 
+                       predicted target key, which might be useful for error 
+                       analysis.
+    :param tokenizer: The tokenizer to use to split the target(s) into tokens. See 
+                      for a module of comptabile tokenisers 
+                      :py:mod:`target_extraction.tokenizers`. This is required 
+                      to give statistics on target length.
     :param sentiment_key: The key in each TargetText within each collection that 
                           contains the True sentiment value.
     :param dataframe_format: If True instead of a list of dictionaries the 
                              return will be a pandas dataframe
+    :param incl_sentence_statistics: If False statistics about the sentence
+                                     will not be included. This is so that 
+                                     the statistics can still be created for 
+                                     datasets that have been anonymised.
     :returns: A list of dictionaries each containing the statistics for the 
               associated collection. Each dictionary will have the keys from 
               :py:func:`dataset_target_extraction_statistics` and the following 
@@ -250,7 +272,8 @@ def dataset_target_sentiment_statistics(collections: List[TargetTextCollection],
                                                                  lower_target=lower_target, 
                                                                  target_key=target_key, 
                                                                  tokeniser=tokeniser,
-                                                                 dataframe_format=False)
+                                                                 dataframe_format=False,
+                                                                 incl_sentence_statistics=incl_sentence_statistics)
     dataset_stats = []
     for collection, collection_stats in zip(collections, initial_dataset_stats):
         sentiment_percent = get_sentiment_counts(collection, normalised=True, 
