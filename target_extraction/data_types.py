@@ -1675,7 +1675,7 @@ class TargetTextCollection(MutableMapping):
         :returns: A TargetTextCollection based on each new line in the given 
                   text to be passable by TargetText.from_json method.
         :raises AnonymisedError: If the `TargetText` object that it is loading 
-                                 is anonymied but the `target_text_collection_kwargs`
+                                 is anonymised but the `target_text_collection_kwargs`
                                  argument contains `anonymised` False, as 
                                  you cannot de-anonymised without performing 
                                  the 
@@ -2441,12 +2441,19 @@ class TargetTextCollection(MutableMapping):
                             TargetTextCollections
         :returns: A TargetTextCollection that is the combination of all of 
                   those given.
+
+        :NOTE: If any of the collections are anonymised then the returned 
+               collection will also be anonymised, even if only one of the 
+               collections has been anonymised.
         '''
         target_objects: 'TargetText' = []
+        is_anonymised = False
         for collection in collections:
+            if collection.anonymised:
+                is_anonymised = True
             for target in collection.values():
                 target_objects.append(target)
-        return TargetTextCollection(target_objects)
+        return TargetTextCollection(target_objects, anonymised=is_anonymised)
 
     @staticmethod
     def same_data(collections: List['TargetTextCollection']

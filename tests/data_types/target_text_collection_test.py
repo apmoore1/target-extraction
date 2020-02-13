@@ -1089,7 +1089,8 @@ class TestTargetTextCollection:
             collection.sanitize()
     
     def test_combine(self):
-        targets = [TargetText(text='some text', text_id='1')]
+        targets = [TargetText(text='some text', text_id='1', targets=['some'], 
+                              spans=[Span(0,4)])]
         # The case of one collection
         test_collection = TargetTextCollection(targets)
 
@@ -1125,6 +1126,21 @@ class TestTargetTextCollection:
         assert len(empty_combined) == 0
         assert empty_combined == empty_collection
         assert empty_combined == empty_collection_1
+
+        # Test the anonymised case
+        test_collection.anonymised = True
+        test_collection_1.anonymised = True
+        combined_collection = TargetTextCollection.combine(test_collection, 
+                                                           test_collection_1)
+        assert combined_collection.anonymised
+        assert len(combined_collection) == 3
+        anonymised_targets = [TargetText(text=None, text_id='1', anonymised=True, 
+                                         targets=['some'], spans=[Span(0,4)]),
+                              TargetText(text=None, text_id='2', anonymised=True),
+                              TargetText(text=None, text_id='3', anonymised=True)]
+        correct_combined = TargetTextCollection(anonymised_targets, anonymised=True)
+        assert combined_collection == correct_combined
+
 
     @pytest.mark.parametrize("lower", (False, True))
     @pytest.mark.parametrize("unique_sentiment", (False, True))
