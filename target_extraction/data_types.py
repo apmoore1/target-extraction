@@ -94,45 +94,47 @@ class TargetText(MutableMapping):
        always contain the following: `# {text_id: `value`}` where the `text_id` 
        represents the `text_id` of this TargetText, this will allow the CONLL
         string to be uniquely identified back this TargetText object.
-    3. tokenize -- This will add a new key `tokenized_text` to this TargetText 
+    3. from_conll -- Adds the gold labels and/or predicted sequence labels from 
+       the CONLL formatted string.
+    4. tokenize -- This will add a new key `tokenized_text` to this TargetText 
        instance that will store the tokens of the text that is associated to 
        this TargetText instance.
-    4. pos_text -- This will add a new key `pos_tags` to this TargetText 
+    5. pos_text -- This will add a new key `pos_tags` to this TargetText 
        instance. This key will store the pos tags of the text that is 
        associated to this Target Text instance.
-    5. force_targets -- Does not return anything but modifies the `spans` and 
+    6. force_targets -- Does not return anything but modifies the `spans` and 
        `text` values as whitespace is prefixed and suffixed the target unless 
        the prefix or suffix is whitespace. NOTE that this is the only method 
        that currently can change the `spans` and `text` key values after they 
        have been set.
-    6. sequence_labels -- Adds the `sequence_labels` key to this TargetText 
+    7. sequence_labels -- Adds the `sequence_labels` key to this TargetText 
        instance which can be used to train a machine learning algorthim to 
        detect targets.
-    7. get_sequence_indexs -- The indexs related to the tokens, pos tags etc 
+    8. get_sequence_indexs -- The indexs related to the tokens, pos tags etc 
        for each labelled sequence span.
-    8. get_sequence_spans -- The span indexs from the sequence labels given 
+    9. get_sequence_spans -- The span indexs from the sequence labels given 
        assuming that the sequence labels are in BIO format.
-    9. get_targets_from_sequence_labels -- Retrives the target words given the 
-       sequence labels.
-    10. one_sample_per_span -- This returns a similar TargetText instance 
+    10. get_targets_from_sequence_labels -- Retrives the target words given the 
+        sequence labels.
+    11. one_sample_per_span -- This returns a similar TargetText instance 
         where the new instance will only contain one target per span.
-    11. left_right_target_contexts -- This will return the sentence that is 
+    12. left_right_target_contexts -- This will return the sentence that is 
         left and right of the target as well as the words in the target for 
         each target in the sentence.
-    12. replace_target -- Given an index and a new target word it will replace 
+    13. replace_target -- Given an index and a new target word it will replace 
         the target at the index with the new target word and return a new 
         TargetText object with everything the same apart from this new target.
-    13. de_anonymise -- This will set the `anonymised` attribute to False 
+    14. de_anonymise -- This will set the `anonymised` attribute to False 
         from True and set the `text` key value to the value in the `text` 
         key within the `text_dict` argument. 
-    14. in_order -- True if all the `targets` within this TargetText 
+    15. in_order -- True if all the `targets` within this TargetText 
         are in sequential left to right order within the text.
-    15. re_order -- Re-Orders the TargetText object targets so that they are in 
+    16. re_order -- Re-Orders the TargetText object targets so that they are in 
         a left to right order within the text, this will then re-order all 
         values within this object that are in a list format into this order. 
         Once the TargetText has been re-ordered it will return True when 
         :py:meth`target_extraction.data_types.TargetText.in_order` is called.
-    16. add_unique_key -- Given a key e.g. `targets` it will create a new value 
+    17. add_unique_key -- Given a key e.g. `targets` it will create a new value 
         in the TargetText object that is a list of strings which are unique IDs
         based on the `text_id` and the index the `targets` occur in e.g. 
         if the `targets` contain [`food`, `service`] and the `text_id` is 
