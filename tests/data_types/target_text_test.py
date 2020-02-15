@@ -743,7 +743,88 @@ class TestTargetText:
         for key, value in true_target_text.items():
             assert value == example_from_json[key]
         assert example_from_json.anonymised == True
-        
+
+    #text = 'The laptop case was great and cover was rubbish'
+    #    text_ids = ['0', 'another_id', '2']
+    #    spans = [[Span(4, 15)], [Span(30, 35)], [Span(4, 15), Span(30, 35)]]
+    #    target_sentiments = [[0], ['positive'], [0, 1]]
+    #    targets = [['laptop case'], ['cover'], ['laptop case', 'cover']]
+    #    categories = [['LAPTOP#CASE'], ['LAPTOP'], ['LAPTOP#CASE', 'LAPTOP']]
+    #    category_sentiments = [['pos'],[1],[0, 1]]
+    def test_to_conll(self):
+        # Normal example without predicted labels
+        examples, _ = self._regular_examples()
+        for example in examples:
+            example.tokenize(str.split)
+            example.sequence_labels(label_key='target_sentiments')
+        #example_bio = {'0': ['O', 'B-0', 'I-0', 'O', 'O', 'O', 'O', 'O', 'O'],
+        #               'another_id': ['O', 'O', 'O', 'O', 'O', 'O', 'B-positive', 'O', 'O'],
+        #               '2': ['O', 'B-0', 'I-0', 'O', 'O', 'O', 'B-1', 'O', 'O']}
+        true_conll = {'0': 'The O\nlaptop B-0\ncase I-0\nwas O\ngreat O\nand O\ncover O\nwas O\nrubbish O',
+                      'another_id': 'The O\nlaptop O\ncase O\nwas O\ngreat O\nand O\ncover B-positive\nwas O\nrubbish O',
+                      '2': 'The O\nlaptop B-0\ncase I-0\nwas O\ngreat O\nand O\ncover B-1\nwas O\nrubbish O'}
+        for example in examples:
+            _id = example['text_id']
+            assert true_conll[_id] == example.to_conll(gold_label_key='sequence_labels')
+        # Example with predicted labels
+        predicted_labels = {'0': [['O', 'O', 'B-0', 'O', 'O', 'O', 'O', 'O', 'O']],
+                            'another_id': [['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-neg']],
+                            '2': [['B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']]}
+        for example in examples:
+            _id = example['text_id']
+            example['predicted_sequences'] = predicted_labels[_id]
+        true_conll = {'0': 'The O O\nlaptop B-0 O\ncase I-0 B-0\nwas O O\ngreat O O\nand O O\ncover O O\nwas O O\nrubbish O O',
+                      'another_id': 'The O O\nlaptop O O\ncase O O\nwas O O\ngreat O O\nand O O\ncover B-positive O\nwas O O\nrubbish O B-neg',
+                      '2': 'The O B\nlaptop B-0 O\ncase I-0 O\nwas O O\ngreat O O\nand O O\ncover B-1 O\nwas O O\nrubbish O O'}
+        for example in examples:
+            _id = example['text_id']
+            assert true_conll[_id] == example.to_conll(gold_label_key='sequence_labels', 
+                                                       prediction_key='predicted_sequences')
+        # Example with predicted labels where there is more than one predicted 
+        # label
+        second_predicted_labels = {'0': ['O', 'O', 'O', 'B-1', 'O', 'O', 'O', 'O', 'O'],
+                                   'another_id': ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'I-neg'],
+                                   '2': ['O', 'I-POS', 'O', 'O', 'O', 'O', 'O', 'O', 'O']}
+        for key, value in second_predicted_labels.items():
+            predicted_labels[key].append(value)
+        true_conll = {'0': 'The O O O\nlaptop B-0 O O\ncase I-0 B-0 O\nwas O O B-1\ngreat O O O\nand O O O\ncover O O O\nwas O O O\nrubbish O O O',
+                      'another_id': 'The O O O\nlaptop O O O\ncase O O O\nwas O O O\ngreat O O O\nand O O O\ncover B-positive O O\nwas O O O\nrubbish O B-neg I-neg',
+                      '2': 'The O B O\nlaptop B-0 O I-POS\ncase I-0 O O\nwas O O O\ngreat O O O\nand O O O\ncover B-1 O O\nwas O O O\nrubbish O O O'}
+        for example in examples:
+            _id = example['text_id']
+            assert true_conll[_id] == example.to_conll(gold_label_key='sequence_labels', 
+                                                       prediction_key='predicted_sequences')
+        # Test the case where the predicted label key raise an error as it should 
+        # be a list within a list and not a list
+        predicted_labels = {'0': ['O', 'O', 'B-0', 'O', 'O', 'O', 'O', 'O', 'O'],
+                            'another_id': ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-neg'],
+                            '2': ['B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']}
+        for example in examples:
+            _id = example['text_id']
+            example['predicted_sequences'] = predicted_labels[_id]
+            with pytest.raises(ValueError):
+                example.to_conll(gold_label_key='sequence_labels', 
+                                 prediction_key='predicted_sequences')
+        # Test KeyError of tokenization
+        no_tokens = TargetText(text_id='1', text='something', sequence=['B'])
+        with pytest.raises(KeyError):
+            no_tokens.to_conll('sequence')
+        # Test KeyError of gold label
+        with pytest.raises(KeyError):
+            examples[0].to_conll('error')
+        # Test KeyError of prediction key
+        with pytest.raises(KeyError):
+            examples[0].to_conll('sequence_labels', 'error')
+        # The gold labels are not of the same length as the tokens
+        true_0_labels = examples[0]['sequence_labels']
+        examples[0]['sequence_labels'] = ['B']
+        with pytest.raises(ValueError):
+            examples[0].to_conll('sequence_labels')
+        examples[0]['sequence_labels'] = true_0_labels
+        # The predicted labels are not the same length as the tokens
+        examples[0]['pred_labels'] = [true_0_labels[:-2]]
+        with pytest.raises(ValueError):
+            examples[0].to_conll('sequence_labels', 'pred_labels')
 
     @pytest.mark.parametrize("tokenizer", (str.split, spacy_tokenizer()))
     @pytest.mark.parametrize("type_checks", (True, False))

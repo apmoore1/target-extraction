@@ -422,6 +422,81 @@ class TargetText(MutableMapping):
         '''
         return json.dumps(self._storage)
 
+    @check_anonymised
+    def to_conll(self, gold_label_key: str, 
+                 prediction_key: Optional[str] = None) -> str:
+        '''
+        :param gold_label: A key that contains a sequence of labels e.g. 
+                           [`B`, `I`, `O`]. This can come from the return 
+                           of the :py:meth:`sequence_labels`
+        :param prediction_key: Key to the predicted labels of the `gold_label`. 
+                               Where the preidction key values is a list of a 
+                               list of predicted labels. Each list is therefore 
+                               a different model run hence creating the 
+                               `PREDICTION 1`, 'PREDICTION 2' etc. Thus the 
+                               values of `prediction_key` must be of shape 
+                               (number runs, number tokens)
+        :returns: A CONLL formatted string where the formatt will be the 
+                  following: `TOKEN#GOLD LABEL#PREDICTION 1# PREDICTION 2`
+                  Where each token and relevant labels are on seperate new 
+                  lines.
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
+        :raises KeyError: If the the object has not be tokenized using 
+                          :py:meth:`tokenize`
+        :raises KeyError: If the `prediction_key` or `gold_label_key` do not 
+                          exist.
+        :raises ValueError: If the `gold_label_key` or `prediction_key` values 
+                            are not of the same length as the tokens, as the 
+                            labels will not be able to match tokens etc.
+        :raises ValueError: If the values in `prediction_key` are not of shape 
+                            (number runs, number tokens)
+        '''
+        keys_to_check = ['tokenized_text', gold_label_key]
+        if prediction_key is not None:
+            keys_to_check.append(prediction_key)
+        for key in keys_to_check:
+            self._key_error(key)
+        number_tokens = len(self['tokenized_text'])
+        # ensure number of labels same as number of tokens
+        value_err = (f'Number of tokens {number_tokens} does not match the '
+                     f'number of labels ')
+        number_gold_labels = len(self[gold_label_key])
+        if number_tokens != number_gold_labels:
+            gold_err = (f'{number_gold_labels} for gold label '
+                        f'{gold_label_key} in {self}')
+            gold_err = f'{value_err} {gold_err}'
+            raise ValueError(gold_err)
+        if prediction_key is not None:
+            for prediction_labels in self[prediction_key]:
+                if not isinstance(prediction_labels, list):
+                    pred_list_shape_error = ('The predictions should be a list '
+                                             'of a list of labels of shape '
+                                             '(number runs, number tokens) not '
+                                             f'{self[prediction_key]}')
+                    raise ValueError(pred_list_shape_error)
+                number_labels = len(prediction_labels)
+                pred_err = (f'{number_labels} for prediction '
+                            f'label {prediction_key} in {self}')
+                pred_err = f'{value_err} {pred_err}'
+                if number_tokens != number_labels:
+                    raise ValueError(pred_err)
+        
+        gold_labels = self[gold_label_key]
+        conll_string = ''
+        for token_index, token in enumerate(self['tokenized_text']):
+            gold_label = gold_labels[token_index]
+            token_string = f'{token} {gold_label} '
+            if prediction_key is not None:
+                for prediction_labels in self[prediction_key]:
+                    prediction_label = prediction_labels[token_index]
+                    token_string += f'{prediction_label} '                    
+            token_string = token_string.strip(' ')
+            if token_index != 0:
+                token_string = f'\n{token_string}'
+            conll_string += token_string
+        return conll_string
+
     def _shift_spans(self, target_span: Span, prefix: bool, 
                      suffix: bool) -> None:
         '''
