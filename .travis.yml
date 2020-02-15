@@ -1,7 +1,5 @@
 os: linux
-dist: 
-  - xenial
-  - bionic
+dist: xenial
 
 language: python
 
