@@ -88,45 +88,51 @@ class TargetText(MutableMapping):
 
     1. to_json -- Returns the object as a dictionary and then encoded using 
        json.dumps
-    2. tokenize -- This will add a new key `tokenized_text` to this TargetText 
+    2. to_conll -- Returns a CONLL formatted string where the formatt will be the 
+       following: `TOKEN#GOLD LABEL#PREDICTION 1# PREDICTION 2`. Where each 
+       token and relevant labels are on separate new lines. The first line will 
+       always contain the following: `# {text_id: `value`}` where the `text_id` 
+       represents the `text_id` of this TargetText, this will allow the CONLL
+        string to be uniquely identified back this TargetText object.
+    3. tokenize -- This will add a new key `tokenized_text` to this TargetText 
        instance that will store the tokens of the text that is associated to 
        this TargetText instance.
-    3. pos_text -- This will add a new key `pos_tags` to this TargetText 
+    4. pos_text -- This will add a new key `pos_tags` to this TargetText 
        instance. This key will store the pos tags of the text that is 
        associated to this Target Text instance.
-    4. force_targets -- Does not return anything but modifies the `spans` and 
+    5. force_targets -- Does not return anything but modifies the `spans` and 
        `text` values as whitespace is prefixed and suffixed the target unless 
        the prefix or suffix is whitespace. NOTE that this is the only method 
        that currently can change the `spans` and `text` key values after they 
        have been set.
-    5. sequence_labels -- Adds the `sequence_labels` key to this TargetText 
+    6. sequence_labels -- Adds the `sequence_labels` key to this TargetText 
        instance which can be used to train a machine learning algorthim to 
        detect targets.
-    6. get_sequence_indexs -- The indexs related to the tokens, pos tags etc 
+    7. get_sequence_indexs -- The indexs related to the tokens, pos tags etc 
        for each labelled sequence span.
-    7. get_sequence_spans -- The span indexs from the sequence labels given 
+    8. get_sequence_spans -- The span indexs from the sequence labels given 
        assuming that the sequence labels are in BIO format.
-    8. get_targets_from_sequence_labels -- Retrives the target words given the 
+    9. get_targets_from_sequence_labels -- Retrives the target words given the 
        sequence labels.
-    9. one_sample_per_span -- This returns a similar TargetText instance 
-       where the new instance will only contain one target per span.
-    10. left_right_target_contexts -- This will return the sentence that is 
+    10. one_sample_per_span -- This returns a similar TargetText instance 
+        where the new instance will only contain one target per span.
+    11. left_right_target_contexts -- This will return the sentence that is 
         left and right of the target as well as the words in the target for 
         each target in the sentence.
-    11. replace_target -- Given an index and a new target word it will replace 
+    12. replace_target -- Given an index and a new target word it will replace 
         the target at the index with the new target word and return a new 
         TargetText object with everything the same apart from this new target.
-    12. de_anonymise -- This will set the `anonymised` attribute to False 
+    13. de_anonymise -- This will set the `anonymised` attribute to False 
         from True and set the `text` key value to the value in the `text` 
         key within the `text_dict` argument. 
-    13. in_order -- True if all the `targets` within this TargetText 
+    14. in_order -- True if all the `targets` within this TargetText 
         are in sequential left to right order within the text.
-    14. re_order -- Re-Orders the TargetText object targets so that they are in 
+    15. re_order -- Re-Orders the TargetText object targets so that they are in 
         a left to right order within the text, this will then re-order all 
         values within this object that are in a list format into this order. 
         Once the TargetText has been re-ordered it will return True when 
         :py:meth`target_extraction.data_types.TargetText.in_order` is called.
-    15. add_unique_key -- Given a key e.g. `targets` it will create a new value 
+    16. add_unique_key -- Given a key e.g. `targets` it will create a new value 
         in the TargetText object that is a list of strings which are unique IDs
         based on the `text_id` and the index the `targets` occur in e.g. 
         if the `targets` contain [`food`, `service`] and the `text_id` is 
@@ -430,16 +436,20 @@ class TargetText(MutableMapping):
                            [`B`, `I`, `O`]. This can come from the return 
                            of the :py:meth:`sequence_labels`
         :param prediction_key: Key to the predicted labels of the `gold_label`. 
-                               Where the preidction key values is a list of a 
+                               Where the prediction key values is a list of a 
                                list of predicted labels. Each list is therefore 
                                a different model run hence creating the 
                                `PREDICTION 1`, 'PREDICTION 2' etc. Thus the 
                                values of `prediction_key` must be of shape 
                                (number runs, number tokens)
-        :returns: A CONLL formatted string where the formatt will be the 
+        :returns: A CONLL formatted string where the format will be the 
                   following: `TOKEN#GOLD LABEL#PREDICTION 1# PREDICTION 2`
-                  Where each token and relevant labels are on seperate new 
-                  lines.
+                  Where each token and relevant labels are on separate new 
+                  lines. The first line will always contain the following:
+                  `# {text_id: `value`}` where the text_id represents the 
+                  `text_id` of this TargetText, this will allow the CONLL
+                  string to be uniquely identified back this TargetText 
+                  object.
         :raises AnonymisedError: If the object has been anonymised then this 
                                  method cannot be used.
         :raises KeyError: If the the object has not be tokenized using 
@@ -481,9 +491,10 @@ class TargetText(MutableMapping):
                 pred_err = f'{value_err} {pred_err}'
                 if number_tokens != number_labels:
                     raise ValueError(pred_err)
-        
+        # End of checks now creating the CONLL string
+        text_id_str = json.dumps({'text_id': self['text_id']})
         gold_labels = self[gold_label_key]
-        conll_string = ''
+        conll_string = f'# {text_id_str}'
         for token_index, token in enumerate(self['tokenized_text']):
             gold_label = gold_labels[token_index]
             token_string = f'{token} {gold_label} '
@@ -492,11 +503,78 @@ class TargetText(MutableMapping):
                     prediction_label = prediction_labels[token_index]
                     token_string += f'{prediction_label} '                    
             token_string = token_string.strip(' ')
-            if token_index != 0:
-                token_string = f'\n{token_string}'
+            token_string = f'\n{token_string}'
             conll_string += token_string
         return conll_string
 
+    @check_anonymised
+    def from_conll(self, conll_str: str, tokens_key: str = 'tokenized_text', 
+                   gold_label_key: Optional[str] = None, 
+                   prediction_key: Optional[str] = None) -> None:
+        '''
+        :param conll_str: CONLL formatted string formatted like so: 
+                          `TOKEN#GOLD LABEL#PREDICTION 1# PREDICTION 2`
+        :param tokens_key: Key to save the CONLL tokens too.
+        :param gold_label_key: Key to save the gold labels too. Either 
+                               `gold_label_key` or `prediction_key` must not be 
+                               `None` or both not `None`
+        :param prediction_key: Key to save the prediction labels too. The value 
+                               will be of shape (number runs, number tokens)
+        :raises AnonymisedError: If the object has been anonymised then this 
+                                 method cannot be used.
+        :raises ValueError: If both `gold_label_key` and `prediction_key` are 
+                            `None`.
+        :raises ValueError: If the number of labels are not consistent in the 
+                            CONLL string e.g. the first token has 3 predicted 
+                            labels and the second token has 2 predicted labels.
+        :raises ValueError: If the text within this TargetText does not match 
+                            the tokens in the CONLL string. (CASE SENSITIVE)
+        '''
+        if prediction_key is None and gold_label_key is None:
+            raise ValueError('Either `prediction_key` or `gold_label_key` or '
+                             'both need to be a String not None')
+        # Predicted labels is of shape (number runs, number tokens)
+        predicted_labels: List[List[str]] = []
+        gold_labels = []
+        tokens = []
+        conll_token_labels = conll_str.split('\n')
+        
+        conll_string_length = 0
+        for index, conll_token_label in enumerate(conll_token_labels):
+            token_labels = conll_token_label.split(' ')
+            number_token_labels = len(token_labels)
+            # Ensure legnth of CONLL same each time
+            if index == 0:
+                conll_string_length = number_token_labels
+            else:
+                if conll_string_length != number_token_labels:
+                    raise ValueError('Number of labels are not consistent. '
+                                     f'Index {index}. CONLL String: '
+                                     f'{conll_token_labels}\n Self {self}')
+            if number_token_labels < 2:
+                raise ValueError('CONLL String does not contain any labels '
+                                 f'{conll_token_labels}')
+            
+            tokens.append(token_labels[0])
+            gold_labels.append(token_labels[1])
+            if number_token_labels < 3:
+                continue
+            predicted_values = token_labels[2:]
+            for pred_index, predicted_tokens in enumerate(predicted_values):
+                if index == 0:
+                    predicted_labels.append([])
+                predicted_labels[pred_index].append(predicted_tokens)
+        # Ensure that the tokens match the text
+        text = self['text']
+        if not is_character_preserving(text, tokens):
+            raise ValueError(f'The tokens {tokens} do not match the text {text}'
+                             f' for {self}')
+        self[tokens_key] = tokens
+        if gold_label_key is not None:
+            self[gold_label_key] = gold_labels
+        if prediction_key is not None:
+            self[prediction_key] = predicted_labels
+        
     def _shift_spans(self, target_span: Span, prefix: bool, 
                      suffix: bool) -> None:
         '''
