@@ -3,8 +3,73 @@
 
 ## Datasets that can be parsed
 In all of our commands and cases we expect the raw data to be downloaded in to the following folder `../target_data/`
-### SemEval 2014 Laptop and Restaurant
-The training data can be found [here](http://metashare.ilsp.gr:8080/repository/browse/semeval-2014-absa-train-data-v20-annotation-guidelines/683b709298b811e3a0e2842b2b6a04d7c7a19307f18a4940beef6a6143f937f0/) and the test data [here](http://metashare.ilsp.gr:8080/repository/browse/semeval-2014-absa-test-data-gold-annotations/b98d11cec18211e38229842b2b6a04d77591d40acd7542b7af823a54fb03a155/)
+### Any dataset that is the same XML format as SemEval 2014 Laptop and Restaurant
+The training data for both the SemEval 2014 Laptop and Restaurant can be found [here](http://metashare.ilsp.gr:8080/repository/browse/semeval-2014-absa-train-data-v20-annotation-guidelines/683b709298b811e3a0e2842b2b6a04d7c7a19307f18a4940beef6a6143f937f0/) and the test data [here](http://metashare.ilsp.gr:8080/repository/browse/semeval-2014-absa-test-data-gold-annotations/b98d11cec18211e38229842b2b6a04d77591d40acd7542b7af823a54fb03a155/). The parser for this dataset; `target_extraction.dataset_parsers.semeval_2014`
+
+An example of the XML format expected here:
+``` xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sentences>
+    <sentence id="2314">
+        <text>But the waiters were not great to us.</text>
+        <aspectTerms>
+            <aspectTerm term="waiters" polarity="negative" from="8" to="15"/>
+        </aspectTerms>
+        <aspectCategories>
+            <aspectCategory category="service" polarity="negative"/>
+        </aspectCategories>
+    </sentence>
+</sentences>
+```
+
+### Any dataset that is the same XML format as [SemEval 2016 task 5 subtask 1](http://alt.qcri.org/semeval2016/task5/)
+
+An example of the XML format expected here, which contains 6 sentences of which all sentences contain aspects but only 5 sentences contain targets as `sentence id="1661043:3"` target is `NULL`:
+``` xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Reviews>
+    <Review rid="1661043">
+        <sentences>
+            <sentence id="1661043:0">
+                <text>Pizza here is consistently good.</text>
+                <Opinions>
+                    <Opinion target="Pizza" category="FOOD#QUALITY" polarity="positive" from="0" to="5"/>
+                </Opinions>
+            </sentence>
+            <sentence id="1661043:1">
+                <text>Salads are a delicious way to begin the meal.</text>
+                <Opinions>
+                    <Opinion target="Salads" category="FOOD#QUALITY" polarity="positive" from="0" to="6"/>
+                </Opinions>
+            </sentence>
+            <sentence id="1661043:2">
+                <text>You should pass on the calamari.</text>
+                <Opinions>
+                    <Opinion target="calamari" category="FOOD#QUALITY" polarity="negative" from="23" to="31"/>
+                </Opinions>
+            </sentence>
+            <sentence id="1661043:3">
+                <text>It is thick and slightly soggy.</text>
+                <Opinions>
+                    <Opinion target="NULL" category="FOOD#QUALITY" polarity="negative" from="0" to="0"/>
+                </Opinions>
+            </sentence>
+            <sentence id="1661043:4">
+                <text>Decor is charming.</text>
+                <Opinions>
+                    <Opinion target="Decor" category="AMBIENCE#GENERAL" polarity="positive" from="0" to="5"/>
+                </Opinions>
+            </sentence>
+            <sentence id="1661043:5">
+                <text>Service is average.</text>
+                <Opinions>
+                    <Opinion target="Service" category="SERVICE#GENERAL" polarity="neutral" from="0" to="7"/>
+                </Opinions>
+            </sentence>
+        </sentences>
+    </Review>
+</Reviews>
+```
 
 # Tutorials
 Below we have created a number of notebooks to show how the package works and to explore some of the datasets that are commonly used.
