@@ -13,6 +13,7 @@ from collections.abc import MutableMapping
 from collections import OrderedDict, Counter, defaultdict, deque
 import copy
 import json
+import itertools
 import functools
 from pathlib import Path
 from typing import Optional, List, Tuple, Iterable, NamedTuple, Any, Callable
@@ -1571,71 +1572,82 @@ class TargetTextCollection(MutableMapping):
        own to_json function on a new line within the returned String. The 
        returned String is not json comptable but if split by new line it is and 
        is also comptable with the from_json method of TargetText.
-    2. add -- Wrapper around __setitem__. Given as an argument a TargetText 
+    2. to_conll -- A CONLL formatted string where the format will be the 
+       following: `TOKEN#GOLD LABEL#PREDICTION 1# PREDICTION 2` Where each 
+       token and relevant labels are on separate new lines. The first line 
+       will always contain the following: `# {text_id: `value`}` where the 
+       text_id represents the `text_id` of this TargetText, this will allow 
+       the CONLL string to be uniquely identified back this TargetText 
+       object. Also each TargetText CONLL string will be seperated 
+       by a new line.
+    3. to_conll_file -- Saves the TargetTextCollection to CONLL format. Useful
+       for Sequence Labelling tasks.
+    4. load_conll -- Loads the CONLL information into the collection.
+    5. add -- Wrapper around __setitem__. Given as an argument a TargetText 
        instance it will be added to the collection.
-    3. to_json_file -- Saves the current TargetTextCollection to a json file 
+    6. to_json_file -- Saves the current TargetTextCollection to a json file 
        which won't be strictly json but each line in the file will be and each 
        line in the file can be loaded in from String via TargetText.from_json. 
        Also the file can be reloaded into a TargetTextCollection using 
        TargetTextCollection.load_json.
-    4. tokenize -- This applies the TargetText.tokenize method across all 
+    7. tokenize -- This applies the TargetText.tokenize method across all 
        of the TargetText instances within the collection.
-    5. pos_text -- This applies the TargetText.pos_text method across all of 
+    8. pos_text -- This applies the TargetText.pos_text method across all of 
         the TargetText instances within the collection.
-    6. sequence_labels -- This applies the TargetText.sequence_labels 
+    9. sequence_labels -- This applies the TargetText.sequence_labels 
        method across all of the TargetText instances within the collection.
-    7. force_targets -- This applies the TargetText.force_targets method 
-       across all of the TargetText instances within the collection.
-    8. exact_match_score -- Recall, Precision, and F1 score in a Tuple. 
-       All of these measures are based on exact span matching rather than the 
-       matching of the sequence label tags, this is due to the annotation spans 
-       not always matching tokenization therefore this removes the tokenization 
-       error that can come from the sequence label measures.
-    9. samples_with_targets -- Returns all of the samples that have target 
-       spans as a TargetTextCollection. 
-    10. target_count -- A dictionary of target text as key and values as the  
+    10. force_targets -- This applies the TargetText.force_targets method 
+        across all of the TargetText instances within the collection.
+    11. exact_match_score -- Recall, Precision, and F1 score in a Tuple. 
+        All of these measures are based on exact span matching rather than the 
+        matching of the sequence label tags, this is due to the annotation spans 
+        not always matching tokenization therefore this removes the tokenization 
+        error that can come from the sequence label measures.
+    12. samples_with_targets -- Returns all of the samples that have target 
+        spans as a TargetTextCollection. 
+    13. target_count -- A dictionary of target text as key and values as the  
         number of times the target text occurs in this TargetTextCollection
-    11. one_sample_per_span -- This applies the TargetText.one_sample_per_span 
+    14. one_sample_per_span -- This applies the TargetText.one_sample_per_span 
         method across all of the TargetText instances within the collection to 
         create a new collection with those new TargetText instances within it.
-    12. number_targets -- Returns the total number of targets.
-    13. number_categories -- Returns the total number of categories.
-    14. category_count -- Returns a dictionary of categories as keys and 
+    15. number_targets -- Returns the total number of targets.
+    16. number_categories -- Returns the total number of categories.
+    17. category_count -- Returns a dictionary of categories as keys and 
         values as the number of times the category occurs.
-    15. target_sentiments -- A dictionary where the keys are target texts and 
+    18. target_sentiments -- A dictionary where the keys are target texts and 
         the values are a List of sentiment values that have been associated to 
         that target.
-    16. dict_iter -- Returns an interator of all of the TargetText objects 
+    19. dict_iter -- Returns an interator of all of the TargetText objects 
         within the collection as dictionaries.
-    17. unique_distinct_sentiments -- A set of the distinct sentiments within 
+    20. unique_distinct_sentiments -- A set of the distinct sentiments within 
         the collection. The length of the set represents the number of distinct 
         sentiments within the collection.
-    18. de_anonymise -- This will set the `anonymised` attribute to False 
+    21. de_anonymise -- This will set the `anonymised` attribute to False 
         from True and set the `text` key value to the value in the `text` 
         key within the `text_dict` argument for each of the TargetTexts in 
         the collection. If any Error is raised this collection will revert back
         fully to being anonymised.
-    19. sanitize -- This applies the TargetText.sanitize function to all of 
+    22. sanitize -- This applies the TargetText.sanitize function to all of 
         the TargetText instances within this collection, affectively ensures 
         that all of the instances follow the specified rules that TargetText 
         instances should follow.
-    20. in_order -- This returns True if all TargetText objects within the 
+    23. in_order -- This returns True if all TargetText objects within the 
         collection contains a list of targets that are in order of appearance 
         within the text from left to right e.g. if the only TargetText in the 
         collection contains two targets where the first target in the `targets`
         list is the first (left most) target in the text then this method would 
         return True.
-    21. re_order -- This will apply :py:meth:`target_extraction.data_types.TargetText.re_order`
+    24. re_order -- This will apply :py:meth:`target_extraction.data_types.TargetText.re_order`
         to each TargetText within the collection.
-    22. add_unique_key -- Applies the following 
+    25. add_unique_key -- Applies the following 
         :py:meth:`target_extraction.data_types.TargetText.add_unique_key` 
         to each TargetText within this collection
-    23. key_difference -- Given this collection and another it will return all
+    26. key_difference -- Given this collection and another it will return all
         of the keys that the other collection contains which this does not.
-    24. combine_data_on_id -- Given this collection and another it will add all
+    27. combine_data_on_id -- Given this collection and another it will add all
         of the data from the other collection into this collection based on the 
         unique key given. 
-    25. one_sentiment_text -- Adds the `text_sentiment_key` to each TargetText 
+    28. one_sentiment_text -- Adds the `text_sentiment_key` to each TargetText 
         within the collection where the value will represent the sentiment value 
         for the text based on the `sentiment_key` values and `average_sentiment` 
         determining how to handle multiple sentiments. This will allow text level 
@@ -1786,6 +1798,99 @@ class TargetTextCollection(MutableMapping):
                 json_text += '\n'
             json_text += json.dumps({'metadata': self.metadata})
         return json_text
+
+    def to_conll(self, gold_label_key: str, 
+                 prediction_key: Optional[str] = None) -> str:
+        '''
+        This in affect performs the `to_conll` function for each TargetText 
+        within the collection and seperates each on the CONLL strings with a 
+        new line.
+
+        :param gold_label: A key that contains a sequence of labels e.g. 
+                           [`B`, `I`, `O`]. This can come from the return 
+                           of the :py:meth:`sequence_labels`
+        :param prediction_key: Key to the predicted labels of the `gold_label`. 
+                               Where the prediction key values is a list of a 
+                               list of predicted labels. Each list is therefore 
+                               a different model run hence creating the 
+                               `PREDICTION 1`, 'PREDICTION 2' etc. Thus the 
+                               values of `prediction_key` must be of shape 
+                               (number runs, number tokens)
+        :returns: A CONLL formatted string where the format will be the 
+                  following: `TOKEN#GOLD LABEL#PREDICTION 1# PREDICTION 2`
+                  Where each token and relevant labels are on separate new 
+                  lines. The first line will always contain the following:
+                  `# {text_id: `value`}` where the text_id represents the 
+                  `text_id` of this TargetText, this will allow the CONLL
+                  string to be uniquely identified back this TargetText 
+                  object. Also each TargetText CONLL string will be seperated 
+                  by a new line.
+        '''
+        conll_string = ''
+        for target_text in self.values():
+            target_conll = target_text.to_conll(gold_label_key=gold_label_key, 
+                                                prediction_key=prediction_key)
+            conll_string += f'{target_conll}\n\n'
+        return conll_string
+
+    def to_conll_file(self, conll_fp: Path, gold_label_key: str, 
+                      prediction_key: Optional[str] = None) -> None:
+        '''
+        Writes the ouput of `to_conll` to the `conll_fp` file.
+
+        :param conll_fp: Write the CONLL string to this file path.
+        :param gold_label: A key that contains a sequence of labels e.g. 
+                           [`B`, `I`, `O`]. This can come from the return 
+                           of the :py:meth:`sequence_labels`
+        :param prediction_key: Key to the predicted labels of the `gold_label`. 
+                               Where the prediction key values is a list of a 
+                               list of predicted labels. Each list is therefore 
+                               a different model run hence creating the 
+                               `PREDICTION 1`, 'PREDICTION 2' etc. Thus the 
+                               values of `prediction_key` must be of shape 
+                               (number runs, number tokens)
+        '''
+        conll_string = self.to_conll(gold_label_key=gold_label_key, 
+                                     prediction_key=prediction_key)
+        with conll_fp.open('w+') as conll_file:
+            conll_file.write(conll_string)
+
+    def load_conll(self, conll_fp: Path, tokens_key: str = 'tokenized_text', 
+                   gold_label_key: Optional[str] = None, 
+                   prediction_key: Optional[str] = None) -> None:
+        '''
+        This takes the `conll_fp` and loads the CONLL data into the relevant 
+        TargetText samples in this collection using the TargetText `from_conll`
+        function. The matching of TargetText with CONLL data is through the CONLL
+        string containing `# {text_id: _id}` for each CONLL sentence/text.
+
+        :param tokens_key: Key to save the CONLL tokens too, for the TargetText.
+        :param gold_label_key: Key to save the gold labels too. Either 
+                               `gold_label_key` or `prediction_key` must not be 
+                               `None` or both not `None`, for the TargetText.
+        :param prediction_key: Key to save the prediction labels too. The value 
+                               will be of shape (number runs, number tokens), 
+                               for the TargetText.
+        '''
+        def _line_divider(line: str) -> bool:
+            return line.strip() == ''
+        
+        with conll_fp.open('r') as conll_file:
+
+            # Group into alternative divider / sentence chunks.
+            for is_divider, lines in itertools.groupby(conll_file, _line_divider):
+                if is_divider:
+                    continue
+                lines = list(lines)
+                _id_line = lines[0]
+                _id_line = _id_line.lstrip('#').strip()
+                text_id = json.loads(_id_line)['text_id']
+                # Find relevant TargetText
+                lines = [line.strip() for line in lines if line.strip()!='']
+                conll_line = '\n'.join(lines[1:])
+                self[text_id].from_conll(conll_line, tokens_key=tokens_key, 
+                                         gold_label_key=gold_label_key, 
+                                         prediction_key=prediction_key)
 
     @staticmethod
     def _get_metadata(json_iterable: Iterable[str]) -> Tuple[Union[Dict[str, Any], None],

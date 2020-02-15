@@ -346,6 +346,69 @@ class TestTargetTextCollection:
                              '{"metadata": {"anonymised": true, "name": ""}}')
         assert new_collection.to_json() == true_json_version
 
+    def test_to_conll(self):
+        true_conll = ('# {"text_id": "0"}\nThe O O\nlaptop B-0 O\ncase I-0 B-0\nwas O O\ngreat O O\nand O O\ncover O O\nwas O O\nrubbish O O'
+                      '\n\n# {"text_id": "another_id"}\nThe O O\nlaptop O O\ncase O O\nwas O O\ngreat O O\nand O O\ncover B-1 O\nwas O O\nrubbish O B-neg'
+                      '\n\n# {"text_id": "2"}\nThe O B\nlaptop B-0 O\ncase I-0 O\nwas O O\ngreat O O\nand O O\ncover B-1 O\nwas O O\nrubbish O O\n\n')
+        predicted_labels = {'0': [['O', 'O', 'B-0', 'O', 'O', 'O', 'O', 'O', 'O']],
+                            'another_id': [['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-neg']],
+                            '2': [['B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']]}
+        examples = self._target_text_examples()
+        for example in examples:
+            _id = example['text_id']
+            example.tokenize(str.split)
+            example.sequence_labels(label_key='target_sentiments')
+            example['predicted_sequences'] = predicted_labels[_id]
+
+        collection = TargetTextCollection(examples)
+        assert true_conll == collection.to_conll(gold_label_key='sequence_labels', 
+                                                 prediction_key='predicted_sequences')
+
+    def test_to_conll_file(self):
+        examples = self._target_text_examples()
+        true_predicted_labels = {'0': [['O', 'O', 'B-0', 'O', 'O', 'O', 'O', 'O', 'O']],
+                                 'another_id': [['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-neg']],
+                                 '2': [['B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']]}
+        true_gold_labels = {}
+        for example in examples:
+            _id = example['text_id']
+            example.tokenize(str.split)
+            example.sequence_labels(label_key='target_sentiments')
+            example['preds'] = true_predicted_labels[_id]
+            true_gold_labels[_id] = example['sequence_labels']
+        
+        collection = TargetTextCollection(examples)
+        test_collection = TargetTextCollection(self._target_text_examples())
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_file = Path(temp_dir, 'temp_file.conll')
+            collection.to_conll_file(temp_file, gold_label_key='sequence_labels', 
+                                     prediction_key='preds')
+            test_collection.load_conll(temp_file, gold_label_key='gold', 
+                                       prediction_key='alt_preds')
+            for _id, target_text in test_collection.items():
+                test_target_text = collection[_id]
+                assert target_text['gold'] == test_target_text['sequence_labels']
+                assert target_text['alt_preds'] == test_target_text['preds']
+            
+    def test_load_conll(self):
+        conll_fp = Path(self._json_data_dir(), 'conll_format.conll')
+        examples = self._target_text_examples()
+        collection = TargetTextCollection(examples)
+        collection.load_conll(conll_fp, gold_label_key='another', 
+                              prediction_key='preds')
+
+        true_predicted_labels = {'0': [['O', 'O', 'B-0', 'O', 'O', 'O', 'O', 'O', 'O']],
+                                 'another_id': [['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-neg']],
+                                 '2': [['B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']]}
+        true_gold_labels = {}
+        for example in examples:
+            example.tokenize(str.split)
+            example.sequence_labels(label_key='target_sentiments')
+            true_gold_labels[example['text_id']] = example['sequence_labels']
+        for _id, target_text in collection.items():
+            assert true_gold_labels[_id] == target_text['another']
+            assert true_predicted_labels[_id] == target_text['preds']
+
     @pytest.mark.parametrize("anonymised", (True, False))
     @pytest.mark.parametrize("name", (' ', 'test_name'))
     @pytest.mark.parametrize("metadata", (None, 'InterAE'))
