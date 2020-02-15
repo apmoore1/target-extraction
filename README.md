@@ -1,6 +1,14 @@
 # Target Extraction
 [![Build Status](https://travis-ci.org/apmoore1/target-extraction.svg?branch=master)](https://travis-ci.org/apmoore1/target-extraction) [![codecov](https://codecov.io/gh/apmoore1/target-extraction/branch/master/graph/badge.svg)](https://codecov.io/gh/apmoore1/target-extraction)
 
+## Requirements and Install
+Requires Python >= 3.6.1. Been testing on Python 3.6.7 and 3.7 on Ubuntu 16.0.4 (Xenial).
+
+Install:
+1. git clone git@github.com:apmoore1/target-extraction.git
+2. Go into the cloned directory and `pip install .`
+
+
 ## Datasets that can be parsed
 In all of our commands and cases we expect the raw data to be downloaded in to the following folder `../target_data/`
 ### Any dataset that is the same XML format as SemEval 2014 Laptop and Restaurant
