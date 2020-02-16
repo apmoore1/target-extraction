@@ -458,7 +458,8 @@ def multi_aspect_multi_sentiment_atsa(dataset: str,
                      it will download the cleaned Training dataset version. The 
                      cleaned version only contains a few sample differences 
                      but these differences are with respect to overlapping 
-                     targets. See this notebook for full differences:
+                     targets. See this `notebook for full differences 
+                     <https://github.com/apmoore1/target-extraction/blob/master/tutorials/Difference_between_MAMS_ATSA_original_and_MAMS_ATSA_cleaned.ipynb>`_:
                      
     :returns: The `train`, `val`, or `test` dataset from the 
               Multi-Aspect-Multi-Sentiment dataset (MAMS) ATSA version. 
