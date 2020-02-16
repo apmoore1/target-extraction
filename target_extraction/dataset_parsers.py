@@ -435,7 +435,8 @@ def wang_2017_election_twitter_test(cache_dir: Optional[Path] = None
     return _wang_2017_election_parser(train=False, cache_dir=cache_dir)
 
 def multi_aspect_multi_sentiment_atsa(dataset: str, 
-                                      cache_dir: Optional[Path] = None
+                                      cache_dir: Optional[Path] = None,
+                                      original: bool = True
                                       ) -> TargetTextCollection:
     '''
     The data for this function when downloaded is stored within: 
@@ -451,6 +452,14 @@ def multi_aspect_multi_sentiment_atsa(dataset: str,
     :param cache_dir: The directory where all of the data is stored for 
                       this code base. If None then the cache directory is
                       `dataset_parsers.CACHE_DIRECTORY`
+    :param original: This does not affect `val` or `test`. If True then it will 
+                     download the original training data from the `original paper 
+                     <https://www.aclweb.org/anthology/D19-1654.pdf>`_ . Else 
+                     it will download the cleaned Training dataset version. The 
+                     cleaned version only contains a few sample differences 
+                     but these differences are with respect to overlapping 
+                     targets. See this notebook for full differences:
+                     
     :returns: The `train`, `val`, or `test` dataset from the 
               Multi-Aspect-Multi-Sentiment dataset (MAMS) ATSA version. 
               Dataset came from the `A Challenge Dataset and Effective Models  
@@ -471,6 +480,8 @@ def multi_aspect_multi_sentiment_atsa(dataset: str,
                    'val': 'https://github.com/siat-nlp/MAMS-for-ABSA/raw/master/data/MAMS-ATSA/raw/val.xml',
                    'test': 'https://github.com/siat-nlp/MAMS-for-ABSA/raw/master/data/MAMS-ATSA/raw/test.xml'}
     url = dataset_url[dataset]
+    if dataset == 'train' and not original:
+        url = 'https://raw.githubusercontent.com/apmoore1/target-extraction/master/data/MAMS/MAMS_ATSA_cleaned_train.xml'
     data_fp = Path(cached_path(url, cache_dir=data_folder))
 
     # Parsing the data

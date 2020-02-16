@@ -33,8 +33,16 @@ def test_multi_aspect_multi_sentiment_atsa():
             assert sample_count == sentiment_breakdown[sentiment_name]
         assert sum(stat.values()) == dataset_collection.number_targets()
         assert 3 == len(sentiment_breakdown.keys())
+    # Testing the non-original/cleaned version
+    train_cleaned = multi_aspect_multi_sentiment_atsa('train', original=False)
+    cleaned_stats = {'positive': 3379, 'neutral': 5038, 'negative': 2763}
+    test_cleaned_stats = get_samples_per_sentiment(train_cleaned)
+    assert len(cleaned_stats) == len(test_cleaned_stats)
+    for key, value in cleaned_stats.items():
+        assert value == test_cleaned_stats[key]
+    
     default_cache = Path(CACHE_DIRECTORY, 'Jiang 2019 MAMS ATSA')
-    assert 6 == len(list(default_cache.iterdir()))
+    assert 8 == len(list(default_cache.iterdir()))
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_fp = Path(temp_dir)
