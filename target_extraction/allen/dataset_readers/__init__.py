@@ -1,3 +1,4 @@
 from target_extraction.allen.dataset_readers.target_extraction import TargetExtractionDatasetReader
 from target_extraction.allen.dataset_readers.target_sentiment import TargetSentimentDatasetReader
 from target_extraction.allen.dataset_readers.text_sentiment import TextSentimentReader
+from target_extraction.allen.dataset_readers.target_conll import TargetConllDatasetReader

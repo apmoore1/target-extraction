@@ -1,0 +1,33 @@
+# {"text_id": "0"}
+The O O
+laptop B-0 O
+case I-0 B-0
+was I-0 O
+great O O
+and O O
+cover O O
+was O O
+rubbish O O
+
+# {"text_id": "2"}
+The O B
+laptop B-0 O
+case I-0 O
+was O O
+great O O
+and O O
+cover B-1 O
+was O O
+rubbish O O
+
+# {"text_id": "another_id"}
+The O O
+laptop O O
+case O O
+was O O
+great O O
+and O O
+cover B-1 O
+was O O
+rubbish O B-neg
+
