@@ -47,20 +47,8 @@ class TextSentimentReader(TextClassificationJsonReader):
         The name of the label field in the JSON objects that are read.
     """
 
-    def __init__(
-        self,
-        token_indexers: Dict[str, TokenIndexer] = None,
-        tokenizer: Tokenizer = None,
-        segment_sentences: bool = False,
-        max_sequence_length: int = None,
-        skip_label_indexing: bool = False,
-        lazy: bool = False, label_name: str = 'label'
-    ) -> None:
-        super().__init__(token_indexers=token_indexers, tokenizer=tokenizer, 
-                         segment_sentences=segment_sentences, 
-                         max_sequence_length=max_sequence_length, 
-                         skip_label_indexing=skip_label_indexing,
-                         lazy=lazy)
+    def __init__(self, label_name: str = 'label', **kwargs) -> None:
+        super().__init__(**kwargs)
         self._label_field = label_name
 
     @overrides

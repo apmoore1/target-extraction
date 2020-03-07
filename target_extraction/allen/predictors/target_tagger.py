@@ -4,7 +4,7 @@ from allennlp.common.util import JsonDict
 from allennlp.data import DatasetReader, Instance, Token
 from allennlp.models import Model
 from allennlp.predictors.predictor import Predictor
-from allennlp.data.tokenizers.word_splitter import SpacyWordSplitter
+from allennlp.data.tokenizers import SpacyTokenizer
 
 @Predictor.register('target-tagger')
 class TargetTaggerPredictor(Predictor):
@@ -32,8 +32,8 @@ class TargetTaggerPredictor(Predictor):
                                   UPOS (universal) tags.
         '''
         super().__init__(model, dataset_reader)
-        self._tokenizer = SpacyWordSplitter(language=language, 
-                                            pos_tags=pos_tags)
+        self._tokenizer = SpacyTokenizer(language=language, 
+                                         pos_tags=pos_tags)
         self._pos_tags = pos_tags
         self._fine_grained_tags = fine_grained_tags
 

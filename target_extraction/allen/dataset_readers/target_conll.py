@@ -73,11 +73,10 @@ class TargetConllDatasetReader(DatasetReader):
     label_namespace: ``str``, optional (default=``labels``)
         Specifies the namespace for the sequence labels.
     '''
-    def __init__(self, lazy: bool = False,
-                 token_indexers: Dict[str, TokenIndexer] = None,
+    def __init__(self, token_indexers: Dict[str, TokenIndexer] = None,
                  coding_scheme: str = "BIO",
-                 label_namespace: str = "labels") -> None:
-        super().__init__(lazy)
+                 label_namespace: str = "labels", **kwargs) -> None:
+        super().__init__(**kwargs)
         self._token_indexers = token_indexers or \
                                {"tokens": SingleIdTokenIndexer()}
         self.label_namespace = label_namespace

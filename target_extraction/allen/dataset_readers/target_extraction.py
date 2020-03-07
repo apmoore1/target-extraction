@@ -37,10 +37,9 @@ class TargetExtractionDatasetReader(DatasetReader):
     :params pos_tags: Whether or not to extract POS tags if avaliable.
     :returns: A ``Dataset`` of ``Instances`` for Target Extraction.
     '''
-    def __init__(self, lazy: bool = False,
-                 token_indexers: Dict[str, TokenIndexer] = None,
-                 pos_tags: bool = False) -> None:
-        super().__init__(lazy)
+    def __init__(self, token_indexers: Dict[str, TokenIndexer] = None,
+                 pos_tags: bool = False, **kwargs) -> None:
+        super().__init__(**kwargs)
         self._token_indexers = token_indexers or \
                                {"tokens": SingleIdTokenIndexer()}
         self._pos_tags = pos_tags

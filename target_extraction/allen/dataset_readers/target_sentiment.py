@@ -6,7 +6,7 @@ from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data.instance import Instance
-from allennlp.data.tokenizers import Token, Tokenizer, WordTokenizer
+from allennlp.data.tokenizers import Token, Tokenizer, SpacyTokenizer
 from allennlp.data.fields import TextField, ListField, MetadataField, Field
 from allennlp.data.fields import SequenceLabelField, ArrayField
 from overrides import overrides
@@ -137,8 +137,7 @@ class TargetSentimentDatasetReader(DatasetReader):
                                                         [0,0,0,0,0,0,0,1,0,0]],
                                    `spans`: [[5,11], [34:40]]}
     '''
-    def __init__(self, lazy: bool = False,
-                 token_indexers: Dict[str, TokenIndexer] = None,
+    def __init__(self, token_indexers: Dict[str, TokenIndexer] = None,
                  tokenizer: Tokenizer = None,
                  left_right_contexts: bool = False,
                  reverse_right_context: bool = False,
@@ -147,9 +146,10 @@ class TargetSentimentDatasetReader(DatasetReader):
                  target_sequences: bool = False,
                  position_embeddings: bool = False,
                  position_weights: bool = False,
-                 max_position_distance: Optional[int] = None) -> None:
-        super().__init__(lazy)
-        self._tokenizer = tokenizer or WordTokenizer()
+                 max_position_distance: Optional[int] = None,
+                 **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._tokenizer = tokenizer or SpacyTokenizer()
         self._token_indexers = token_indexers or \
                                {"tokens": SingleIdTokenIndexer()}
         if incl_target and not left_right_contexts:
