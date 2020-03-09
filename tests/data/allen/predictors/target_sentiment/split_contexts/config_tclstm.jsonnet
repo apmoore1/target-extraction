@@ -16,10 +16,12 @@
       "type": "split_contexts_classifier",
       "dropout": 0.5,
       "context_field_embedder": {
-        "tokens": {
-          "type": "embedding",
-          "embedding_dim": 10,
-          "trainable": false
+        "token_embedders":{
+          "tokens": {
+            "type": "embedding",
+            "embedding_dim": 10,
+            "trainable": false
+          }
         }
       },
       "left_text_encoder": {

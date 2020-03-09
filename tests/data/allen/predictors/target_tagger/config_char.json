@@ -22,25 +22,28 @@
       "dropout": 0.5,
       "include_start_end_transitions": false,
       "text_field_embedder": {
-        "tokens": {
-          "type": "embedding",
-          "embedding_dim": 20,
-          "trainable": true
-        },
-        "token_characters": {
-            "type": "character_encoding",
-            "embedding":{
-                "embedding_dim": 5,
-                "trainable": true
-            },
-            "encoder": {
-                "type": "gru",
-                "bidirectional": true,
-                "input_size": 5,
-                "hidden_size": 5,
-                "num_layers": 1
-            }
-            }
+        "token_embedders": {
+          "tokens": {
+            "type": "embedding",
+            "embedding_dim": 20,
+            "trainable": true
+          },
+          "token_characters": {
+              "type": "character_encoding",
+              "embedding":{
+                  "embedding_dim": 5,
+                  "trainable": true,
+                  "vocab_namespace": "token_characters"
+              },
+              "encoder": {
+                  "type": "gru",
+                  "bidirectional": true,
+                  "input_size": 5,
+                  "hidden_size": 5,
+                  "num_layers": 1
+              }
+              }
+        }
       }
     },
     "iterator": {

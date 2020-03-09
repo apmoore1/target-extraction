@@ -5,3 +5,4 @@ docs/build
 docs/make.bat
 docs/source/modules.rst
 docs/source/target_extraction.rst
+experimental_configs/

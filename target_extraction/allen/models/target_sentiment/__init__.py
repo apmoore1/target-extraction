@@ -2,3 +2,4 @@ from target_extraction.allen.models.target_sentiment.split_contexts import Split
 from target_extraction.allen.models.target_sentiment import util
 from target_extraction.allen.models.target_sentiment.interactive_attention_network import InteractivateAttentionNetworkClassifier
 from target_extraction.allen.models.target_sentiment.atae import ATAEClassifier
+from target_extraction.allen.models.target_sentiment.in_context import InContextClassifier

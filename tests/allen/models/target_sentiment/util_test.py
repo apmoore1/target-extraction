@@ -23,11 +23,10 @@ def test_concat_position_embeddings():
                                      [[1,0,0], [0,0,0]]])
     position_indexes = position_indexes.type(torch.long)
     assert (batch_size, number_targets, text_seq_length) == position_indexes.shape
-    position_indexes = {'position_tokens': position_indexes}
+    position_indexes = {'position_tokens': {'tokens': position_indexes}}
 
     embedding = Embedding(num_embeddings=3, embedding_dim=5, trainable=False)
     target_position_embedding = BasicTextFieldEmbedder({'position_tokens': embedding})
-
     assert (batch_size, number_targets, text_seq_length, 5) == target_position_embedding(position_indexes).shape
 
     test_encoded_text_tensor = util.concat_position_embeddings(encoded_text_tensor, 

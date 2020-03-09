@@ -7,7 +7,7 @@
         "lowercase_tokens": true
       },
     "elmo": {
-      "type": "elmo_characters"
+      "type": "custom_elmo_characters"
     }
     }
   },
@@ -17,19 +17,21 @@
     "type": "interactive_attention_network_classifier",
     "dropout": 0.5,
     "context_field_embedder": {
-      "tokens": {
-        "type": "embedding",
-        "embedding_dim": 5,
-        "trainable": false
-      },
-    "elmo": {
-      "type": "language_model_token_embedder",
-      "archive_file": "./tests/data/elmo_test_model/elmo_lm_test_model.tar.gz",
-      "dropout": 0.2,
-      "bos_eos_tokens": ["<S>", "</S>"],
-      "remove_bos_eos": true,
-      "requires_grad": false
-    }
+      "token_embedders" :{
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 5,
+          "trainable": false
+        },
+        "elmo": {
+          "type": "language_model_token_embedder",
+          "archive_file": "./tests/data/elmo_test_model/elmo_lm_test_model.tar.gz",
+          "dropout": 0.2,
+          "bos_eos_tokens": ["<S>", "</S>"],
+          "remove_bos_eos": true,
+          "requires_grad": false
+        }
+      }
     },
     "target_encoder": {
       "type": "gru",

@@ -3,7 +3,7 @@
       "type": "target_sentiment",
       "token_indexers": {
       "elmo": {
-        "type": "elmo_characters"
+        "type": "custom_elmo_characters"
       }
       },
       "left_right_contexts": true,
@@ -15,14 +15,16 @@
       "type": "split_contexts_classifier",
       "dropout": 0.5,
       "context_field_embedder": {
-      "elmo": {
-        "type": "language_model_token_embedder",
-        "archive_file": "./tests/data/elmo_test_model/elmo_lm_test_model.tar.gz",
-        "dropout": 0.2,
-        "bos_eos_tokens": ["<S>", "</S>"],
-        "remove_bos_eos": true,
-        "requires_grad": false
-      }
+        "token_embedders" :{
+          "elmo": {
+            "type": "language_model_token_embedder",
+            "archive_file": "./tests/data/elmo_test_model/elmo_lm_test_model.tar.gz",
+            "dropout": 0.2,
+            "bos_eos_tokens": ["<S>", "</S>"],
+            "remove_bos_eos": true,
+            "requires_grad": false
+          }
+        }
       },
       "left_text_encoder": {
         "type": "gru",

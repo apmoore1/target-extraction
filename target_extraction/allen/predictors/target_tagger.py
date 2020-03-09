@@ -58,12 +58,9 @@ class TargetTaggerPredictor(Predictor):
                 input_dict['pos_tags'] = json_dict['pos_tags']
             return self._dataset_reader.text_to_instance(**input_dict)
         # Using the tokenizer and pos tagger from the constructor
-        tokenized_text = self._tokenizer.split_words(text)
-        tokens = []
+        tokens = self._tokenizer.tokenize(text)
         pos_tags = []
-        for allen_token in tokenized_text:
-            tokens.append(Token(allen_token.text))
-            
+        for allen_token in tokens:            
             if self._pos_tags:
                 if self._fine_grained_tags:
                     pos_tag = allen_token.tag_

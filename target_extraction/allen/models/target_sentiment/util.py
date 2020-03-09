@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List, Union, Optional, Dict
 
 from allennlp.models import Model
@@ -34,7 +35,7 @@ def loss_weight_order(model: Model, loss_weights: Optional[List[float]],
 
 def elmo_input_reshape(inputs: Dict[str, torch.Tensor], batch_size: int,
                        number_targets: int, batch_size_num_targets: int
-                       ) -> Dict[str, torch.Tensor]:
+                       ) -> Dict[str, Dict[str, torch.Tensor]]:
     '''
     :param inputs: The token indexer dictionary where the keys state the token 
                    indexer and the values are the Tensors that are of shape 
@@ -47,11 +48,12 @@ def elmo_input_reshape(inputs: Dict[str, torch.Tensor], batch_size: int,
               so that it can be processed by the ELMO embedder. 
     '''
     if 'transformer_tokens' in inputs or 'elmo' in inputs:
-        temp_inputs: Dict[str, torch.Tensor] = {}
-        for key, value in inputs.items():
-            temp_value = value.view(batch_size_num_targets, *value.shape[2:])
-            temp_inputs[key] = temp_value
-        return temp_inputs
+        temp_inputs: Dict[str, Dict[str, torch.Tensor]] = defaultdict(dict)
+        for key, inner_key_value in inputs.items():
+            for inner_key, value in inner_key_value.items():
+                temp_value = value.view(batch_size_num_targets, *value.shape[2:])
+                temp_inputs[key][inner_key] = temp_value
+        return dict(temp_inputs)
     else:
         return inputs
 
@@ -74,7 +76,7 @@ def elmo_input_reverse(embedded_input: torch.Tensor,
     '''
     if 'elmo' in inputs or 'transformer_tokens' in inputs:
         return embedded_input.view(batch_size, number_targets,
-                               *embedded_input.shape[1:])
+                                   *embedded_input.shape[1:])
     return embedded_input
 
 def concat_position_embeddings(embedding_context: torch.Tensor, 

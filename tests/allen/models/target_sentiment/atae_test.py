@@ -253,7 +253,7 @@ class ATAEClassifierTest(ModelTestCase):
         # Raises a ConfigurationError when the context encoder input dim is not 
         # the sum of the position, context, and target embedders
         params = Params.from_file(self.position_embedding_atae_config).duplicate()
-        params['model']['target_position_embedding']["position_tokens"]["embedding_dim"] = 4
+        params['model']['target_position_embedding']["token_embedders"]["position_tokens"]["embedding_dim"] = 4
         params_copy = copy.deepcopy(params)
         with pytest.raises(ConfigurationError):
             Model.from_params(vocab=self.vocab, params=params_copy.get('model'))

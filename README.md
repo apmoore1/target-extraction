@@ -166,3 +166,11 @@ allennlp train ./training_configs/Target_Sentiment/split_contexts/tdlstm.jsonnet
 
 ## Results
 They can be found within the following [folder](./results).
+
+
+## Errors
+Need to remove the `{'allow_unmatched_keys': True}` from the Language Model's configuration file. You may also need to add `"vocab_namespace": "token_characters"` within the `token_characters` `embedding` value.
+
+```
+allennlp.common.checks.ConfigurationError: Extra parameters passed to BasicTextFieldEmbedder: {'allow_unmatched_keys': True}
+```

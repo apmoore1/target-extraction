@@ -16,10 +16,12 @@
     "AttentionAE": false,
     "dropout": 0.5,
     "context_field_embedder": {
-      "tokens": {
-        "type": "embedding",
-        "embedding_dim": 5,
-        "trainable": false
+      "token_embedders":{
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 5,
+          "trainable": false
+        }
       }
     },
     "context_encoder": {

@@ -32,7 +32,8 @@
           "token_characters": {
               "type": "character_encoding",
               "embedding": {
-                "embedding_dim": 10
+                "embedding_dim": 10,
+                "vocab_namespace": "token_characters"
               },
               "encoder": {
                 "type": "gru",

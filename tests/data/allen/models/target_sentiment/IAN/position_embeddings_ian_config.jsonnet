@@ -15,17 +15,21 @@
     "type": "interactive_attention_network_classifier",
     "dropout": 0.5,
     "context_field_embedder": {
-      "tokens": {
-        "type": "embedding",
-        "embedding_dim": 5,
-        "trainable": false
+      "token_embedders" :{
+        "tokens": {
+          "type": "embedding",
+          "embedding_dim": 5,
+          "trainable": false
+        }
       }
     },
     "target_position_embedding": {
-      "position_tokens": {
-        "type": "embedding",
-        "embedding_dim": 5,
-        "trainable": false
+      "token_embedders" :{
+        "position_tokens": {
+          "type": "embedding",
+          "embedding_dim": 5,
+          "trainable": false
+        }
       }
     },
     "target_encoder": {
