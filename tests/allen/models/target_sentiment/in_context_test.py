@@ -4,14 +4,13 @@ import tempfile
 
 from allennlp.common.testing import ModelTestCase
 from allennlp.common.params import Params
-from allennlp.data.dataset import Batch
+from allennlp.data import Batch
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models import Model
 from allennlp.nn import InitializerApplicator, Initializer
 from flaky import flaky
 from allennlp.common.checks import ConfigurationError
 import pytest
-import numpy
 
 import target_extraction
 from .util import loss_weights

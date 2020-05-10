@@ -168,9 +168,12 @@ allennlp train ./training_configs/Target_Sentiment/split_contexts/tdlstm.jsonnet
 They can be found within the following [folder](./results).
 
 
-## Errors
+## ELMo Transformer model Errors, upgrading from Allennlp 0.9.0 to 1.0.0
 Need to remove the `{'allow_unmatched_keys': True}` from the Language Model's configuration file. You may also need to add `"vocab_namespace": "token_characters"` within the `token_characters` `embedding` value.
 
 ```
 allennlp.common.checks.ConfigurationError: Extra parameters passed to BasicTextFieldEmbedder: {'allow_unmatched_keys': True}
 ```
+
+## Get best results with the transformer models:
+Good Learning Rate is either 3e-5 or 2e-5 using either the ADAM or ADAMW optimiser.
