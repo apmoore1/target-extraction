@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict
 
 from allennlp.common.checks import ConfigurationError, check_dimensions_match
-from allennlp.data import Vocabulary
+from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.modules.attention import BilinearAttention
 from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder
 from allennlp.modules import FeedForward, Seq2SeqEncoder, TextFieldEmbedder
@@ -13,6 +13,7 @@ from allennlp.training.metrics import CategoricalAccuracy, F1Measure
 import torch
 from torch.nn.modules import Dropout, Linear
 import numpy
+from overrides import overrides
 
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
@@ -220,8 +221,8 @@ class InteractivateAttentionNetworkClassifier(Model):
         initializer(self)
 
     def forward(self,
-                tokens: Dict[str, torch.LongTensor],
-                targets: Dict[str, torch.LongTensor],
+                tokens: TextFieldTensors,
+                targets: TextFieldTensors,
                 target_sentiments: torch.LongTensor = None,
                 target_sequences: Optional[torch.LongTensor] = None,
                 metadata: Optional[torch.LongTensor] = None,
@@ -292,8 +293,8 @@ class InteractivateAttentionNetworkClassifier(Model):
                 embedded_targets = self.context_field_embedder(temp_targets)
             # Size (batch size, num targets, sequence length, embedding dim)
             embedded_targets = elmo_input_reverse(embedded_targets, targets, 
-                                                batch_size, number_targets, 
-                                                batch_size_num_targets)
+                                                  batch_size, number_targets, 
+                                                  batch_size_num_targets)
             # Batch size * number targets, target length, dim
             _, _, target_sequence_length, embeded_target_dim = embedded_targets.shape
             embedded_targets = embedded_targets.view(batch_size_num_targets, target_sequence_length,
@@ -375,6 +376,9 @@ class InteractivateAttentionNetworkClassifier(Model):
         output_dict = {"class_probabilities": masked_class_probabilities, 
                        "targets_mask": label_mask}
 
+        # Convert it to bool tensor.
+        label_mask = label_mask == 1
+
         if target_sentiments is not None:
             # gets the loss per target instance due to the average=`token`
             if self.loss_weights is not None:
@@ -392,18 +396,18 @@ class InteractivateAttentionNetworkClassifier(Model):
         if metadata is not None:
             words = []
             texts = []
-            targets = []
+            meta_targets = []
             target_words = []
             for batch_index, sample in enumerate(metadata):
                 words.append(sample['text words'])
                 texts.append(sample['text'])
-                targets.append(sample['targets'])
+                meta_targets.append(sample['targets'])
                 target_words.append(sample['target words'])
                         
             output_dict["words"] = words
             output_dict["text"] = texts
             output_dict["word_attention"] = context_attentions_weights
-            output_dict["targets"] = targets
+            output_dict["targets"] = meta_targets
             output_dict["target words"] = target_words
             output_dict["targets_attention"] = target_attention_weights
             output_dict["context_mask"] = context_mask
@@ -411,8 +415,9 @@ class InteractivateAttentionNetworkClassifier(Model):
 
         return output_dict
 
-    def decode(self, output_dict: Dict[str, torch.Tensor]
-               ) -> Dict[str, torch.Tensor]:
+    @overrides
+    def make_output_human_readable(self, output_dict: Dict[str, torch.Tensor]
+                                   ) -> Dict[str, torch.Tensor]:
         '''
         Adds the predicted label to the output dict, also removes any class 
         probabilities that do not have a target associated which is caused 

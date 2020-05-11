@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import List, Union, Optional, Dict
 
+from allennlp.data import TextFieldTensors
 from allennlp.models import Model
 from allennlp.modules import TextFieldEmbedder
 import torch
@@ -25,30 +26,39 @@ def loss_weight_order(model: Model, loss_weights: Optional[List[float]],
         
         temp_loss_weights = []
         loss_weight_labels = ['negative', 'neutral', 'positive']
-        loss_weights = {label_name: weight for label_name, weight 
-                        in zip(loss_weight_labels, loss_weights)}
+        loss_name_weights = {label_name: weight for label_name, weight 
+                             in zip(loss_weight_labels, loss_weights)}
         for label_name, index in label_name_index:
-            temp_loss_weights.append(loss_weights[label_name])
+            temp_loss_weights.append(loss_name_weights[label_name])
         return temp_loss_weights
     else:
         return None
 
-def elmo_input_reshape(inputs: Dict[str, torch.Tensor], batch_size: int,
+def elmo_input_reshape(inputs: TextFieldTensors, batch_size: int,
                        number_targets: int, batch_size_num_targets: int
-                       ) -> Dict[str, Dict[str, torch.Tensor]]:
+                       ) -> TextFieldTensors:
     '''
+    NOTE: This does not work for the hugginface transformers as when they are 
+    processed by the token indexers they produce additional key other than 
+    token ids such as mask ids and segment ids that also need handling, of 
+    which we have not had time to handle this yet. A way around this, which 
+    would be more appropriate, would be to use `target_sequences` like in the 
+    `InContext` model, to generate contextualised targets from the context rather 
+    than using the target words as is without context.
+
     :param inputs: The token indexer dictionary where the keys state the token 
                    indexer and the values are the Tensors that are of shape 
                    (Batch Size, Number Targets, Sequence Length)
     :param batch_size: The Batch Size
     :param number_targets: The max number of targets in the batch
     :param batch_size_num_targets: Batch Size * number of targets
-    :returns: If the inputs contains a `elmo` key it will reshape all the keys 
-              values into shape (Batch Size * Number Targets, Sequence Length)
-              so that it can be processed by the ELMO embedder. 
+    :returns: If the inputs contains a `elmo` or 'token_characters' key it will 
+              reshape all the keys values into shape 
+              (Batch Size * Number Targets, Sequence Length) so that it can be 
+              processed by the ELMO or character embedder/encoder. 
     '''
-    if 'transformer_tokens' in inputs or 'elmo' in inputs:
-        temp_inputs: Dict[str, Dict[str, torch.Tensor]] = defaultdict(dict)
+    if 'elmo' in inputs or 'token_characters' in inputs:
+        temp_inputs: TextFieldTensors = defaultdict(dict)
         for key, inner_key_value in inputs.items():
             for inner_key, value in inner_key_value.items():
                 temp_value = value.view(batch_size_num_targets, *value.shape[2:])
@@ -58,7 +68,7 @@ def elmo_input_reshape(inputs: Dict[str, torch.Tensor], batch_size: int,
         return inputs
 
 def elmo_input_reverse(embedded_input: torch.Tensor, 
-                       inputs: Dict[str, torch.Tensor], batch_size: int,
+                       inputs: TextFieldTensors, batch_size: int,
                        number_targets: int, batch_size_num_targets: int
                        ) -> torch.Tensor:
     '''
@@ -70,11 +80,11 @@ def elmo_input_reverse(embedded_input: torch.Tensor,
     :param batch_size: The Batch Size
     :param number_targets: The max number of targets in the batch
     :param batch_size_num_targets: Batch Size * number of targets
-    :returns: If the inputs contains a `elmo` key it will reshape the 
-              `embedded_input` into the original shape of 
+    :returns: If the inputs contains a `elmo` or 'token_characters' key it will 
+              reshape the `embedded_input` into the original shape of 
               (Batch Size, Number Targets, Sequence Length, embedding dim)
     '''
-    if 'elmo' in inputs or 'transformer_tokens' in inputs:
+    if 'elmo' in inputs or 'token_characters' in inputs:
         return embedded_input.view(batch_size, number_targets,
                                    *embedded_input.shape[1:])
     return embedded_input

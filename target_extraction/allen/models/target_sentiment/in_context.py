@@ -1,7 +1,7 @@
 from typing import Dict, Optional, List
 
 from allennlp.common.checks import ConfigurationError, check_dimensions_match
-from allennlp.data import Vocabulary
+from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.modules import FeedForward, Seq2SeqEncoder, TextFieldEmbedder
 from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder
 from allennlp.modules import InputVariationalDropout, TimeDistributed
@@ -124,10 +124,10 @@ class InContextClassifier(Model):
                                    'FeedForward')
         initializer(self)
 
-    def forward(self, tokens: Dict[str, torch.LongTensor],
-                targets: Dict[str, torch.LongTensor],
+    def forward(self, tokens: TextFieldTensors,
+                targets: TextFieldTensors,
+                target_sequences: torch.LongTensor,
                 target_sentiments: torch.LongTensor = None,
-                target_sequences: Optional[torch.LongTensor] = None,
                 metadata: torch.LongTensor = None, **kwargs
                 ) -> Dict[str, torch.Tensor]:
         '''
@@ -208,16 +208,16 @@ class InContextClassifier(Model):
         if metadata is not None:
             words = []
             texts = []
-            targets = []
+            meta_targets = []
             target_words = []
             for sample in metadata:
                 words.append(sample['text words'])
                 texts.append(sample['text'])
-                targets.append(sample['targets'])
+                meta_targets.append(sample['targets'])
                 target_words.append(sample['target words'])
             output_dict["words"] = words
             output_dict["text"] = texts
-            output_dict["targets"] = targets
+            output_dict["targets"] = meta_targets
             output_dict["target words"] = target_words
         return output_dict
 

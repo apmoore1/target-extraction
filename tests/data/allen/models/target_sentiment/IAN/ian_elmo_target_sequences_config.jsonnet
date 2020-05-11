@@ -3,7 +3,7 @@
     "type": "target_sentiment",
     "token_indexers": {
     "elmo": {
-      "type": "custom_elmo_characters"
+      "type": "elmo_characters"
     }
     },
     "target_sequences": true
@@ -48,9 +48,10 @@
         "dropout": 0.1
       }
   },
-  "iterator": {
-    "type": "basic",
-    "batch_size": 64
+  "data_loader": {
+    "batch_size": 64,
+    "shuffle": true,
+    "drop_last": false
   },
   "trainer": {
     "num_epochs": 1,
