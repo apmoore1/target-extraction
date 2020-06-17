@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict
 
 from allennlp.common.checks import ConfigurationError, check_dimensions_match
-from allennlp.data import Vocabulary
+from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.modules.attention import DotProductAttention
 from allennlp.modules.seq2vec_encoders import BagOfEmbeddingsEncoder
 from allennlp.modules import FeedForward, TextFieldEmbedder
@@ -15,6 +15,7 @@ import torch
 from torch.nn.parameter import Parameter
 from torch.nn.modules import Dropout, Linear
 import numpy
+from overrides import overrides
 
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reverse, elmo_input_reshape
@@ -273,8 +274,8 @@ class ATAEClassifier(Model):
         torch.nn.init.uniform_(self.attention_vector, -0.01, 0.01)
 
     def forward(self,
-                tokens: Dict[str, torch.LongTensor],
-                targets: Dict[str, torch.LongTensor],
+                tokens: TextFieldTensors,
+                targets: TextFieldTensors,
                 target_sentiments: torch.LongTensor = None,
                 target_sequences: Optional[torch.LongTensor] = None,
                 metadata: torch.LongTensor = None, 
@@ -416,6 +417,8 @@ class ATAEClassifier(Model):
         masked_class_probabilities = util.masked_softmax(logits, label_mask.unsqueeze(-1))
         output_dict = {"class_probabilities": masked_class_probabilities, 
                        "targets_mask": label_mask}
+        # Convert it to bool tensor.
+        label_mask = label_mask == 1
 
         if target_sentiments is not None:
             # gets the loss per target instance due to the average=`token`
@@ -452,9 +455,10 @@ class ATAEClassifier(Model):
             output_dict["context_mask"] = context_mask
 
         return output_dict
-
-    def decode(self, output_dict: Dict[str, torch.Tensor]
-               ) -> Dict[str, torch.Tensor]:
+    
+    @overrides
+    def make_output_human_readable(self, output_dict: Dict[str, torch.Tensor]
+                                   ) -> Dict[str, torch.Tensor]:
         '''
         Adds the predicted label to the output dict, also removes any class 
         probabilities that do not have a target associated which is caused 
