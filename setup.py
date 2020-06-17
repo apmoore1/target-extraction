@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 
 setup(name='target_extraction',
-      version='0.0.1',
+      version='0.0.3',
       description='Target Extraction',
       long_description=long_description,
       long_description_content_type="text/markdown",
@@ -15,9 +15,9 @@ setup(name='target_extraction',
       author_email='andrew.p.moore94@gmail.com',
       license='Apache License 2.0',
       install_requires=[
-          'transformers>=2.4.0,<2.5.0',
-          'allennlp==0.9.1.dev20200218',
-          'spacy>=2.1,<2.2',
+          'allennlp==1.0.0',
+          'allennlp-models==1.0.0',
+          'spacy>=2.1',
           'stanfordnlp==0.2.0',
           'twokenize>=1.0.0',
           'pandas',

@@ -39,13 +39,13 @@ def test_multi_aspect_multi_sentiment_acsa():
         assert len(unique_categories) == len(dataset_collection.category_count())
         assert unique_categories == set(dataset_collection.category_count().keys())
     default_cache = Path(CACHE_DIRECTORY, 'Jiang 2019 MAMS ACSA')
-    assert 6 == len(list(default_cache.iterdir()))
+    assert 9 == len(list(default_cache.iterdir()))
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_fp = Path(temp_dir)
         for dataset in dataset_stats.keys():
             multi_aspect_multi_sentiment_acsa(dataset, cache_dir=temp_dir_fp)
-        assert 6 == len(list(Path(temp_dir_fp, 'Jiang 2019 MAMS ACSA').iterdir()))
+        assert 9 == len(list(Path(temp_dir_fp, 'Jiang 2019 MAMS ACSA').iterdir()))
     
     with pytest.raises(ValueError):
         multi_aspect_multi_sentiment_acsa('error')

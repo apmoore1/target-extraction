@@ -42,13 +42,13 @@ def test_multi_aspect_multi_sentiment_atsa():
         assert value == test_cleaned_stats[key]
     
     default_cache = Path(CACHE_DIRECTORY, 'Jiang 2019 MAMS ATSA')
-    assert 8 == len(list(default_cache.iterdir()))
+    assert 12 == len(list(default_cache.iterdir()))
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir_fp = Path(temp_dir)
         for dataset in dataset_stats.keys():
             multi_aspect_multi_sentiment_atsa(dataset, cache_dir=temp_dir_fp)
-        assert 6 == len(list(Path(temp_dir_fp, 'Jiang 2019 MAMS ATSA').iterdir()))
+        assert 9 == len(list(Path(temp_dir_fp, 'Jiang 2019 MAMS ATSA').iterdir()))
     
     with pytest.raises(ValueError):
         multi_aspect_multi_sentiment_atsa('error')

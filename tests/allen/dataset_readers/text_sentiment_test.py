@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import List, Optional
 
 from allennlp.common.util import ensure_list
-from allennlp.common.testing import AllenNlpTestCase
 from allennlp.data.tokenizers.sentence_splitter import SpacySentenceSplitter
 from allennlp.common.util import get_spacy_model
 
@@ -20,12 +19,7 @@ class TestTextSentimentReader:
     def test_set_skip_indexing_true(self, lazy: bool, label_name: str):
         reader = TextSentimentReader(lazy=lazy, skip_label_indexing=True, 
                                      label_name=label_name)
-        ag_path = (
-            AllenNlpTestCase.FIXTURES_ROOT
-            / "data"
-            / "text_classification_json"
-            / "integer_labels.jsonl"
-        )
+        ag_path = Path(DATA_DIR,"integer_labels_original.jsonl" ).resolve()
         if label_name == 'text_sentiment':
             ag_path = Path(DATA_DIR,"integer_labels.jsonl" ).resolve()
         instances = reader.read(ag_path)
@@ -42,12 +36,7 @@ class TestTextSentimentReader:
         assert [t.text for t in fields["tokens"].tokens] == instance2["tokens"]
         assert fields["label"].label == instance2["label"]
 
-        ag_path = (
-                AllenNlpTestCase.FIXTURES_ROOT
-                / "data"
-                / "text_classification_json"
-                / "imdb_corpus.jsonl"
-            )
+        ag_path = Path(DATA_DIR, "imdb_corpus_original.jsonl" ).resolve()
         if label_name == 'text_sentiment':
             ag_path = Path(DATA_DIR, "imdb_corpus.jsonl" ).resolve()
         with pytest.raises(ValueError) as exec_info:
@@ -58,12 +47,7 @@ class TestTextSentimentReader:
     @pytest.mark.parametrize("lazy", (True, False))
     def test_read_from_file_ag_news_corpus(self, lazy: bool, label_name: str):
         reader = TextSentimentReader(lazy=lazy, label_name=label_name)
-        ag_path = (
-            AllenNlpTestCase.FIXTURES_ROOT
-            / "data"
-            / "text_classification_json"
-            / "ag_news_corpus.jsonl"
-        )
+        ag_path = Path(DATA_DIR, 'ag_news_corpus_original.jsonl')
         if label_name == 'text_sentiment':
             ag_path = Path(DATA_DIR, 'ag_news_corpus.jsonl')
         instances = reader.read(ag_path)
@@ -202,12 +186,7 @@ class TestTextSentimentReader:
                                                                   label_name: str):
         reader = TextSentimentReader(lazy=lazy, max_sequence_length=5, 
                                      label_name=label_name)
-        ag_path = (
-            AllenNlpTestCase.FIXTURES_ROOT
-            / "data"
-            / "text_classification_json"
-            / "ag_news_corpus.jsonl"
-        )
+        ag_path = Path(DATA_DIR, 'ag_news_corpus_original.jsonl')
         if label_name == 'text_sentiment':
             ag_path = Path(DATA_DIR, 'ag_news_corpus.jsonl')
         instances = reader.read(ag_path)
@@ -236,12 +215,7 @@ class TestTextSentimentReader:
         reader = TextSentimentReader(lazy=lazy, segment_sentences=True, 
                                      label_name=label_name, 
                                      max_sequence_length=max_sequence_length)
-        ag_path = (
-            AllenNlpTestCase.FIXTURES_ROOT
-            / "data"
-            / "text_classification_json"
-            / "ag_news_corpus.jsonl"
-        )
+        ag_path = Path(DATA_DIR, 'ag_news_corpus_original.jsonl')
         if label_name == 'text_sentiment':
             ag_path = Path(DATA_DIR, 'ag_news_corpus.jsonl')
         instances = reader.read(ag_path)
