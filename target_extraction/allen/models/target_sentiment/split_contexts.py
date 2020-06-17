@@ -1,7 +1,7 @@
 from typing import Dict, Optional, List
 
 from allennlp.common.checks import ConfigurationError, check_dimensions_match
-from allennlp.data import Vocabulary
+from allennlp.data import Vocabulary, TextFieldTensors
 from allennlp.modules import FeedForward, Seq2VecEncoder, TextFieldEmbedder
 from allennlp.modules import InputVariationalDropout, TimeDistributed
 from allennlp.models.model import Model
@@ -11,6 +11,7 @@ from allennlp.training.metrics import CategoricalAccuracy, F1Measure
 import numpy
 import torch
 from torch.nn.modules import Dropout, Linear
+from overrides import overrides
 
 from target_extraction.allen.models import target_sentiment
 from target_extraction.allen.models.target_sentiment.util import elmo_input_reshape, elmo_input_reverse
@@ -173,9 +174,9 @@ class SplitContextsClassifier(Model):
 
         initializer(self)
 
-    def forward(self, left_contexts: Dict[str, torch.LongTensor],
-                right_contexts: Dict[str, torch.LongTensor],
-                targets: Dict[str, torch.LongTensor],
+    def forward(self, left_contexts:TextFieldTensors,
+                right_contexts: TextFieldTensors,
+                targets: TextFieldTensors,
                 target_sentiments: torch.LongTensor = None,
                 metadata: torch.LongTensor = None, **kwargs
                 ) -> Dict[str, torch.Tensor]:
@@ -267,6 +268,8 @@ class SplitContextsClassifier(Model):
 
         output_dict = {"class_probabilities": masked_class_probabilities, 
                        "targets_mask": targets_mask}
+        # Convert it to bool tensor.
+        targets_mask = targets_mask == 1
 
         if target_sentiments is not None:
             # gets the loss per target instance due to the average=`token`
@@ -299,8 +302,9 @@ class SplitContextsClassifier(Model):
 
         return output_dict
 
-    def decode(self, output_dict: Dict[str, torch.Tensor]
-               ) -> Dict[str, torch.Tensor]:
+    @overrides
+    def make_output_human_readable(self, output_dict: Dict[str, torch.Tensor]
+                                   ) -> Dict[str, torch.Tensor]:
         '''
         Adds the predicted label to the output dict, also removes any class 
         probabilities that do not have a target associated which is caused 

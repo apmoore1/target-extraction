@@ -40,9 +40,10 @@
         "averaged": true
       }
     },
-    "iterator": {
-      "type": "basic",
-      "batch_size": 64
+    "data_loader": {
+    "batch_size": 64,
+    "shuffle": true,
+    "drop_last": false
     },
     "trainer": {
       "optimizer": {
