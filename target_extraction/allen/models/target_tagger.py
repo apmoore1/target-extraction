@@ -332,6 +332,8 @@ class TargetTagger(Model):
 
         output = {"logits": logits, "mask": mask, "tags": predicted_tags,
                   "class_probabilities": class_probabilities}
+        # Convert it to bool tensor.
+        mask = mask == 1
 
         if tags is not None:
             # Handle either the CRF or Greedy decoder cases.
@@ -353,9 +355,9 @@ class TargetTagger(Model):
 
             for metric_name, metric in self.metrics.items():
                 if metric_name != 'POS_accuracy':
-                    metric(metric_class_probabilities, tags, mask.float())
+                    metric(metric_class_probabilities, tags, mask)
             if self.calculate_span_f1 is not None:
-                self._f1_metric(metric_class_probabilities, tags, mask.float())
+                self._f1_metric(metric_class_probabilities, tags, mask)
             
             # Have to predict the POS tags to get a POS loss
             if self.pos_tag_loss and pos_tags is not None:
@@ -394,7 +396,8 @@ class TargetTagger(Model):
         return output
 
     @overrides
-    def decode(self, output_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def make_output_human_readable(self, output_dict: Dict[str, torch.Tensor]
+                                   ) -> Dict[str, torch.Tensor]:
         """
         Converts the tag ids to the actual tags.
         ``output_dict["tags"]`` is a list of lists of tag_ids,

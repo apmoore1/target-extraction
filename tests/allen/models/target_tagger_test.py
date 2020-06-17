@@ -5,7 +5,7 @@ from allennlp.models import Model
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.params import Params
 from allennlp.data import DatasetReader, Vocabulary
-from allennlp.data.dataset import Batch
+from allennlp.data import Batch
 import pytest
 
 import target_extraction
