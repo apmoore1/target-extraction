@@ -16,8 +16,6 @@ from torch.nn.functional import relu
 from overrides import overrides
 
 from target_extraction.allen.models import target_sentiment
-from target_extraction.allen.models.target_sentiment.util import elmo_input_reshape, elmo_input_reverse
-from target_extraction.allen.modules.inter_target import InterTarget
 
 @Model.register("in_context_classifier")
 class InContextClassifier(Model):
@@ -145,6 +143,9 @@ class InContextClassifier(Model):
         etc therefore the dictionary represents these different ways e.g. 
         {'words': words_tensor_ids, 'chars': char_tensor_ids}
         '''
+        # A way around having targets as all they are used for is target_mask is
+        # to do the following
+        # target_mask = target_sequences.sum(-1) == 1
         targets_mask = util.get_text_field_mask(targets, num_wrapping_dims=1)
         b, nt, tsl = targets_mask.shape
         b_nt = b * nt
