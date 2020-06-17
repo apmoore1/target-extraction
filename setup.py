@@ -17,7 +17,7 @@ setup(name='target_extraction',
       install_requires=[
           'allennlp==1.0.0',
           'allennlp-models==1.0.0',
-          'spacy>=2.1',
+          'spacy>=2.1,<2.3',
           'stanfordnlp==0.2.0',
           'twokenize>=1.0.0',
           'pandas',
