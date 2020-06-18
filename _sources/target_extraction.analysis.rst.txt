@@ -1,0 +1,57 @@
+target\_extraction.analysis package
+===================================
+
+Submodules
+----------
+
+target\_extraction.analysis.dataset\_plots module
+-------------------------------------------------
+
+.. automodule:: target_extraction.analysis.dataset_plots
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.analysis.dataset\_statistics module
+------------------------------------------------------
+
+.. automodule:: target_extraction.analysis.dataset_statistics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.analysis.sentiment\_error\_analysis module
+-------------------------------------------------------------
+
+.. automodule:: target_extraction.analysis.sentiment_error_analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.analysis.sentiment\_metrics module
+-----------------------------------------------------
+
+.. automodule:: target_extraction.analysis.sentiment_metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.analysis.statistical\_analysis module
+--------------------------------------------------------
+
+.. automodule:: target_extraction.analysis.statistical_analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.analysis.util module
+---------------------------------------
+
+.. automodule:: target_extraction.analysis.util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,292 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.allen.dataset_readers.target_extraction &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.allen.dataset_readers.target_extraction</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.allen.dataset_readers.target_extraction</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">allennlp.common.file_utils</span> <span class="kn">import</span> <span class="n">cached_path</span>
+<span class="kn">from</span> <span class="nn">allennlp.common.checks</span> <span class="kn">import</span> <span class="n">ConfigurationError</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.dataset_readers.dataset_reader</span> <span class="kn">import</span> <span class="n">DatasetReader</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.token_indexers</span> <span class="kn">import</span> <span class="n">TokenIndexer</span><span class="p">,</span> <span class="n">SingleIdTokenIndexer</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.instance</span> <span class="kn">import</span> <span class="n">Instance</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.tokenizers</span> <span class="kn">import</span> <span class="n">Token</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.fields</span> <span class="kn">import</span> <span class="n">TextField</span><span class="p">,</span> <span class="n">SequenceLabelField</span><span class="p">,</span> <span class="n">MetadataField</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">overrides</span> <span class="kn">import</span> <span class="n">overrides</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>  <span class="c1"># pylint: disable=invalid-name</span>
+
+<div class="viewcode-block" id="TargetExtractionDatasetReader"><a class="viewcode-back" href="../../../../target_extraction.allen.dataset_readers.html#target_extraction.allen.dataset_readers.target_extraction.TargetExtractionDatasetReader">[docs]</a><span class="nd">@DatasetReader</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;target_extraction&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">TargetExtractionDatasetReader</span><span class="p">(</span><span class="n">DatasetReader</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Dataset reader designed to read a list of JSON like objects of the </span>
+<span class="sd">    following type:</span>
+
+<span class="sd">    {`tokenized_text`: [`This`, `Camera`, `lens`, `is`, `great`],</span>
+<span class="sd">     `text`: `This Camera lens is great`, </span>
+<span class="sd">     `tags`: [`O`, `B`, `I`, `O`, `O`],</span>
+<span class="sd">     `pos_tags`: [`DET`, `NOUN`, `NOUN`, `AUX`, `ADJ`]}</span>
+
+<span class="sd">    Where the `pos_tags` are optional. This type of JSON can be created </span>
+<span class="sd">    from exporting a `target_extraction.data_types.TargetTextCollection` </span>
+<span class="sd">    using the `to_json_file` method.</span>
+
+<span class="sd">    If the `pos_tags` are given, they can be used as either features or </span>
+<span class="sd">    for joint learning.</span>
+<span class="sd">     </span>
+<span class="sd">    The only sequence labels that we currently support is BIO or also known as </span>
+<span class="sd">    IOB-2.</span>
+
+<span class="sd">    :params pos_tags: Whether or not to extract POS tags if avaliable.</span>
+<span class="sd">    :returns: A ``Dataset`` of ``Instances`` for Target Extraction.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_indexers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TokenIndexer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">pos_tags</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_token_indexers</span> <span class="o">=</span> <span class="n">token_indexers</span> <span class="ow">or</span> \
+                               <span class="p">{</span><span class="s2">&quot;tokens&quot;</span><span class="p">:</span> <span class="n">SingleIdTokenIndexer</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pos_tags</span> <span class="o">=</span> <span class="n">pos_tags</span>
+
+    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="c1"># if `file_path` is a URL, redirect to the cache</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">cached_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">te_file</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reading Target Extraction instances from jsonl &quot;</span>
+                        <span class="s2">&quot;dataset at: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">te_file</span><span class="p">:</span>
+                <span class="n">example</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">example_instance</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="n">sequence_labels</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;sequence_labels&quot;</span><span class="p">]</span>
+                <span class="n">tokens_</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;tokenized_text&quot;</span><span class="p">]</span>
+                <span class="c1"># TextField requires ``Token`` objects</span>
+                <span class="n">tokens</span> <span class="o">=</span> <span class="p">[</span><span class="n">Token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens_</span><span class="p">]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pos_tags</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="s1">&#39;pos_tags&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
+                        <span class="n">pos_err</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The POS tags are within the data: </span><span class="si">{</span><span class="n">example</span><span class="si">}</span><span class="s2">&quot;</span>
+                                  <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Please add them in manually or automatically&quot;</span>
+                                  <span class="s2">&quot; to this dataset if you wish to use them.&quot;</span><span class="p">)</span>
+                        <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="n">pos_err</span><span class="p">)</span>
+                    <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;pos_tags&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;pos_tags&#39;</span><span class="p">]</span>
+
+                <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;tags&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sequence_labels</span>
+                <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokens</span>
+                <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_to_instance</span><span class="p">(</span><span class="o">**</span><span class="n">example_instance</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="TargetExtractionDatasetReader.text_to_instance"><a class="viewcode-back" href="../../../../target_extraction.allen.dataset_readers.html#target_extraction.allen.dataset_readers.target_extraction.TargetExtractionDatasetReader.text_to_instance">[docs]</a>    <span class="k">def</span> <span class="nf">text_to_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">],</span>
+                         <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                         <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">pos_tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Instance</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The tokens are expected to be pre-tokenised.</span>
+
+<span class="sd">        The original token text and the text itself is stored in a </span>
+<span class="sd">        MetadataField</span>
+
+<span class="sd">        :param tokens: Tokenised text that either has target extraction labels </span>
+<span class="sd">                       or is to be tagged.</span>
+<span class="sd">        :param text: The text that the tokenised text has come from.</span>
+<span class="sd">        :param tags: The target extraction BIO labels.</span>
+<span class="sd">        :param pos_tags: POS tags to be used either as features or for joint </span>
+<span class="sd">                         learning.</span>
+<span class="sd">        :returns: An Instance object with all of the above enocded for a</span>
+<span class="sd">                  PyTorch model.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">sequence</span> <span class="o">=</span> <span class="n">TextField</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_token_indexers</span><span class="p">)</span>
+        <span class="n">instance_fields</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;tokens&#39;</span><span class="p">:</span> <span class="n">sequence</span><span class="p">}</span>
+        <span class="c1"># Metadata field</span>
+        <span class="n">metadata_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;words&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">]}</span>
+        <span class="n">metadata_dict</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+        <span class="n">instance_fields</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MetadataField</span><span class="p">(</span><span class="n">metadata_dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;tags&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SequenceLabelField</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">sequence</span><span class="p">,</span> <span class="s2">&quot;labels&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">pos_tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;pos_tags&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SequenceLabelField</span><span class="p">(</span><span class="n">pos_tags</span><span class="p">,</span> <span class="n">sequence</span><span class="p">,</span> <span class="s2">&quot;pos_tags&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Instance</span><span class="p">(</span><span class="n">instance_fields</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

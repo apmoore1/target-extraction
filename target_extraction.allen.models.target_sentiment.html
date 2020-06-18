@@ -1,0 +1,574 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.allen.models.target_sentiment package &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">target_extraction.allen.models.target_sentiment package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.models.target_sentiment.atae">target_extraction.allen.models.target_sentiment.atae module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.models.target_sentiment.in_context">target_extraction.allen.models.target_sentiment.in_context module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.models.target_sentiment.interactive_attention_network">target_extraction.allen.models.target_sentiment.interactive_attention_network module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.models.target_sentiment.split_contexts">target_extraction.allen.models.target_sentiment.split_contexts module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.models.target_sentiment.util">target_extraction.allen.models.target_sentiment.util module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.models.target_sentiment">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>target_extraction.allen.models.target_sentiment package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/target_extraction.allen.models.target_sentiment.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="target-extraction-allen-models-target-sentiment-package">
+<h1>target_extraction.allen.models.target_sentiment package<a class="headerlink" href="#target-extraction-allen-models-target-sentiment-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-target_extraction.allen.models.target_sentiment.atae">
+<span id="target-extraction-allen-models-target-sentiment-atae-module"></span><h2>target_extraction.allen.models.target_sentiment.atae module<a class="headerlink" href="#module-target_extraction.allen.models.target_sentiment.atae" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="target_extraction.allen.models.target_sentiment.atae.ATAEClassifier">
+<em class="property">class </em><code class="sig-prename descclassname">target_extraction.allen.models.target_sentiment.atae.</code><code class="sig-name descname">ATAEClassifier</code><span class="sig-paren">(</span><em class="sig-param">vocab</em>, <em class="sig-param">context_field_embedder</em>, <em class="sig-param">context_encoder</em>, <em class="sig-param">target_encoder</em>, <em class="sig-param">feedforward=None</em>, <em class="sig-param">context_attention_activation_function='tanh'</em>, <em class="sig-param">target_field_embedder=None</em>, <em class="sig-param">AE=True</em>, <em class="sig-param">AttentionAE=True</em>, <em class="sig-param">inter_target_encoding=None</em>, <em class="sig-param">target_position_weight=None</em>, <em class="sig-param">target_position_embedding=None</em>, <em class="sig-param">initializer=&lt;allennlp.nn.initializers.InitializerApplicator object&gt;</em>, <em class="sig-param">regularizer=None</em>, <em class="sig-param">dropout=0.0</em>, <em class="sig-param">label_name='target-sentiment-labels'</em>, <em class="sig-param">loss_weights=None</em>, <em class="sig-param">use_target_sequences=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/atae.html#ATAEClassifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.atae.ATAEClassifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.models.model.Model</span></code></p>
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.atae.ATAEClassifier.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">tokens</em>, <em class="sig-param">targets</em>, <em class="sig-param">target_sentiments=None</em>, <em class="sig-param">target_sequences=None</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">position_weights=None</em>, <em class="sig-param">position_embeddings=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/atae.html#ATAEClassifier.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.atae.ATAEClassifier.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>The text and targets are Dictionaries as they are text fields they can 
+be represented many different ways e.g. just words or words and chars 
+etc therefore the dictionary represents these different ways e.g. 
+{‘words’: words_tensor_ids, ‘chars’: char_tensor_ids}</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.atae.ATAEClassifier.get_metrics">
+<code class="sig-name descname">get_metrics</code><span class="sig-paren">(</span><em class="sig-param">reset=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/atae.html#ATAEClassifier.get_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.atae.ATAEClassifier.get_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of metrics. This method will be called by
+<cite>allennlp.training.Trainer</cite> in order to compute and use model metrics for early
+stopping and model serialization.  We return an empty dictionary here rather than raising
+as it is not required to implement metrics for a new model.  A boolean <cite>reset</cite> parameter is
+passed, as frequently a metric accumulator will have some state which should be reset
+between epochs. This is also compatible with [<cite>Metric`s](../training/metrics/metric.md). Metrics
+should be populated during the call to `forward</cite>, with the <cite>Metric</cite> handling the accumulation of
+the metric until this method is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.atae.ATAEClassifier.make_output_human_readable">
+<code class="sig-name descname">make_output_human_readable</code><span class="sig-paren">(</span><em class="sig-param">output_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/atae.html#ATAEClassifier.make_output_human_readable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.atae.ATAEClassifier.make_output_human_readable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds the predicted label to the output dict, also removes any class 
+probabilities that do not have a target associated which is caused 
+through the batch prediction process and can be removed by using the 
+target mask.</p>
+<p>Everyting in the dictionary will be of length (batch size * number of 
+targets) where the number of targets is based on the number of targets 
+in each sentence e.g. if the batch has two sentences where the first 
+contian 2 targets and the second 3 targets the number returned will be 
+(2 + 3) 5 target sentiments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.atae.ATAEClassifier.reset_parameters">
+<code class="sig-name descname">reset_parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/atae.html#ATAEClassifier.reset_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.atae.ATAEClassifier.reset_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Intitalises the attnention vector</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.models.target_sentiment.in_context">
+<span id="target-extraction-allen-models-target-sentiment-in-context-module"></span><h2>target_extraction.allen.models.target_sentiment.in_context module<a class="headerlink" href="#module-target_extraction.allen.models.target_sentiment.in_context" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="target_extraction.allen.models.target_sentiment.in_context.InContextClassifier">
+<em class="property">class </em><code class="sig-prename descclassname">target_extraction.allen.models.target_sentiment.in_context.</code><code class="sig-name descname">InContextClassifier</code><span class="sig-paren">(</span><em class="sig-param">vocab</em>, <em class="sig-param">context_field_embedder</em>, <em class="sig-param">context_encoder</em>, <em class="sig-param">target_encoding_pooling_function='mean'</em>, <em class="sig-param">feedforward=None</em>, <em class="sig-param">initializer=&lt;allennlp.nn.initializers.InitializerApplicator object&gt;</em>, <em class="sig-param">regularizer=None</em>, <em class="sig-param">dropout=0.0</em>, <em class="sig-param">label_name='target-sentiment-labels'</em>, <em class="sig-param">loss_weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/in_context.html#InContextClassifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.in_context.InContextClassifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.models.model.Model</span></code></p>
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.in_context.InContextClassifier.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">tokens</em>, <em class="sig-param">targets</em>, <em class="sig-param">target_sequences</em>, <em class="sig-param">target_sentiments=None</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/in_context.html#InContextClassifier.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.in_context.InContextClassifier.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>B = Batch
+NT = Number Targets
+B_NT = Batch * Number Targets 
+TSL = Target Sequence Length
+CSL = Context Sequence Length (number tokens in the text incl padding)
+D = Dimension of the vector
+EC_D = Encoded Context Dimension
+ET_D = Embedded Text Dimension</p>
+<p>The text and targets are Dictionaries as they are text fields they can 
+be represented many different ways e.g. just words or words and chars 
+etc therefore the dictionary represents these different ways e.g. 
+{‘words’: words_tensor_ids, ‘chars’: char_tensor_ids}</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.in_context.InContextClassifier.get_metrics">
+<code class="sig-name descname">get_metrics</code><span class="sig-paren">(</span><em class="sig-param">reset=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/in_context.html#InContextClassifier.get_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.in_context.InContextClassifier.get_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of metrics. This method will be called by
+<cite>allennlp.training.Trainer</cite> in order to compute and use model metrics for early
+stopping and model serialization.  We return an empty dictionary here rather than raising
+as it is not required to implement metrics for a new model.  A boolean <cite>reset</cite> parameter is
+passed, as frequently a metric accumulator will have some state which should be reset
+between epochs. This is also compatible with [<cite>Metric`s](../training/metrics/metric.md). Metrics
+should be populated during the call to `forward</cite>, with the <cite>Metric</cite> handling the accumulation of
+the metric until this method is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.in_context.InContextClassifier.make_output_human_readable">
+<code class="sig-name descname">make_output_human_readable</code><span class="sig-paren">(</span><em class="sig-param">output_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/in_context.html#InContextClassifier.make_output_human_readable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.in_context.InContextClassifier.make_output_human_readable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds the predicted label to the output dict, also removes any class 
+probabilities that do not have a target associated which is caused 
+through the batch prediction process and can be removed by using the 
+target mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.models.target_sentiment.interactive_attention_network">
+<span id="target-extraction-allen-models-target-sentiment-interactive-attention-network-module"></span><h2>target_extraction.allen.models.target_sentiment.interactive_attention_network module<a class="headerlink" href="#module-target_extraction.allen.models.target_sentiment.interactive_attention_network" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="target_extraction.allen.models.target_sentiment.interactive_attention_network.InteractivateAttentionNetworkClassifier">
+<em class="property">class </em><code class="sig-prename descclassname">target_extraction.allen.models.target_sentiment.interactive_attention_network.</code><code class="sig-name descname">InteractivateAttentionNetworkClassifier</code><span class="sig-paren">(</span><em class="sig-param">vocab</em>, <em class="sig-param">context_field_embedder</em>, <em class="sig-param">context_encoder</em>, <em class="sig-param">target_encoder</em>, <em class="sig-param">feedforward=None</em>, <em class="sig-param">context_attention_activation_function='tanh'</em>, <em class="sig-param">target_attention_activation_function='tanh'</em>, <em class="sig-param">target_field_embedder=None</em>, <em class="sig-param">inter_target_encoding=None</em>, <em class="sig-param">target_position_weight=None</em>, <em class="sig-param">target_position_embedding=None</em>, <em class="sig-param">initializer=&lt;allennlp.nn.initializers.InitializerApplicator object&gt;</em>, <em class="sig-param">regularizer=None</em>, <em class="sig-param">dropout=0.0</em>, <em class="sig-param">label_name='target-sentiment-labels'</em>, <em class="sig-param">loss_weights=None</em>, <em class="sig-param">use_target_sequences=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/interactive_attention_network.html#InteractivateAttentionNetworkClassifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.interactive_attention_network.InteractivateAttentionNetworkClassifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.models.model.Model</span></code></p>
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.interactive_attention_network.InteractivateAttentionNetworkClassifier.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">tokens</em>, <em class="sig-param">targets</em>, <em class="sig-param">target_sentiments=None</em>, <em class="sig-param">target_sequences=None</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">position_weights=None</em>, <em class="sig-param">position_embeddings=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/interactive_attention_network.html#InteractivateAttentionNetworkClassifier.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.interactive_attention_network.InteractivateAttentionNetworkClassifier.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>The text and targets are Dictionaries as they are text fields they can 
+be represented many different ways e.g. just words or words and chars 
+etc therefore the dictionary represents these different ways e.g. 
+{‘words’: words_tensor_ids, ‘chars’: char_tensor_ids}</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.interactive_attention_network.InteractivateAttentionNetworkClassifier.get_metrics">
+<code class="sig-name descname">get_metrics</code><span class="sig-paren">(</span><em class="sig-param">reset=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/interactive_attention_network.html#InteractivateAttentionNetworkClassifier.get_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.interactive_attention_network.InteractivateAttentionNetworkClassifier.get_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of metrics. This method will be called by
+<cite>allennlp.training.Trainer</cite> in order to compute and use model metrics for early
+stopping and model serialization.  We return an empty dictionary here rather than raising
+as it is not required to implement metrics for a new model.  A boolean <cite>reset</cite> parameter is
+passed, as frequently a metric accumulator will have some state which should be reset
+between epochs. This is also compatible with [<cite>Metric`s](../training/metrics/metric.md). Metrics
+should be populated during the call to `forward</cite>, with the <cite>Metric</cite> handling the accumulation of
+the metric until this method is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.interactive_attention_network.InteractivateAttentionNetworkClassifier.make_output_human_readable">
+<code class="sig-name descname">make_output_human_readable</code><span class="sig-paren">(</span><em class="sig-param">output_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/interactive_attention_network.html#InteractivateAttentionNetworkClassifier.make_output_human_readable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.interactive_attention_network.InteractivateAttentionNetworkClassifier.make_output_human_readable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds the predicted label to the output dict, also removes any class 
+probabilities that do not have a target associated which is caused 
+through the batch prediction process and can be removed by using the 
+target mask.</p>
+<p>Everyting in the dictionary will be of length (batch size * number of 
+targets) where the number of targets is based on the number of targets 
+in each sentence e.g. if the batch has two sentences where the first 
+contian 2 targets and the second 3 targets the number returned will be 
+(2 + 3) 5 target sentiments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.models.target_sentiment.split_contexts">
+<span id="target-extraction-allen-models-target-sentiment-split-contexts-module"></span><h2>target_extraction.allen.models.target_sentiment.split_contexts module<a class="headerlink" href="#module-target_extraction.allen.models.target_sentiment.split_contexts" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="target_extraction.allen.models.target_sentiment.split_contexts.SplitContextsClassifier">
+<em class="property">class </em><code class="sig-prename descclassname">target_extraction.allen.models.target_sentiment.split_contexts.</code><code class="sig-name descname">SplitContextsClassifier</code><span class="sig-paren">(</span><em class="sig-param">vocab</em>, <em class="sig-param">context_field_embedder</em>, <em class="sig-param">left_text_encoder</em>, <em class="sig-param">right_text_encoder</em>, <em class="sig-param">feedforward=None</em>, <em class="sig-param">target_field_embedder=None</em>, <em class="sig-param">target_encoder=None</em>, <em class="sig-param">inter_target_encoding=None</em>, <em class="sig-param">initializer=&lt;allennlp.nn.initializers.InitializerApplicator object&gt;</em>, <em class="sig-param">regularizer=None</em>, <em class="sig-param">dropout=0.0</em>, <em class="sig-param">label_name='target-sentiment-labels'</em>, <em class="sig-param">loss_weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/split_contexts.html#SplitContextsClassifier"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.split_contexts.SplitContextsClassifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.models.model.Model</span></code></p>
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.split_contexts.SplitContextsClassifier.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">left_contexts</em>, <em class="sig-param">right_contexts</em>, <em class="sig-param">targets</em>, <em class="sig-param">target_sentiments=None</em>, <em class="sig-param">metadata=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/split_contexts.html#SplitContextsClassifier.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.split_contexts.SplitContextsClassifier.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>The text and targets are Dictionaries as they are text fields they can 
+be represented many different ways e.g. just words or words and chars 
+etc therefore the dictionary represents these different ways e.g. 
+{‘words’: words_tensor_ids, ‘chars’: char_tensor_ids}</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.split_contexts.SplitContextsClassifier.get_metrics">
+<code class="sig-name descname">get_metrics</code><span class="sig-paren">(</span><em class="sig-param">reset=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/split_contexts.html#SplitContextsClassifier.get_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.split_contexts.SplitContextsClassifier.get_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionary of metrics. This method will be called by
+<cite>allennlp.training.Trainer</cite> in order to compute and use model metrics for early
+stopping and model serialization.  We return an empty dictionary here rather than raising
+as it is not required to implement metrics for a new model.  A boolean <cite>reset</cite> parameter is
+passed, as frequently a metric accumulator will have some state which should be reset
+between epochs. This is also compatible with [<cite>Metric`s](../training/metrics/metric.md). Metrics
+should be populated during the call to `forward</cite>, with the <cite>Metric</cite> handling the accumulation of
+the metric until this method is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="target_extraction.allen.models.target_sentiment.split_contexts.SplitContextsClassifier.make_output_human_readable">
+<code class="sig-name descname">make_output_human_readable</code><span class="sig-paren">(</span><em class="sig-param">output_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/split_contexts.html#SplitContextsClassifier.make_output_human_readable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.split_contexts.SplitContextsClassifier.make_output_human_readable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds the predicted label to the output dict, also removes any class 
+probabilities that do not have a target associated which is caused 
+through the batch prediction process and can be removed by using the 
+target mask.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.models.target_sentiment.util">
+<span id="target-extraction-allen-models-target-sentiment-util-module"></span><h2>target_extraction.allen.models.target_sentiment.util module<a class="headerlink" href="#module-target_extraction.allen.models.target_sentiment.util" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="target_extraction.allen.models.target_sentiment.util.concat_position_embeddings">
+<code class="sig-prename descclassname">target_extraction.allen.models.target_sentiment.util.</code><code class="sig-name descname">concat_position_embeddings</code><span class="sig-paren">(</span><em class="sig-param">embedding_context</em>, <em class="sig-param">position_indexes=None</em>, <em class="sig-param">target_position_embedding=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/util.html#concat_position_embeddings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.util.concat_position_embeddings" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>embedding_context</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – Tensor of shape (batch size * number targets, 
+context sequence length, context dim)</p></li>
+<li><p><strong>position_indexes</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">LongTensor</span></code>]]) – Dictionary of token indexer name to a 
+Tensor of shape (batch size, number targets, 
+text sequence length)</p></li>
+<li><p><strong>target_position_embedding</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TextFieldEmbedder</span></code>]) – An embedding function for the position 
+indexes, where the dimension of the position 
+embedding is <cite>position dim</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>If <cite>position_indexes</cite> and <cite>target_position_embedding</cite> are None then
+the <cite>embedding_context</cite> is returned without any change. Else the 
+relevant position embeddings are concatenated onto the relevant 
+token embeddings within the <cite>embedding_context</cite> to create a 
+Tensor of shape (batch size * number targets, text sequence length, 
+context dim + position dim)</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <cite>target_position_embedding</cite> is not None when 
+<cite>position_indexes</cite> is None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.allen.models.target_sentiment.util.elmo_input_reshape">
+<code class="sig-prename descclassname">target_extraction.allen.models.target_sentiment.util.</code><code class="sig-name descname">elmo_input_reshape</code><span class="sig-paren">(</span><em class="sig-param">inputs</em>, <em class="sig-param">batch_size</em>, <em class="sig-param">number_targets</em>, <em class="sig-param">batch_size_num_targets</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/util.html#elmo_input_reshape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.util.elmo_input_reshape" title="Permalink to this definition">¶</a></dt>
+<dd><p>NOTE: This does not work for the hugginface transformers as when they are 
+processed by the token indexers they produce additional key other than 
+token ids such as mask ids and segment ids that also need handling, of 
+which we have not had time to handle this yet. A way around this, which 
+would be more appropriate, would be to use <cite>target_sequences</cite> like in the 
+<cite>InContext</cite> model, to generate contextualised targets from the context rather 
+than using the target words as is without context.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]) – The token indexer dictionary where the keys state the token 
+indexer and the values are the Tensors that are of shape 
+(Batch Size, Number Targets, Sequence Length)</p></li>
+<li><p><strong>batch_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The Batch Size</p></li>
+<li><p><strong>number_targets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The max number of targets in the batch</p></li>
+<li><p><strong>batch_size_num_targets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Batch Size * number of targets</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>If the inputs contains a <cite>elmo</cite> or ‘token_characters’ key it will 
+reshape all the keys values into shape 
+(Batch Size * Number Targets, Sequence Length) so that it can be 
+processed by the ELMO or character embedder/encoder.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.allen.models.target_sentiment.util.elmo_input_reverse">
+<code class="sig-prename descclassname">target_extraction.allen.models.target_sentiment.util.</code><code class="sig-name descname">elmo_input_reverse</code><span class="sig-paren">(</span><em class="sig-param">embedded_input</em>, <em class="sig-param">inputs</em>, <em class="sig-param">batch_size</em>, <em class="sig-param">number_targets</em>, <em class="sig-param">batch_size_num_targets</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/util.html#elmo_input_reverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.util.elmo_input_reverse" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>embedded_input</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – The embedding generated after the embedder has been 
+forwarded over the <cite>inputs</cite></p></li>
+<li><p><strong>inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]) – The token indexer dictionary where the keys state the token 
+indexer and the values are the Tensors that are of shape 
+(Batch Size, Number Targets, Sequence Length)</p></li>
+<li><p><strong>batch_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The Batch Size</p></li>
+<li><p><strong>number_targets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The max number of targets in the batch</p></li>
+<li><p><strong>batch_size_num_targets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Batch Size * number of targets</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>If the inputs contains a <cite>elmo</cite> or ‘token_characters’ key it will 
+reshape the <cite>embedded_input</cite> into the original shape of 
+(Batch Size, Number Targets, Sequence Length, embedding dim)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.allen.models.target_sentiment.util.loss_weight_order">
+<code class="sig-prename descclassname">target_extraction.allen.models.target_sentiment.util.</code><code class="sig-name descname">loss_weight_order</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">loss_weights</em>, <em class="sig-param">label_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/models/target_sentiment/util.html#loss_weight_order"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.models.target_sentiment.util.loss_weight_order" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Model</span></code>) – The model that you want to know the loss weights for. Requires 
+a vocab.</p></li>
+<li><p><strong>loss_weights</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – The loss weights to give to the labels. Can be None and 
+if so returns None.</p></li>
+<li><p><strong>label_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name of the vocab for the label that is to be 
+predicted.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None if <cite>loss weights</cite> is None. Else return a list of weights to 
+give to each label, where the original loss weights are ordered 
+by <cite>[‘negative’, ‘neutral’, ‘positive’]</cite> and the returned are 
+ordered by occurrence in the models vocab for that <cite>label_name</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.models.target_sentiment">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-target_extraction.allen.models.target_sentiment" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

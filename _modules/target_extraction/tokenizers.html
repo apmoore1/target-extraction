@@ -1,0 +1,376 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.tokenizers &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.tokenizers</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.tokenizers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This modules contains a set of functions that return tokenization functions </span>
+<span class="sd">which can be defined by the following typing: Callable[[str], List[str]]. </span>
+<span class="sd">All of the functions take exactly no positional arguments but can take </span>
+<span class="sd">keyword arguments.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">pkgutil</span>
+
+<span class="kn">import</span> <span class="nn">spacy</span>
+<span class="kn">import</span> <span class="nn">stanfordnlp</span>
+<span class="kn">from</span> <span class="nn">stanfordnlp.utils</span> <span class="kn">import</span> <span class="n">resources</span>
+<span class="kn">import</span> <span class="nn">twokenize</span>
+
+<span class="kn">from</span> <span class="nn">target_extraction.taggers_helper</span> <span class="kn">import</span> <span class="n">stanford_downloader</span>
+<span class="kn">from</span> <span class="nn">target_extraction.data_types_util</span> <span class="kn">import</span> <span class="n">Span</span>
+
+
+<div class="viewcode-block" id="is_character_preserving"><a class="viewcode-back" href="../../target_extraction.html#target_extraction.tokenizers.is_character_preserving">[docs]</a><span class="k">def</span> <span class="nf">is_character_preserving</span><span class="p">(</span><span class="n">original_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text_tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+                            <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param original_text: Text that has been tokenized</span>
+<span class="sd">    :param text_tokens: List of tokens after the text has been tokenized</span>
+<span class="sd">    :returns: True if the tokenized text when all characters are joined </span>
+<span class="sd">                together is equal to the original text with all it&#39;s </span>
+<span class="sd">                characters joined together.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">text_tokens_copy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">text_tokens</span><span class="p">)</span>
+    <span class="c1"># Required as some of the tokenization tokens contain whitespace at the </span>
+    <span class="c1"># end of them I think this due to Stanford method being a Neural Network</span>
+    <span class="n">text_tokens_copy</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">text_tokens_copy</span><span class="p">]</span>
+    <span class="n">tokens_text</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text_tokens_copy</span><span class="p">)</span>
+    <span class="n">original_text</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">original_text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">tokens_text</span> <span class="o">==</span> <span class="n">original_text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="spacy_tokenizer"><a class="viewcode-back" href="../../target_extraction.html#target_extraction.tokenizers.spacy_tokenizer">[docs]</a><span class="k">def</span> <span class="nf">spacy_tokenizer</span><span class="p">(</span><span class="n">lang</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;en&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Given optionally the language (default English) it will return the </span>
+<span class="sd">    Spacy rule based tokeniser for that language but the function will now </span>
+<span class="sd">    return a List of String rather than Spacy tokens.</span>
+
+<span class="sd">    If the whitespace between two words is more than one token then the Spacy </span>
+<span class="sd">    tokenizer treat it as in affect a special space token, we remove these </span>
+<span class="sd">    special space tokens.</span>
+
+<span class="sd">    :param lang: Language of the rule based Spacy tokeniser to use.</span>
+<span class="sd">    :returns: A callable that takes a String and returns the tokens for that </span>
+<span class="sd">              String.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">spacy_lang_modules</span> <span class="o">=</span> <span class="n">pkgutil</span><span class="o">.</span><span class="n">iter_modules</span><span class="p">(</span><span class="n">spacy</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">__path__</span><span class="p">)</span>
+    <span class="n">spacy_lang_codes</span> <span class="o">=</span> <span class="p">[</span><span class="n">lang_code</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">lang_code</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">spacy_lang_modules</span> 
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lang_code</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">lang</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spacy_lang_codes</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Spacy does not support the following language &#39;</span>
+                         <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">lang</span><span class="si">}</span><span class="s1">. These languages are supported &#39;</span>
+                         <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">spacy_lang_codes</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">sapcy_tokenizer_func</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">blank</span><span class="p">(</span><span class="n">lang</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_spacy_token_to_text</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">spacy_token</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">spacy_token</span> <span class="ow">in</span> <span class="n">sapcy_tokenizer_func</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> 
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">spacy_token</span><span class="o">.</span><span class="n">is_space</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">_spacy_token_to_text</span></div>
+
+<div class="viewcode-block" id="whitespace"><a class="viewcode-back" href="../../target_extraction.html#target_extraction.tokenizers.whitespace">[docs]</a><span class="k">def</span> <span class="nf">whitespace</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Standard whitespace tokeniser</span>
+
+<span class="sd">    :returns: A callable that takes a String and returns the tokens for that </span>
+<span class="sd">              String.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="o">.</span><span class="n">split</span></div>
+
+<div class="viewcode-block" id="ark_twokenize"><a class="viewcode-back" href="../../target_extraction.html#target_extraction.tokenizers.ark_twokenize">[docs]</a><span class="k">def</span> <span class="nf">ark_twokenize</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    A Twitter tokeniser from</span>
+<span class="sd">    `CMU Ark &lt;https://github.com/brendano/ark-tweet-nlp&gt;`_ and relevant </span>
+<span class="sd">    `paper &lt;https://www.cs.cmu.edu/~ark/TweetNLP/gimpel+etal.acl11.pdf&gt;`_</span>
+
+<span class="sd">    :returns: A callable that takes a String and returns the tokens for </span>
+<span class="sd">              that String.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">twokenize</span><span class="o">.</span><span class="n">tokenizeRawTweetText</span></div>
+
+<div class="viewcode-block" id="stanford"><a class="viewcode-back" href="../../target_extraction.html#target_extraction.tokenizers.stanford">[docs]</a><span class="k">def</span> <span class="nf">stanford</span><span class="p">(</span><span class="n">lang</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;en&#39;</span><span class="p">,</span> <span class="n">treebank</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+             <span class="n">download</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Stanford neural network tokeniser that uses a BiLSTM and CNN at the </span>
+<span class="sd">    character and token level.</span>
+
+<span class="sd">    ASSUMPTIONS: The returned callable tokeniser will assume that all text </span>
+<span class="sd">    that is given to it, is one sentence, as this method performs sentence </span>
+<span class="sd">    splitting but we assume each text is one sentence and we ignore the </span>
+<span class="sd">    sentence splitting.</span>
+
+<span class="sd">    For Vietnamese instead of characters they used syllables.</span>
+
+<span class="sd">    `Languages supported &lt;https://stanfordnlp.github.io/stanfordnlp/installation_download.html#human-languages-supported-by-stanfordnlp&gt;`_</span>
+
+<span class="sd">    `Reference paper &lt;https://www.aclweb.org/anthology/K18-2016&gt;`_</span>
+
+<span class="sd">    :param lang: Language of the Neural Network tokeniser</span>
+<span class="sd">    :param treebank: The neural network model to use based on the treebank </span>
+<span class="sd">                     it was trained from. If not given the default treebank </span>
+<span class="sd">                     will be used. To see which is the default treebank </span>
+<span class="sd">                     and the treebanks available for each language go to this </span>
+<span class="sd">                     `link &lt;https://stanfordnlp.github.io/stanfordnlp/models.html#human-languages-supported-by-stanfordnlp&gt;`_</span>
+<span class="sd">    :param download: If to re-download the model. </span>
+<span class="sd">    :returns: A callable that takes a String and returns the tokens for that </span>
+<span class="sd">              String.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">full_treebank_name</span> <span class="o">=</span> <span class="n">stanford_downloader</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">treebank</span><span class="p">,</span> <span class="n">download</span><span class="p">)</span>
+    <span class="n">nlp</span> <span class="o">=</span> <span class="n">stanfordnlp</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">(</span><span class="n">lang</span><span class="o">=</span><span class="n">lang</span><span class="p">,</span> <span class="n">processors</span><span class="o">=</span><span class="s1">&#39;tokenize&#39;</span><span class="p">,</span> 
+                               <span class="n">treebank</span><span class="o">=</span><span class="n">full_treebank_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_stanford_doc_to_text</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This returns all of the words in each sentence however in the </span>
+<span class="sd">        documentation you do have the option to use the tokens instead but </span>
+<span class="sd">        the words are used for downstream application hence why the words </span>
+<span class="sd">        were chosen over the tokens. See here for more </span>
+<span class="sd">        `details &lt;https://stanfordnlp.github.io/stanfordnlp/pipeline.html#accessing-word-information&gt;`_</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="n">nlp</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">sentences</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">sentences</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">sentences</span><span class="p">:</span>
+             <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">sentence</span><span class="o">.</span><span class="n">words</span><span class="p">:</span>
+                 <span class="n">tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">tokens</span>
+    <span class="k">return</span> <span class="n">_stanford_doc_to_text</span></div>
+
+
+<div class="viewcode-block" id="token_index_alignment"><a class="viewcode-back" href="../../target_extraction.html#target_extraction.tokenizers.token_index_alignment">[docs]</a><span class="k">def</span> <span class="nf">token_index_alignment</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Span</span><span class="p">]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param text: text that has been tokenized</span>
+<span class="sd">    :param tokens: The tokens that were the output of the text and a tokenizer</span>
+<span class="sd">                   (tokenizer has to be character preserving)</span>
+<span class="sd">    :returns: A list of tuples where each tuple contains two ints each </span>
+<span class="sd">              representing the start and end index for each of the associated </span>
+<span class="sd">              tokens given as an argument.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_character_preserving</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">tokens</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The tokenization method used is not character&#39;</span>
+                         <span class="sa">f</span><span class="s1">&#39; preserving. Original text `</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s1">`</span><span class="se">\n</span><span class="s1">&#39;</span>
+                         <span class="sa">f</span><span class="s1">&#39;Tokenized text `</span><span class="si">{</span><span class="n">tokens</span><span class="si">}</span><span class="s1">`&#39;</span><span class="p">)</span>
+    <span class="n">token_index_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Span</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">char_index</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Handle whitespace at the start of the text</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">char_index</span><span class="p">:</span>
+        <span class="k">while</span> <span class="n">text</span><span class="p">[</span><span class="n">char_index</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39; &#39;</span><span class="p">:</span>
+            <span class="n">char_index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">char_index</span><span class="p">:</span>
+                <span class="k">break</span>
+
+    <span class="k">for</span> <span class="n">token_index</span><span class="p">,</span> <span class="n">token</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">tokens</span><span class="p">):</span>
+        <span class="n">token_start</span> <span class="o">=</span> <span class="n">char_index</span>
+        <span class="n">token_end</span> <span class="o">=</span> <span class="n">token_start</span>
+        <span class="k">for</span> <span class="n">token_char_index</span><span class="p">,</span> <span class="n">token_char</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
+            <span class="n">char</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="n">char_index</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">token_char</span> <span class="o">==</span> <span class="n">char</span><span class="p">:</span>
+                <span class="n">char_index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The tokenised output within the token should &#39;</span>
+                                 <span class="sa">f</span><span class="s1">&#39;be the same as the text. Token </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                                 <span class="sa">f</span><span class="s1">&#39;Text: </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="se">\n</span><span class="s1">Character index </span><span class="si">{</span><span class="n">char_index</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                                 <span class="sa">f</span><span class="s1">&#39;Token index: </span><span class="si">{</span><span class="n">token_index</span><span class="si">}</span><span class="se">\n</span><span class="s1">Token char &#39;</span>
+                                 <span class="sa">f</span><span class="s1">&#39;index </span><span class="si">{</span><span class="n">token_char_index</span><span class="si">}</span><span class="se">\n</span><span class="s1">Tokens </span><span class="si">{</span><span class="n">tokens</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                
+        <span class="n">token_end</span> <span class="o">=</span> <span class="n">char_index</span>
+        <span class="n">token_index_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Span</span><span class="p">(</span><span class="n">token_start</span><span class="p">,</span> <span class="n">token_end</span><span class="p">))</span>
+        <span class="c1"># Covers the whitespaces of n length between tokens and after the text</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">char_index</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">[</span><span class="n">char_index</span><span class="p">]):</span>
+                <span class="n">char_index</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">char_index</span><span class="p">:</span>
+                    <span class="k">break</span>
+    
+    <span class="k">if</span> <span class="n">char_index</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Did not get to the end of the text: </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                         <span class="sa">f</span><span class="s1">&#39;Character index </span><span class="si">{</span><span class="n">char_index</span><span class="si">}</span><span class="se">\n</span><span class="s1">&#39;</span>
+                         <span class="sa">f</span><span class="s1">&#39;Token index list </span><span class="si">{</span><span class="n">token_index_list</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">token_index_list</span></div>
+
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,313 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.allen.models.target_sentiment.util &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.allen.models.target_sentiment.util</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.allen.models.target_sentiment.util</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">from</span> <span class="nn">allennlp.data</span> <span class="kn">import</span> <span class="n">TextFieldTensors</span>
+<span class="kn">from</span> <span class="nn">allennlp.models</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">allennlp.modules</span> <span class="kn">import</span> <span class="n">TextFieldEmbedder</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<div class="viewcode-block" id="loss_weight_order"><a class="viewcode-back" href="../../../../../target_extraction.allen.models.target_sentiment.html#target_extraction.allen.models.target_sentiment.util.loss_weight_order">[docs]</a><span class="k">def</span> <span class="nf">loss_weight_order</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">loss_weights</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span> 
+                      <span class="n">label_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param model: The model that you want to know the loss weights for. Requires </span>
+<span class="sd">                  a vocab.</span>
+<span class="sd">    :param loss_weights: The loss weights to give to the labels. Can be None and </span>
+<span class="sd">                         if so returns None.</span>
+<span class="sd">    :param label_name: The name of the vocab for the label that is to be </span>
+<span class="sd">                       predicted.</span>
+<span class="sd">    :returns: None if `loss weights` is None. Else return a list of weights to </span>
+<span class="sd">              give to each label, where the original loss weights are ordered </span>
+<span class="sd">              by `[&#39;negative&#39;, &#39;neutral&#39;, &#39;positive&#39;]` and the returned are </span>
+<span class="sd">              ordered by occurrence in the models vocab for that `label_name` </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">loss_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">label_name_index</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_token_to_index_vocabulary</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="n">label_name</span><span class="p">)</span>
+        <span class="n">label_name_index</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">label_name_index</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        
+        <span class="n">temp_loss_weights</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">loss_weight_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;negative&#39;</span><span class="p">,</span> <span class="s1">&#39;neutral&#39;</span><span class="p">,</span> <span class="s1">&#39;positive&#39;</span><span class="p">]</span>
+        <span class="n">loss_name_weights</span> <span class="o">=</span> <span class="p">{</span><span class="n">label_name</span><span class="p">:</span> <span class="n">weight</span> <span class="k">for</span> <span class="n">label_name</span><span class="p">,</span> <span class="n">weight</span> 
+                             <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">loss_weight_labels</span><span class="p">,</span> <span class="n">loss_weights</span><span class="p">)}</span>
+        <span class="k">for</span> <span class="n">label_name</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">label_name_index</span><span class="p">:</span>
+            <span class="n">temp_loss_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss_name_weights</span><span class="p">[</span><span class="n">label_name</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">temp_loss_weights</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="elmo_input_reshape"><a class="viewcode-back" href="../../../../../target_extraction.allen.models.target_sentiment.html#target_extraction.allen.models.target_sentiment.util.elmo_input_reshape">[docs]</a><span class="k">def</span> <span class="nf">elmo_input_reshape</span><span class="p">(</span><span class="n">inputs</span><span class="p">:</span> <span class="n">TextFieldTensors</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                       <span class="n">number_targets</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_size_num_targets</span><span class="p">:</span> <span class="nb">int</span>
+                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TextFieldTensors</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    NOTE: This does not work for the hugginface transformers as when they are </span>
+<span class="sd">    processed by the token indexers they produce additional key other than </span>
+<span class="sd">    token ids such as mask ids and segment ids that also need handling, of </span>
+<span class="sd">    which we have not had time to handle this yet. A way around this, which </span>
+<span class="sd">    would be more appropriate, would be to use `target_sequences` like in the </span>
+<span class="sd">    `InContext` model, to generate contextualised targets from the context rather </span>
+<span class="sd">    than using the target words as is without context.</span>
+
+<span class="sd">    :param inputs: The token indexer dictionary where the keys state the token </span>
+<span class="sd">                   indexer and the values are the Tensors that are of shape </span>
+<span class="sd">                   (Batch Size, Number Targets, Sequence Length)</span>
+<span class="sd">    :param batch_size: The Batch Size</span>
+<span class="sd">    :param number_targets: The max number of targets in the batch</span>
+<span class="sd">    :param batch_size_num_targets: Batch Size * number of targets</span>
+<span class="sd">    :returns: If the inputs contains a `elmo` or &#39;token_characters&#39; key it will </span>
+<span class="sd">              reshape all the keys values into shape </span>
+<span class="sd">              (Batch Size * Number Targets, Sequence Length) so that it can be </span>
+<span class="sd">              processed by the ELMO or character embedder/encoder. </span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="s1">&#39;elmo&#39;</span> <span class="ow">in</span> <span class="n">inputs</span> <span class="ow">or</span> <span class="s1">&#39;token_characters&#39;</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+        <span class="n">temp_inputs</span><span class="p">:</span> <span class="n">TextFieldTensors</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">inner_key_value</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">inner_key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">inner_key_value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">temp_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size_num_targets</span><span class="p">,</span> <span class="o">*</span><span class="n">value</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
+                <span class="n">temp_inputs</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">inner_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_value</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">temp_inputs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">inputs</span></div>
+
+<div class="viewcode-block" id="elmo_input_reverse"><a class="viewcode-back" href="../../../../../target_extraction.allen.models.target_sentiment.html#target_extraction.allen.models.target_sentiment.util.elmo_input_reverse">[docs]</a><span class="k">def</span> <span class="nf">elmo_input_reverse</span><span class="p">(</span><span class="n">embedded_input</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> 
+                       <span class="n">inputs</span><span class="p">:</span> <span class="n">TextFieldTensors</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                       <span class="n">number_targets</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_size_num_targets</span><span class="p">:</span> <span class="nb">int</span>
+                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param embedded_input: The embedding generated after the embedder has been </span>
+<span class="sd">                           forwarded over the `inputs`</span>
+<span class="sd">    :param inputs: The token indexer dictionary where the keys state the token </span>
+<span class="sd">                   indexer and the values are the Tensors that are of shape </span>
+<span class="sd">                   (Batch Size, Number Targets, Sequence Length)</span>
+<span class="sd">    :param batch_size: The Batch Size</span>
+<span class="sd">    :param number_targets: The max number of targets in the batch</span>
+<span class="sd">    :param batch_size_num_targets: Batch Size * number of targets</span>
+<span class="sd">    :returns: If the inputs contains a `elmo` or &#39;token_characters&#39; key it will </span>
+<span class="sd">              reshape the `embedded_input` into the original shape of </span>
+<span class="sd">              (Batch Size, Number Targets, Sequence Length, embedding dim)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="s1">&#39;elmo&#39;</span> <span class="ow">in</span> <span class="n">inputs</span> <span class="ow">or</span> <span class="s1">&#39;token_characters&#39;</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">embedded_input</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">number_targets</span><span class="p">,</span>
+                                   <span class="o">*</span><span class="n">embedded_input</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="k">return</span> <span class="n">embedded_input</span></div>
+
+<div class="viewcode-block" id="concat_position_embeddings"><a class="viewcode-back" href="../../../../../target_extraction.allen.models.target_sentiment.html#target_extraction.allen.models.target_sentiment.util.concat_position_embeddings">[docs]</a><span class="k">def</span> <span class="nf">concat_position_embeddings</span><span class="p">(</span><span class="n">embedding_context</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> 
+                               <span class="n">position_indexes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                               <span class="n">target_position_embedding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TextFieldEmbedder</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                               <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param embedding_context: Tensor of shape (batch size * number targets, </span>
+<span class="sd">                              context sequence length, context dim)</span>
+<span class="sd">    :param position_indexes: Dictionary of token indexer name to a </span>
+<span class="sd">                             Tensor of shape (batch size, number targets, </span>
+<span class="sd">                             text sequence length)</span>
+<span class="sd">    :param target_position_embedding: An embedding function for the position </span>
+<span class="sd">                                      indexes, where the dimension of the position </span>
+<span class="sd">                                      embedding is `position dim`.</span>
+<span class="sd">    :returns: If `position_indexes` and `target_position_embedding` are None then</span>
+<span class="sd">              the `embedding_context` is returned without any change. Else the </span>
+<span class="sd">              relevant position embeddings are concatenated onto the relevant </span>
+<span class="sd">              token embeddings within the `embedding_context` to create a </span>
+<span class="sd">              Tensor of shape (batch size * number targets, text sequence length, </span>
+<span class="sd">              context dim + position dim)</span>
+<span class="sd">    :raises ValueError: If `target_position_embedding` is not None when </span>
+<span class="sd">                        `position_indexes` is None.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">target_position_embedding</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">position_indexes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;This model requires `position_indexes` as &#39;</span>
+                             <span class="s1">&#39;input to the `target_position_embedding` &#39;</span>
+                             <span class="s1">&#39;forward function to get the position embeddings&#39;</span><span class="p">)</span>
+        <span class="n">target_position_embeddings</span> <span class="o">=</span> <span class="n">target_position_embedding</span><span class="p">(</span><span class="n">position_indexes</span><span class="p">)</span>
+        <span class="n">batch_size_num_targets</span><span class="p">,</span> <span class="n">context_sequence_length</span><span class="p">,</span> <span class="n">context_dim</span> <span class="o">=</span> <span class="n">embedding_context</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">position_embedding_dim</span> <span class="o">=</span> <span class="n">target_position_embeddings</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># re-shape position_embeddings</span>
+        <span class="n">target_position_embeddings</span> <span class="o">=</span> <span class="n">target_position_embeddings</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size_num_targets</span><span class="p">,</span> 
+                                                                     <span class="n">context_sequence_length</span><span class="p">,</span> 
+                                                                     <span class="n">position_embedding_dim</span><span class="p">)</span>
+        <span class="n">embedding_context</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">embedding_context</span><span class="p">,</span> 
+                                       <span class="n">target_position_embeddings</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">embedding_context</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

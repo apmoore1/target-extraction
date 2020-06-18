@@ -1,0 +1,327 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.taggers_helper &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.taggers_helper</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.taggers_helper</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This module contains code that will help the following modules:</span>
+
+<span class="sd">1. tokenizers</span>
+<span class="sd">2. pos_taggers</span>
+
+<span class="sd">Functions:</span>
+
+<span class="sd">1. stanford_downloader - Downloads the specific Stanford NLP Neural Network </span>
+<span class="sd">   pipeline.</span>
+<span class="sd">2. spacy_downloader - This in affect downloads the relevant spacy model and </span>
+<span class="sd">   loads the model with the relevant taggers e.g. POS, Parse and NER taggers </span>
+<span class="sd">   for that spacy model which is language dependent.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span> <span class="nn">spacy</span>
+<span class="kn">from</span> <span class="nn">spacy.cli.download</span> <span class="kn">import</span> <span class="n">download</span> <span class="k">as</span> <span class="n">spacy_download</span>
+<span class="kn">from</span> <span class="nn">spacy.language</span> <span class="kn">import</span> <span class="n">Language</span> <span class="k">as</span> <span class="n">SpacyModelType</span>
+<span class="kn">import</span> <span class="nn">stanfordnlp</span>
+<span class="kn">from</span> <span class="nn">stanfordnlp.utils</span> <span class="kn">import</span> <span class="n">resources</span>
+
+<span class="n">LOADED_SPACY_MODELS</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">],</span> <span class="n">SpacyModelType</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="spacy_downloader"><a class="viewcode-back" href="../../target_extraction.html#target_extraction.taggers_helper.spacy_downloader">[docs]</a><span class="k">def</span> <span class="nf">spacy_downloader</span><span class="p">(</span><span class="n">spacy_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pos_tags</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">parse</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> 
+                     <span class="n">ner</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SpacyModelType</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is a copy of allennlp.common.util.get_spacy_model function. This in  </span>
+<span class="sd">    affect downloads the relevant spacy model and loads the model with the  </span>
+<span class="sd">    relevant taggers e.g. POS, Parse and NER taggers for that spacy model which  </span>
+<span class="sd">    is language dependent.</span>
+
+<span class="sd">    Spacy can have multiple trained models per language based on size.</span>
+
+<span class="sd">    :param spacy_model_name: Name of the Spacy model e.g. en_core_web_sm</span>
+<span class="sd">    :param pos_tags: Whether or not the returned Spacy model should perform </span>
+<span class="sd">                     POS tagging.</span>
+<span class="sd">    :param parse: Whether or not the returned Spacy model should perform </span>
+<span class="sd">                  Parsing.</span>
+<span class="sd">    :param ner: Whether or not the returned Spacy model should perform </span>
+<span class="sd">                  NER.</span>
+<span class="sd">    :returns: The relevant Spacy model.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">options</span> <span class="o">=</span> <span class="p">(</span><span class="n">spacy_model_name</span><span class="p">,</span> <span class="n">pos_tags</span><span class="p">,</span> <span class="n">parse</span><span class="p">,</span> <span class="n">ner</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">options</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">LOADED_SPACY_MODELS</span><span class="p">:</span>
+        <span class="c1"># This needs manually updating each time Spacy is updated. Supported </span>
+        <span class="c1"># languages can be found here: https://spacy.io/usage/models</span>
+        <span class="n">supported_codes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;de&#39;</span><span class="p">,</span> <span class="s1">&#39;el&#39;</span><span class="p">,</span> <span class="s1">&#39;en&#39;</span><span class="p">,</span> <span class="s1">&#39;es&#39;</span><span class="p">,</span> <span class="s1">&#39;fr&#39;</span><span class="p">,</span> <span class="s1">&#39;it&#39;</span><span class="p">,</span> <span class="s1">&#39;nl&#39;</span><span class="p">,</span> <span class="s1">&#39;pt&#39;</span><span class="p">,</span> <span class="s1">&#39;xx&#39;</span><span class="p">]</span>
+        <span class="n">lang_code</span> <span class="o">=</span> <span class="n">spacy_model_name</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">lang_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_codes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Spacy does not support the following language &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">lang_code</span><span class="si">}</span><span class="s1">. These languages are supported &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">supported_codes</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        
+        <span class="n">disable</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vectors&#39;</span><span class="p">,</span> <span class="s1">&#39;textcat&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pos_tags</span><span class="p">:</span>
+            <span class="n">disable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;tagger&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parse</span><span class="p">:</span>
+            <span class="n">disable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;parser&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ner</span><span class="p">:</span>
+            <span class="n">disable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;ner&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">spacy_model</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">spacy_model_name</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="n">disable</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Spacy models &#39;</span><span class="si">{</span><span class="n">spacy_model_name</span><span class="si">}</span><span class="s2">&#39; not found. &quot;</span>
+                  <span class="s2">&quot;Downloading and installing.&quot;</span><span class="p">)</span>
+            <span class="n">spacy_download</span><span class="p">(</span><span class="n">spacy_model_name</span><span class="p">)</span>
+            <span class="kn">from</span> <span class="nn">spacy.cli</span> <span class="kn">import</span> <span class="n">link</span>
+            <span class="kn">from</span> <span class="nn">spacy.util</span> <span class="kn">import</span> <span class="n">get_package_path</span>
+            <span class="n">package_path</span> <span class="o">=</span> <span class="n">get_package_path</span><span class="p">(</span><span class="n">spacy_model_name</span><span class="p">)</span>
+            <span class="n">link</span><span class="p">(</span><span class="n">spacy_model_name</span><span class="p">,</span> <span class="n">spacy_model_name</span><span class="p">,</span> <span class="n">model_path</span><span class="o">=</span><span class="n">package_path</span><span class="p">)</span>
+            <span class="n">spacy_model</span> <span class="o">=</span> <span class="n">spacy</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">spacy_model_name</span><span class="p">,</span> <span class="n">disable</span><span class="o">=</span><span class="n">disable</span><span class="p">)</span>
+        <span class="n">LOADED_SPACY_MODELS</span><span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="o">=</span> <span class="n">spacy_model</span>
+    <span class="k">return</span> <span class="n">LOADED_SPACY_MODELS</span><span class="p">[</span><span class="n">options</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="stanford_downloader"><a class="viewcode-back" href="../../target_extraction.html#target_extraction.taggers_helper.stanford_downloader">[docs]</a><span class="k">def</span> <span class="nf">stanford_downloader</span><span class="p">(</span><span class="n">lang</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">treebank</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                        <span class="n">download</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Downloads the Stanford NLP Neural Network pipelines that can be used </span>
+<span class="sd">    for the following tagging tasks:</span>
+<span class="sd">    </span>
+<span class="sd">    1. tokenizing</span>
+<span class="sd">    2. Multi Word Tokens (MWT)</span>
+<span class="sd">    3. POS tagging - Universal POS (UPOS) tags and depending on the language, </span>
+<span class="sd">       language specific POS tags (XPOS)</span>
+<span class="sd">    4. Lemmatization </span>
+<span class="sd">    5. Dependency Parsing</span>
+
+<span class="sd">    Each pipeline is trained per language and per treebank hence why the </span>
+<span class="sd">    language and treebank is required as arguments. When the treebank is not </span>
+<span class="sd">    given the default treebank is used. </span>
+<span class="sd">    </span>
+<span class="sd">    If download is True then it will re-download the pipeline even if it </span>
+<span class="sd">    already exists, this might be useful if a new version has come avliable.</span>
+
+<span class="sd">    Languages supported: </span>
+<span class="sd">    https://stanfordnlp.github.io/stanfordnlp/installation_download.html#human-</span>
+<span class="sd">    languages-supported-by-stanfordnlp</span>
+
+<span class="sd">    Reference paper:</span>
+<span class="sd">    https://www.aclweb.org/anthology/K18-2016</span>
+
+<span class="sd">    :param lang: Language of the Neural Network Pipeline to download.</span>
+<span class="sd">    :param treebank: The neural network model to use based on the treebank </span>
+<span class="sd">                     it was trained from. If not given the default treebank </span>
+<span class="sd">                     will be used. To see which is the default treebank </span>
+<span class="sd">                     and the treebanks available for each language go to:</span>
+<span class="sd">                     https://stanfordnlp.github.io/stanfordnlp/installation_</span>
+<span class="sd">                     download.html#human-languages-supported-by-stanfordnlp</span>
+<span class="sd">    :param download: If to re-download the model. </span>
+<span class="sd">    :returns: The treebank full name which this method has to resolve to it&#39;s </span>
+<span class="sd">              full name to find the model&#39;s directory.</span>
+<span class="sd">    :raises ValueError: If the treebank does not exist for the given language.</span>
+<span class="sd">                        Also will raise an error there is not a pipeline for </span>
+<span class="sd">                        the language given.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">lang</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">resources</span><span class="o">.</span><span class="n">default_treebanks</span><span class="p">:</span>
+        <span class="n">pipeline_langs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">resources</span><span class="o">.</span><span class="n">default_treebanks</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;There is no pipeline for the language </span><span class="si">{</span><span class="n">lang</span><span class="si">}</span><span class="s1">. &#39;</span>
+                         <span class="s1">&#39;There are pipelines for the following languages:&#39;</span>
+                         <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">pipeline_langs</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">treebank</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">treebank</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="n">default_treebanks</span><span class="p">[</span><span class="n">lang</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">treebank</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">lang</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">treebank</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">if</span> <span class="n">treebank</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">resources</span><span class="o">.</span><span class="n">conll_shorthands</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The treebank </span><span class="si">{</span><span class="n">treebank</span><span class="si">}</span><span class="s1"> does not exist for &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">lang</span><span class="si">}</span><span class="s1">. Here is a list of languages and &#39;</span>
+                             <span class="s1">&#39;treebanks that do exist:</span><span class="se">\n</span><span class="s1">&#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">resources</span><span class="o">.</span><span class="n">conll_shorthands</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">model_dir_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">treebank</span><span class="si">}</span><span class="s1">_models&#39;</span>
+    <span class="n">model_download_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">(),</span> <span class="s1">&#39;stanfordnlp_resources&#39;</span><span class="p">,</span> 
+                              <span class="n">model_dir_name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">download</span><span class="p">:</span>
+        <span class="n">stanfordnlp</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">treebank</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_download_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">stanfordnlp</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">treebank</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">treebank</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

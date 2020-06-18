@@ -1,0 +1,601 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.allen.dataset_readers package &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">target_extraction.allen.dataset_readers package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.dataset_readers.target_conll">target_extraction.allen.dataset_readers.target_conll module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.dataset_readers.target_extraction">target_extraction.allen.dataset_readers.target_extraction module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.dataset_readers.target_sentiment">target_extraction.allen.dataset_readers.target_sentiment module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.dataset_readers.text_sentiment">target_extraction.allen.dataset_readers.text_sentiment module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.allen.dataset_readers">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>target_extraction.allen.dataset_readers package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/target_extraction.allen.dataset_readers.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="target-extraction-allen-dataset-readers-package">
+<h1>target_extraction.allen.dataset_readers package<a class="headerlink" href="#target-extraction-allen-dataset-readers-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-target_extraction.allen.dataset_readers.target_conll">
+<span id="target-extraction-allen-dataset-readers-target-conll-module"></span><h2>target_extraction.allen.dataset_readers.target_conll module<a class="headerlink" href="#module-target_extraction.allen.dataset_readers.target_conll" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="target_extraction.allen.dataset_readers.target_conll.TargetConllDatasetReader">
+<em class="property">class </em><code class="sig-prename descclassname">target_extraction.allen.dataset_readers.target_conll.</code><code class="sig-name descname">TargetConllDatasetReader</code><span class="sig-paren">(</span><em class="sig-param">token_indexers=None</em>, <em class="sig-param">coding_scheme='BIO'</em>, <em class="sig-param">label_namespace='labels'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/dataset_readers/target_conll.html#TargetConllDatasetReader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_conll.TargetConllDatasetReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.data.dataset_readers.dataset_reader.DatasetReader</span></code></p>
+<p>Dataset reader designed to read a CONLL formatted file that is produced 
+from <cite>target_extraction.data_types.TargetTextCollection.to_conll</cite>. The 
+CONLL file should have the following structure:</p>
+<p><cite>TOKEN#GOLD LABEL</cite></p>
+<p>Where each text is sperated by a blank new line and that each text has an 
+associated <cite># {text_id: ‘value’}</cite> line at the start of the text. An example
+of the file is below:
+`
+# {“text_id”: “0”}
+The O
+laptop B-0
+case I-0
+was O
+great O
+and O
+cover O
+was O
+rubbish O</p>
+<p># {“text_id”: “2”}
+The O
+laptop B-0
+case I-0
+was O
+great O
+and O
+cover B-1
+was O
+rubbish O
+`</p>
+<dl>
+<dt>token_indexers<span class="classifier"><code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">TokenIndexer]</span></code>, optional (default=``{“tokens”: SingleIdTokenIndexer()}``)</span></dt><dd><p>We use this to define the input representation for the text.  See <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenIndexer</span></code>.</p>
+</dd>
+<dt>coding_scheme: <code class="docutils literal notranslate"><span class="pre">str</span></code>, optional (default=``BIO``)</dt><dd><p>Specifies the coding scheme for.
+Valid options are <code class="docutils literal notranslate"><span class="pre">BIO</span></code> and <code class="docutils literal notranslate"><span class="pre">BIOUL</span></code>.  The <code class="docutils literal notranslate"><span class="pre">BIO</span></code> default maintains
+the original BIO scheme in the data.
+In the BIO scheme, B is a token starting a span, I is a token continuing 
+a span, and
+O is a token outside of a span.</p>
+</dd>
+<dt>label_namespace: <code class="docutils literal notranslate"><span class="pre">str</span></code>, optional (default=``labels``)</dt><dd><p>Specifies the namespace for the sequence labels.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="target_extraction.allen.dataset_readers.target_conll.TargetConllDatasetReader.text_to_instance">
+<code class="sig-name descname">text_to_instance</code><span class="sig-paren">(</span><em class="sig-param">tokens</em>, <em class="sig-param">tags=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/dataset_readers/target_conll.html#TargetConllDatasetReader.text_to_instance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_conll.TargetConllDatasetReader.text_to_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>We take <cite>pre-tokenized</cite> input here, because we don’t have a tokenizer 
+in this class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Instance</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="target_extraction.allen.dataset_readers.target_conll.logger">
+<code class="sig-prename descclassname">target_extraction.allen.dataset_readers.target_conll.</code><code class="sig-name descname">logger</code><em class="property"> = &lt;Logger target_extraction.allen.dataset_readers.target_conll (WARNING)&gt;</em><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_conll.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.dataset_readers.target_extraction">
+<span id="target-extraction-allen-dataset-readers-target-extraction-module"></span><h2>target_extraction.allen.dataset_readers.target_extraction module<a class="headerlink" href="#module-target_extraction.allen.dataset_readers.target_extraction" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="target_extraction.allen.dataset_readers.target_extraction.TargetExtractionDatasetReader">
+<em class="property">class </em><code class="sig-prename descclassname">target_extraction.allen.dataset_readers.target_extraction.</code><code class="sig-name descname">TargetExtractionDatasetReader</code><span class="sig-paren">(</span><em class="sig-param">token_indexers=None</em>, <em class="sig-param">pos_tags=False</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/dataset_readers/target_extraction.html#TargetExtractionDatasetReader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_extraction.TargetExtractionDatasetReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.data.dataset_readers.dataset_reader.DatasetReader</span></code></p>
+<p>Dataset reader designed to read a list of JSON like objects of the 
+following type:</p>
+<dl class="simple">
+<dt>{<cite>tokenized_text</cite>: [<cite>This</cite>, <cite>Camera</cite>, <cite>lens</cite>, <cite>is</cite>, <cite>great</cite>],</dt><dd><p><cite>text</cite>: <cite>This Camera lens is great</cite>, 
+<cite>tags</cite>: [<cite>O</cite>, <cite>B</cite>, <cite>I</cite>, <cite>O</cite>, <cite>O</cite>],
+<cite>pos_tags</cite>: [<cite>DET</cite>, <cite>NOUN</cite>, <cite>NOUN</cite>, <cite>AUX</cite>, <cite>ADJ</cite>]}</p>
+</dd>
+</dl>
+<p>Where the <cite>pos_tags</cite> are optional. This type of JSON can be created 
+from exporting a <cite>target_extraction.data_types.TargetTextCollection</cite> 
+using the <cite>to_json_file</cite> method.</p>
+<p>If the <cite>pos_tags</cite> are given, they can be used as either features or 
+for joint learning.</p>
+<p>The only sequence labels that we currently support is BIO or also known as 
+IOB-2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params pos_tags</dt>
+<dd class="field-odd"><p>Whether or not to extract POS tags if avaliable.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">Dataset</span></code> of <code class="docutils literal notranslate"><span class="pre">Instances</span></code> for Target Extraction.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="target_extraction.allen.dataset_readers.target_extraction.TargetExtractionDatasetReader.text_to_instance">
+<code class="sig-name descname">text_to_instance</code><span class="sig-paren">(</span><em class="sig-param">tokens</em>, <em class="sig-param">text</em>, <em class="sig-param">tags=None</em>, <em class="sig-param">pos_tags=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/dataset_readers/target_extraction.html#TargetExtractionDatasetReader.text_to_instance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_extraction.TargetExtractionDatasetReader.text_to_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>The tokens are expected to be pre-tokenised.</p>
+<p>The original token text and the text itself is stored in a 
+MetadataField</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tokens</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Token</span></code>]) – Tokenised text that either has target extraction labels 
+or is to be tagged.</p></li>
+<li><p><strong>text</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The text that the tokenised text has come from.</p></li>
+<li><p><strong>tags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – The target extraction BIO labels.</p></li>
+<li><p><strong>pos_tags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – POS tags to be used either as features or for joint 
+learning.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Instance</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An Instance object with all of the above enocded for a
+PyTorch model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="target_extraction.allen.dataset_readers.target_extraction.logger">
+<code class="sig-prename descclassname">target_extraction.allen.dataset_readers.target_extraction.</code><code class="sig-name descname">logger</code><em class="property"> = &lt;Logger target_extraction.allen.dataset_readers.target_extraction (WARNING)&gt;</em><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_extraction.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.dataset_readers.target_sentiment">
+<span id="target-extraction-allen-dataset-readers-target-sentiment-module"></span><h2>target_extraction.allen.dataset_readers.target_sentiment module<a class="headerlink" href="#module-target_extraction.allen.dataset_readers.target_sentiment" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="target_extraction.allen.dataset_readers.target_sentiment.TargetSentimentDatasetReader">
+<em class="property">class </em><code class="sig-prename descclassname">target_extraction.allen.dataset_readers.target_sentiment.</code><code class="sig-name descname">TargetSentimentDatasetReader</code><span class="sig-paren">(</span><em class="sig-param">token_indexers=None</em>, <em class="sig-param">tokenizer=None</em>, <em class="sig-param">left_right_contexts=False</em>, <em class="sig-param">reverse_right_context=False</em>, <em class="sig-param">incl_target=False</em>, <em class="sig-param">use_categories=False</em>, <em class="sig-param">target_sequences=False</em>, <em class="sig-param">position_embeddings=False</em>, <em class="sig-param">position_weights=False</em>, <em class="sig-param">max_position_distance=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/dataset_readers/target_sentiment.html#TargetSentimentDatasetReader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_sentiment.TargetSentimentDatasetReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.data.dataset_readers.dataset_reader.DatasetReader</span></code></p>
+<p>Dataset reader designed to read a list of JSON like objects of the 
+following type:</p>
+<dl class="simple">
+<dt>{<cite>text</cite>: <cite>This Camera lens is great</cite>, </dt><dd><p><cite>targets</cite>: [<cite>Camera</cite>],
+<cite>target_sentiments</cite>: [<cite>positive</cite>]}</p>
+</dd>
+</dl>
+<p>or</p>
+<dl class="simple">
+<dt>{<cite>text</cite>: <cite>This Camera lens is great</cite>, </dt><dd><p><cite>categories</cite>: [<cite>CAMERA</cite>],
+<cite>category_sentiments</cite>: [<cite>positive</cite>]}</p>
+</dd>
+</dl>
+<p>or</p>
+<dl class="simple">
+<dt>{<cite>text</cite>: <cite>This Camera lens is great</cite>, </dt><dd><p><cite>targets</cite>: [<cite>Camera</cite>]
+<cite>categories</cite>: [<cite>CAMERA</cite>],
+<cite>target_sentiments</cite>: [<cite>positive</cite>]}</p>
+</dd>
+</dl>
+<p>or</p>
+<dl class="simple">
+<dt>{<cite>text</cite>: <cite>This Camera lens is great</cite>, </dt><dd><p><cite>targets</cite>: [<cite>Camera</cite>],
+<cite>target_sentiments</cite>: [<cite>positive</cite>],
+<cite>spans</cite>: [[5,11]]}</p>
+</dd>
+</dl>
+<p>This type of JSON can be created from exporting a 
+<cite>target_extraction.data_types.TargetTextCollection</cite> using the 
+<cite>to_json_file</cite> method.</p>
+<p>The difference between the three objects depends on the objective of the 
+model being trained:  
+1. Version is for a purely Target based sentiment classifier.
+2. Version is for a purely Aspect or latent based sentiment classifier.
+3. Version is if you want to make use of the relationship between the</p>
+<blockquote>
+<div><p>Target and Aspect in the sentiment classifier.</p>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li><p>If the Target based sentiment classifier requires the knowledge of 
+where the target is.</p></li>
+</ol>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lazy</strong> – Whether or not instances can be read lazily.</p></li>
+<li><p><strong>token_indexers</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenIndexer</span></code>]]) – We use this to define the input representation 
+for the text. See 
+<code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.data.token_indexers.TokenIndexer</span></code>.</p></li>
+<li><p><strong>tokenizer</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tokenizer</span></code>]) – Tokenizer to use to split the sentence text as well as 
+the text of the target.</p></li>
+<li><p><strong>left_right_contexts</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True it will return within the 
+instance for <cite>text_to_instance</cite> the 
+sentence context left and right of the target.</p></li>
+<li><p><strong>reverse_right_context</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True this will reverse the text that is 
+in the right context. NOTE left_right_context 
+has to be True.</p></li>
+<li><p><strong>incl_target</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If left_right_context is True and this also 
+the left and right contexts will include the target
+word(s) as well.</p></li>
+<li><p><strong>use_categories</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to return the categories in the 
+instances even if they do occur in the dataset. 
+This is a temporary solution to the following 
+<a class="reference external" href="https://github.com/apmoore1/target-extraction/issues/5">issue</a>.
+The number of categories does not have to match the 
+number of targets, just there has to be at least one 
+category per sentence.</p></li>
+<li><p><strong>target_sequences</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to generate <cite>target_sequences</cite> 
+which are a sequence of masks per target for all 
+target texts. This will allow the model to know 
+which tokens in the context relate to the target.
+Example of this is shown below (for this to work 
+does require the <cite>span</cite> of each target)</p></li>
+<li><p><strong>position_embeddings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to create distance values 
+that can be converted to embeddings similar 
+to the <cite>position_weights</cite> but instead of the 
+model later on using them as weights it uses 
+the distances to learn position embeddings.
+(for this to work does require the <cite>span</cite> of 
+each target). <a class="reference external" href="https://www.aclweb.org/anthology/C18-1066.pdf">A Position-aware Bidirectional 
+Attention Network for Aspect-level Sentiment 
+Analysis</a></p></li>
+<li><p><strong>position_weights</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – In the instances there will be an extra key 
+<cite>position_weights</cite> which will be an array of 
+integers representing the linear distance between 
+each token and it’s target e.g. If the text 
+contains two targets where each token is represented
+by a number and the 1’s target tokens = 
+[[0,0,0,1], [1,1,0,0]] then the <cite>position_weights</cite>
+will be [[4,3,2,1], [1,1,2,3]]. (for this to work 
+does require the <cite>span</cite> of each target). An example 
+of position weighting is in section 3.3 of 
+<a class="reference external" href="https://arxiv.org/pdf/1906.04501.pdf">Modeling Sentiment Dependencies with Graph 
+Convolutional Networks for Aspect-level Sentiment 
+Classification</a></p></li>
+<li><p><strong>max_position_distance</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The maximum position distance given to a token 
+from the target e.g. [0,0,0,0,0,1,0,0] if the 
+each value represents a token and 1’s represent
+target tokens then the distance array would be 
+[6,5,4,3,2,1,2,3] if the <cite>max_position_distance</cite>
+is 5 then the distance array will be 
+[5,5,4,3,2,1,2,3]. (for this to work either 
+<cite>position_embeddings</cite> has to be True or 
+<cite>position_weights</cite>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the <cite>left_right_contexts</cite> is not True while either the 
+<cite>incl_targets</cite> or <cite>reverse_right_context</cite> arguments are 
+True.</p></li>
+<li><p><strong>ValueError</strong> – If the <cite>left_right_contexts</cite> and <cite>target_sequences</cite> are 
+True at the same time.</p></li>
+<li><p><strong>ValueError</strong> – If the <cite>max_position_distance</cite> when set is less than 2.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>max_position_distance</cite> is set but neither 
+<cite>position_embeddings</cite> nor <cite>position_weights</cite> are 
+<cite>True</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Example of target_sequences</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>{<cite>text</cite>: <a href="#id1"><span class="problematic" id="id2">`</span></a>This Camera lens is great but the </dt><dd><p>screen is rubbish`,</p>
+</dd>
+</dl>
+<p><cite>targets</cite>: [<cite>Camera</cite>, <cite>screen</cite>],
+<cite>target_sentiments</cite>: [<cite>positive</cite>, <cite>negative</cite>],
+<cite>target_sequences</cite>: [[0,1,0,0,0,0,0,0,0,0],</p>
+<blockquote>
+<div><p>[0,0,0,0,0,0,0,1,0,0]],</p>
+</div></blockquote>
+<p><cite>spans</cite>: [[5,11], [34:40]]}</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="target_extraction.allen.dataset_readers.target_sentiment.TargetSentimentDatasetReader.text_to_instance">
+<code class="sig-name descname">text_to_instance</code><span class="sig-paren">(</span><em class="sig-param">text</em>, <em class="sig-param">targets=None</em>, <em class="sig-param">target_sentiments=None</em>, <em class="sig-param">spans=None</em>, <em class="sig-param">categories=None</em>, <em class="sig-param">category_sentiments=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/dataset_readers/target_sentiment.html#TargetSentimentDatasetReader.text_to_instance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_sentiment.TargetSentimentDatasetReader.text_to_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>The original text, text tokens as well as the targets and target 
+tokens are stored in the MetadataField.</p>
+<dl class="field-list simple">
+<dt class="field-odd">NOTE</dt>
+<dd class="field-odd"><p>At least targets and/or categories must be present.</p>
+</dd>
+<dt class="field-even">NOTE</dt>
+<dd class="field-even"><p>That the left and right contexts returned in the instance are 
+a List of a List of tokens. A list for each Target.</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The text that contains the target(s) and/or categories.</p></li>
+<li><p><strong>targets</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – The targets that are within the text</p></li>
+<li><p><strong>target_sentiments</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]]) – The sentiment of the targets. To be used if 
+training the classifier</p></li>
+<li><p><strong>spans</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]]) – The spans that represent the character offsets for each 
+of the targets given in the targets list.</p></li>
+<li><p><strong>categories</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – The categories that are within the text</p></li>
+<li><p><strong>category_sentiments</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]]) – The sentiment of the categories</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Instance</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>An Instance object with all of the above encoded for a
+PyTorch model.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If either targets and categories are both None</p></li>
+<li><p><strong>ValueError</strong> – If <cite>self._target_sequences</cite> is True and the passed 
+<cite>spans</cite> argument is None.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>self._left_right_contexts</cite> is True and the 
+passed <cite>spans</cite> argument is None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="target_extraction.allen.dataset_readers.target_sentiment.logger">
+<code class="sig-prename descclassname">target_extraction.allen.dataset_readers.target_sentiment.</code><code class="sig-name descname">logger</code><em class="property"> = &lt;Logger target_extraction.allen.dataset_readers.target_sentiment (WARNING)&gt;</em><a class="headerlink" href="#target_extraction.allen.dataset_readers.target_sentiment.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.dataset_readers.text_sentiment">
+<span id="target-extraction-allen-dataset-readers-text-sentiment-module"></span><h2>target_extraction.allen.dataset_readers.text_sentiment module<a class="headerlink" href="#module-target_extraction.allen.dataset_readers.text_sentiment" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="target_extraction.allen.dataset_readers.text_sentiment.TextSentimentReader">
+<em class="property">class </em><code class="sig-prename descclassname">target_extraction.allen.dataset_readers.text_sentiment.</code><code class="sig-name descname">TextSentimentReader</code><span class="sig-paren">(</span><em class="sig-param">label_name='label'</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/dataset_readers/text_sentiment.html#TextSentimentReader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.dataset_readers.text_sentiment.TextSentimentReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.data.dataset_readers.text_classification_json.TextClassificationJsonReader</span></code></p>
+<p>Subclasses <code class="xref py py-class docutils literal notranslate"><span class="pre">allennlp.data.dataset_readers.TextClassificationJsonReader</span></code>
+of which the only differences is the <cite>label_name</cite> construction parameter 
+which is explained in the Parameters section below.</p>
+<p>Reads tokens and their labels from a labeled text classification dataset.
+Expects a “text” field and a “label” field in JSON format.
+The output of <code class="docutils literal notranslate"><span class="pre">read</span></code> is a list of <code class="docutils literal notranslate"><span class="pre">Instance</span></code> s with the fields:</p>
+<blockquote>
+<div><p>tokens: <code class="docutils literal notranslate"><span class="pre">TextField</span></code> and
+label: <code class="docutils literal notranslate"><span class="pre">LabelField</span></code></p>
+</div></blockquote>
+<dl>
+<dt>token_indexers<span class="classifier"><code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">TokenIndexer]</span></code>, optional</span></dt><dd><p>optional (default=``{“tokens”: SingleIdTokenIndexer()}``)
+We use this to define the input representation for the text.
+See <code class="xref py py-class docutils literal notranslate"><span class="pre">TokenIndexer</span></code>.</p>
+</dd>
+<dt>tokenizer<span class="classifier"><code class="docutils literal notranslate"><span class="pre">Tokenizer</span></code>, optional (default = <code class="docutils literal notranslate"><span class="pre">{&quot;tokens&quot;:</span> <span class="pre">SpacyTokenizer()}</span></code>)</span></dt><dd><p>Tokenizer to use to split the input text into words or other kinds of tokens.</p>
+</dd>
+<dt>segment_sentences: <code class="docutils literal notranslate"><span class="pre">bool</span></code>, optional (default = <code class="docutils literal notranslate"><span class="pre">False</span></code>)</dt><dd><p>If True, we will first segment the text into sentences using SpaCy and then tokenize words.
+Necessary for some models that require pre-segmentation of sentences, like the Hierarchical
+Attention Network (<a class="reference external" href="https://www.cs.cmu.edu/~hovy/papers/16HLT-hierarchical-attention-networks.pdf">https://www.cs.cmu.edu/~hovy/papers/16HLT-hierarchical-attention-networks.pdf</a>).</p>
+</dd>
+<dt>max_sequence_length: <code class="docutils literal notranslate"><span class="pre">int</span></code>, optional (default = <code class="docutils literal notranslate"><span class="pre">None</span></code>)</dt><dd><p>If specified, will truncate tokens to specified maximum length.</p>
+</dd>
+<dt>skip_label_indexing: <code class="docutils literal notranslate"><span class="pre">bool</span></code>, optional (default = <code class="docutils literal notranslate"><span class="pre">False</span></code>)</dt><dd><p>Whether or not to skip label indexing. You might want to skip label indexing if your
+labels are numbers, so the dataset reader doesn’t re-number them starting from 0.</p>
+</dd>
+<dt>lazy<span class="classifier"><code class="docutils literal notranslate"><span class="pre">bool</span></code>, optional, (default = <code class="docutils literal notranslate"><span class="pre">False</span></code>)</span></dt><dd><p>Whether or not instances can be read lazily.</p>
+</dd>
+<dt>label_name: <code class="docutils literal notranslate"><span class="pre">str</span></code>, optional, (default = <code class="docutils literal notranslate"><span class="pre">label</span></code>)</dt><dd><p>The name of the label field in the JSON objects that are read.</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="target_extraction.allen.dataset_readers.text_sentiment.TextSentimentReader.text_to_instance">
+<code class="sig-name descname">text_to_instance</code><span class="sig-paren">(</span><em class="sig-param">text</em>, <em class="sig-param">label=None</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/allen/dataset_readers/text_sentiment.html#TextSentimentReader.text_to_instance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.allen.dataset_readers.text_sentiment.TextSentimentReader.text_to_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p># Parameters</p>
+<dl>
+<dt>text<span class="classifier"><cite>str</cite>, required.</span></dt><dd><p>The text to classify</p>
+</dd>
+<dt>label<span class="classifier"><cite>str</cite>, optional, (default = <cite>None</cite>).</span></dt><dd><p>The label for this text.</p>
+</dd>
+</dl>
+<p># Returns</p>
+<dl class="simple">
+<dt>An <cite>Instance</cite> containing the following fields:</dt><dd><ul class="simple">
+<li><p>tokens (<cite>TextField</cite>) :
+The tokens in the sentence or phrase.</p></li>
+<li><p>label (<cite>LabelField</cite>) :
+The label label of the sentence or phrase.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Instance</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="data">
+<dt id="target_extraction.allen.dataset_readers.text_sentiment.logger">
+<code class="sig-prename descclassname">target_extraction.allen.dataset_readers.text_sentiment.</code><code class="sig-name descname">logger</code><em class="property"> = &lt;Logger target_extraction.allen.dataset_readers.text_sentiment (WARNING)&gt;</em><a class="headerlink" href="#target_extraction.allen.dataset_readers.text_sentiment.logger" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.allen.dataset_readers">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-target_extraction.allen.dataset_readers" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

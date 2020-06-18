@@ -1,0 +1,50 @@
+target\_extraction.allen.models.target\_sentiment package
+=========================================================
+
+Submodules
+----------
+
+target\_extraction.allen.models.target\_sentiment.atae module
+-------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.models.target_sentiment.atae
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.models.target\_sentiment.in\_context module
+--------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.models.target_sentiment.in_context
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.models.target\_sentiment.interactive\_attention\_network module
+----------------------------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.models.target_sentiment.interactive_attention_network
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.models.target\_sentiment.split\_contexts module
+------------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.models.target_sentiment.split_contexts
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.models.target\_sentiment.util module
+-------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.models.target_sentiment.util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen.models.target_sentiment
+   :members:
+   :undoc-members:
+   :show-inheritance:

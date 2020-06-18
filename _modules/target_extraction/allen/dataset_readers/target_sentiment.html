@@ -1,0 +1,641 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.allen.dataset_readers.target_sentiment &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.allen.dataset_readers.target_sentiment</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.allen.dataset_readers.target_sentiment</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">NamedTuple</span>
+
+<span class="kn">from</span> <span class="nn">allennlp.common.file_utils</span> <span class="kn">import</span> <span class="n">cached_path</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.dataset_readers.dataset_reader</span> <span class="kn">import</span> <span class="n">DatasetReader</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.token_indexers</span> <span class="kn">import</span> <span class="n">TokenIndexer</span><span class="p">,</span> <span class="n">SingleIdTokenIndexer</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.instance</span> <span class="kn">import</span> <span class="n">Instance</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.tokenizers</span> <span class="kn">import</span> <span class="n">Token</span><span class="p">,</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">SpacyTokenizer</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.fields</span> <span class="kn">import</span> <span class="n">TextField</span><span class="p">,</span> <span class="n">ListField</span><span class="p">,</span> <span class="n">MetadataField</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.fields</span> <span class="kn">import</span> <span class="n">SequenceLabelField</span><span class="p">,</span> <span class="n">ArrayField</span>
+<span class="kn">from</span> <span class="nn">overrides</span> <span class="kn">import</span> <span class="n">overrides</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">target_extraction.data_types</span> <span class="kn">import</span> <span class="n">TargetText</span>
+<span class="kn">from</span> <span class="nn">target_extraction.data_types_util</span> <span class="kn">import</span> <span class="n">Span</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>  <span class="c1"># pylint: disable=invalid-name</span>
+
+<div class="viewcode-block" id="TargetSentimentDatasetReader"><a class="viewcode-back" href="../../../../target_extraction.allen.dataset_readers.html#target_extraction.allen.dataset_readers.target_sentiment.TargetSentimentDatasetReader">[docs]</a><span class="nd">@DatasetReader</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;target_sentiment&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">TargetSentimentDatasetReader</span><span class="p">(</span><span class="n">DatasetReader</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Dataset reader designed to read a list of JSON like objects of the </span>
+<span class="sd">    following type:</span>
+
+<span class="sd">    {`text`: `This Camera lens is great`, </span>
+<span class="sd">     `targets`: [`Camera`],</span>
+<span class="sd">     `target_sentiments`: [`positive`]}</span>
+
+<span class="sd">    or</span>
+
+<span class="sd">    {`text`: `This Camera lens is great`, </span>
+<span class="sd">     `categories`: [`CAMERA`],</span>
+<span class="sd">     `category_sentiments`: [`positive`]}</span>
+
+<span class="sd">    or</span>
+
+<span class="sd">    {`text`: `This Camera lens is great`, </span>
+<span class="sd">     `targets`: [`Camera`]</span>
+<span class="sd">     `categories`: [`CAMERA`],</span>
+<span class="sd">     `target_sentiments`: [`positive`]}</span>
+
+<span class="sd">    or </span>
+
+<span class="sd">    {`text`: `This Camera lens is great`, </span>
+<span class="sd">     `targets`: [`Camera`],</span>
+<span class="sd">     `target_sentiments`: [`positive`],</span>
+<span class="sd">     `spans`: [[5,11]]}</span>
+
+<span class="sd">    This type of JSON can be created from exporting a </span>
+<span class="sd">    `target_extraction.data_types.TargetTextCollection` using the </span>
+<span class="sd">    `to_json_file` method.</span>
+
+<span class="sd">    The difference between the three objects depends on the objective of the </span>
+<span class="sd">    model being trained:  </span>
+<span class="sd">    1. Version is for a purely Target based sentiment classifier.</span>
+<span class="sd">    2. Version is for a purely Aspect or latent based sentiment classifier.</span>
+<span class="sd">    3. Version is if you want to make use of the relationship between the </span>
+<span class="sd">       Target and Aspect in the sentiment classifier.</span>
+<span class="sd">    4. If the Target based sentiment classifier requires the knowledge of </span>
+<span class="sd">       where the target is.</span>
+
+<span class="sd">    :param lazy: Whether or not instances can be read lazily.</span>
+<span class="sd">    :param token_indexers: We use this to define the input representation </span>
+<span class="sd">                            for the text. See </span>
+<span class="sd">                            :class:`allennlp.data.token_indexers.TokenIndexer`.</span>
+<span class="sd">    :param tokenizer: Tokenizer to use to split the sentence text as well as </span>
+<span class="sd">                       the text of the target.</span>
+<span class="sd">    :param left_right_contexts: If True it will return within the </span>
+<span class="sd">                                instance for `text_to_instance` the </span>
+<span class="sd">                                sentence context left and right of the target.</span>
+<span class="sd">    :param reverse_right_context: If True this will reverse the text that is </span>
+<span class="sd">                                  in the right context. NOTE left_right_context </span>
+<span class="sd">                                  has to be True.</span>
+<span class="sd">    :param incl_target: If left_right_context is True and this also </span>
+<span class="sd">                        the left and right contexts will include the target</span>
+<span class="sd">                        word(s) as well.</span>
+<span class="sd">    :param use_categories: Whether or not to return the categories in the </span>
+<span class="sd">                           instances even if they do occur in the dataset. </span>
+<span class="sd">                           This is a temporary solution to the following </span>
+<span class="sd">                           `issue &lt;https://github.com/apmoore1/target-extraction/issues/5&gt;`_.</span>
+<span class="sd">                           The number of categories does not have to match the </span>
+<span class="sd">                           number of targets, just there has to be at least one </span>
+<span class="sd">                           category per sentence. </span>
+<span class="sd">    :param target_sequences: Whether or not to generate `target_sequences` </span>
+<span class="sd">                             which are a sequence of masks per target for all </span>
+<span class="sd">                             target texts. This will allow the model to know </span>
+<span class="sd">                             which tokens in the context relate to the target.</span>
+<span class="sd">                             Example of this is shown below (for this to work </span>
+<span class="sd">                             does require the `span` of each target)</span>
+<span class="sd">    :param position_embeddings: Whether or not to create distance values </span>
+<span class="sd">                                that can be converted to embeddings similar </span>
+<span class="sd">                                to the `position_weights` but instead of the </span>
+<span class="sd">                                model later on using them as weights it uses </span>
+<span class="sd">                                the distances to learn position embeddings.</span>
+<span class="sd">                                (for this to work does require the `span` of </span>
+<span class="sd">                                each target). `A Position-aware Bidirectional </span>
+<span class="sd">                                Attention Network for Aspect-level Sentiment </span>
+<span class="sd">                                Analysis &lt;https://www.aclweb.org/anthology/C18-1066.pdf&gt;`_</span>
+<span class="sd">    :param position_weights: In the instances there will be an extra key </span>
+<span class="sd">                             `position_weights` which will be an array of </span>
+<span class="sd">                             integers representing the linear distance between </span>
+<span class="sd">                             each token and it&#39;s target e.g. If the text </span>
+<span class="sd">                             contains two targets where each token is represented</span>
+<span class="sd">                             by a number and the 1&#39;s target tokens = </span>
+<span class="sd">                             [[0,0,0,1], [1,1,0,0]] then the `position_weights`</span>
+<span class="sd">                             will be [[4,3,2,1], [1,1,2,3]]. (for this to work </span>
+<span class="sd">                             does require the `span` of each target). An example </span>
+<span class="sd">                             of position weighting is in section 3.3 of </span>
+<span class="sd">                             `Modeling Sentiment Dependencies with Graph </span>
+<span class="sd">                             Convolutional Networks for Aspect-level Sentiment </span>
+<span class="sd">                             Classification &lt;https://arxiv.org/pdf/1906.04501.pdf&gt;`_</span>
+<span class="sd">    :param max_position_distance: The maximum position distance given to a token </span>
+<span class="sd">                                  from the target e.g. [0,0,0,0,0,1,0,0] if the </span>
+<span class="sd">                                  each value represents a token and 1&#39;s represent</span>
+<span class="sd">                                  target tokens then the distance array would be </span>
+<span class="sd">                                  [6,5,4,3,2,1,2,3] if the `max_position_distance`</span>
+<span class="sd">                                  is 5 then the distance array will be </span>
+<span class="sd">                                  [5,5,4,3,2,1,2,3]. (for this to work either </span>
+<span class="sd">                                  `position_embeddings` has to be True or </span>
+<span class="sd">                                  `position_weights`)</span>
+<span class="sd">    :raises ValueError: If the `left_right_contexts` is not True while either the </span>
+<span class="sd">                        `incl_targets` or `reverse_right_context` arguments are </span>
+<span class="sd">                        True.</span>
+<span class="sd">    :raises ValueError: If the `left_right_contexts` and `target_sequences` are </span>
+<span class="sd">                        True at the same time.</span>
+<span class="sd">    :raises ValueError: If the `max_position_distance` when set is less than 2.</span>
+<span class="sd">    :raises ValueError: If `max_position_distance` is set but neither </span>
+<span class="sd">                        `position_embeddings` nor `position_weights` are </span>
+<span class="sd">                        `True`. </span>
+
+<span class="sd">    :Example of target_sequences: {`text`: `This Camera lens is great but the </span>
+<span class="sd">                                            screen is rubbish`, </span>
+<span class="sd">                                   `targets`: [`Camera`, `screen`],</span>
+<span class="sd">                                   `target_sentiments`: [`positive`, `negative`],</span>
+<span class="sd">                                   `target_sequences`: [[0,1,0,0,0,0,0,0,0,0], </span>
+<span class="sd">                                                        [0,0,0,0,0,0,0,1,0,0]],</span>
+<span class="sd">                                   `spans`: [[5,11], [34:40]]}</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_indexers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TokenIndexer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">left_right_contexts</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">reverse_right_context</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">incl_target</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">use_categories</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">target_sequences</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">position_embeddings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">position_weights</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">max_position_distance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span> <span class="ow">or</span> <span class="n">SpacyTokenizer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_token_indexers</span> <span class="o">=</span> <span class="n">token_indexers</span> <span class="ow">or</span> \
+                               <span class="p">{</span><span class="s2">&quot;tokens&quot;</span><span class="p">:</span> <span class="n">SingleIdTokenIndexer</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="n">incl_target</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">left_right_contexts</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;If `incl_target` is True then `left_right_contexts`&#39;</span>
+                             <span class="s1">&#39; argument also has to be True&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reverse_right_context</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">left_right_contexts</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;If `reverse_right_context` is True then &#39;</span>
+                             <span class="s1">&#39;`left_right_contexts` argument also has to be True&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_incl_target</span> <span class="o">=</span> <span class="n">incl_target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reverse_right_context</span> <span class="o">=</span> <span class="n">reverse_right_context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_left_right_contexts</span> <span class="o">=</span> <span class="n">left_right_contexts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_use_categories</span> <span class="o">=</span> <span class="n">use_categories</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target_sequences</span> <span class="o">=</span> <span class="n">target_sequences</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left_right_contexts</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_sequences</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot have both `left_right_contexts` and &#39;</span>
+                             <span class="s1">&#39;`target_sequences` True at the same time either&#39;</span>
+                             <span class="s1">&#39; one or the other or None.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">position_embeddings</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">position_weights</span> <span class="ow">and</span> 
+            <span class="n">max_position_distance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;`max_position_distance` contains a value &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">max_position_distance</span><span class="si">}</span><span class="s1"> When neither `position&#39;</span>
+                             <span class="s1">&#39;_embeddings` nor `position_weights` are True&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position_embeddings</span> <span class="o">=</span> <span class="n">position_embeddings</span>
+        <span class="k">if</span> <span class="n">position_embeddings</span><span class="p">:</span>
+            <span class="c1"># position_tokens in the namespace forces it to have a different </span>
+            <span class="c1"># vocab in the self.vocab</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_position_indexers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;position_tokens&quot;</span><span class="p">:</span> 
+                                       <span class="n">SingleIdTokenIndexer</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;position_tokens&quot;</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_position_weights</span> <span class="o">=</span> <span class="n">position_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_position_distance</span> <span class="o">=</span> <span class="n">max_position_distance</span>
+
+    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="c1"># if `file_path` is a URL, redirect to the cache</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">cached_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">te_file</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reading Target Sentiment instances from jsonl &quot;</span>
+                        <span class="s2">&quot;dataset at: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file_path</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">te_file</span><span class="p">:</span>
+                <span class="n">example</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">example_instance</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="n">example_instance</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;target_sentiments&#39;</span> <span class="ow">in</span> <span class="n">example</span> <span class="ow">and</span> <span class="s1">&#39;targets&#39;</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
+                    <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;targets&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;targets&#39;</span><span class="p">]</span>
+                    <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;target_sentiments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;target_sentiments&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;categories&#39;</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
+                    <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;category_sentiments&#39;</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
+                    <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;category_sentiments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;category_sentiments&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;spans&#39;</span> <span class="ow">in</span> <span class="n">example</span><span class="p">:</span>
+                    <span class="n">example_instance</span><span class="p">[</span><span class="s1">&#39;spans&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="s1">&#39;spans&#39;</span><span class="p">]</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_to_instance</span><span class="p">(</span><span class="o">**</span><span class="n">example_instance</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_context_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sentence_contexts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">ListField</span><span class="p">:</span>
+        <span class="n">context_fields</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">context</span> <span class="ow">in</span> <span class="n">sentence_contexts</span><span class="p">:</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+            <span class="n">context_field</span> <span class="o">=</span> <span class="n">TextField</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_token_indexers</span><span class="p">)</span>
+            <span class="n">context_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">context_field</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ListField</span><span class="p">(</span><span class="n">context_fields</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_target_indicators_to_distances</span><span class="p">(</span><span class="n">target_indicators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+                                        <span class="n">max_distance</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                        <span class="n">as_string</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+                                        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span><span class="nb">str</span><span class="p">]]]:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param target_indicators: For a text the outer list represents the number </span>
+<span class="sd">                                  of targets in the sentence and the inner list </span>
+<span class="sd">                                  are 0&#39;s representing no target tokens and 1&#39;s </span>
+<span class="sd">                                  representing targets for one potential multi</span>
+<span class="sd">                                  word target in that text. e.g. [[0,0,1,1,0], [1,0,0,0,0]]</span>
+<span class="sd">                                  this would mean the text has two targets where </span>
+<span class="sd">                                  the first is a multi word target and the second </span>
+<span class="sd">                                  is a single word target.</span>
+<span class="sd">        :param max_distance: The maximum distance that can be given.</span>
+<span class="sd">        :param as_string: Whether the integers should become string value. Required</span>
+<span class="sd">                          if you want to use these as position embeddings.</span>
+<span class="sd">        :returns: A list of a list where the outer list represents the number of </span>
+<span class="sd">                  targets in the text and the inner represents the distance the </span>
+<span class="sd">                  tokens are to those targets e.g. using the example in </span>
+<span class="sd">                  `target_indicators` the return would be [[3,2,1,1,2], [1,2,3,4,5]]</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">max_distance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">max_distance</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">distance_error</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Max distance has to be greater than 1. &#39;</span>
+                                  <span class="sa">f</span><span class="s1">&#39;Currently max distance is </span><span class="si">{</span><span class="n">max_distance</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">distance_error</span><span class="p">)</span>
+        <span class="n">target_indicator_distances</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">target_indicator_list</span> <span class="ow">in</span> <span class="n">target_indicators</span><span class="p">:</span>
+            <span class="n">target_indicator_distance</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">first_one</span> <span class="o">=</span> <span class="n">target_indicator_list</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># tokens up to the target</span>
+            <span class="k">if</span> <span class="n">first_one</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">distance</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">first_one</span><span class="p">)):</span>
+                    <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span> <span class="o">+</span> <span class="mi">2</span>
+                    <span class="k">if</span> <span class="n">max_distance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="n">max_distance</span><span class="p">:</span>
+                            <span class="n">distance</span> <span class="o">=</span> <span class="n">max_distance</span>
+                    <span class="n">target_indicator_distance</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span>
+            <span class="c1"># https://stackoverflow.com/questions/522372/finding-first-and-last-index-of-some-value-in-a-list-in-python</span>
+            <span class="n">last_one</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_indicator_list</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">target_indicator_list</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">length_of_target</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_one</span> <span class="o">-</span> <span class="n">first_one</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="c1"># tokens in the target</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length_of_target</span><span class="p">):</span>
+                <span class="n">target_indicator_distance</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># tokens after the target</span>
+            <span class="n">number_tokens_left</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_indicator_list</span><span class="p">)</span> <span class="o">-</span> <span class="n">last_one</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">distance</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_tokens_left</span><span class="p">):</span>
+                <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span> <span class="o">+</span> <span class="mi">2</span>
+                <span class="k">if</span> <span class="n">max_distance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="n">max_distance</span><span class="p">:</span>
+                        <span class="n">distance</span> <span class="o">=</span> <span class="n">max_distance</span>
+                <span class="n">target_indicator_distance</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_indicator_list</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_indicator_distance</span><span class="p">)</span>
+            <span class="c1"># to string </span>
+            <span class="k">if</span> <span class="n">as_string</span><span class="p">:</span>
+                <span class="n">target_indicator_distance</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="k">for</span> <span class="n">distance</span> <span class="ow">in</span> <span class="n">target_indicator_distance</span><span class="p">]</span>
+            <span class="n">target_indicator_distances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target_indicator_distance</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">target_indicator_distances</span>
+
+<div class="viewcode-block" id="TargetSentimentDatasetReader.text_to_instance"><a class="viewcode-back" href="../../../../target_extraction.allen.dataset_readers.html#target_extraction.allen.dataset_readers.target_sentiment.TargetSentimentDatasetReader.text_to_instance">[docs]</a>    <span class="k">def</span> <span class="nf">text_to_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                         <span class="n">targets</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">target_sentiments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">spans</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">categories</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">category_sentiments</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Instance</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        The original text, text tokens as well as the targets and target </span>
+<span class="sd">        tokens are stored in the MetadataField.</span>
+
+<span class="sd">        :NOTE: At least targets and/or categories must be present.</span>
+<span class="sd">        :NOTE: That the left and right contexts returned in the instance are </span>
+<span class="sd">               a List of a List of tokens. A list for each Target.</span>
+
+<span class="sd">        :param text: The text that contains the target(s) and/or categories.</span>
+<span class="sd">        :param targets: The targets that are within the text</span>
+<span class="sd">        :param target_sentiments: The sentiment of the targets. To be used if </span>
+<span class="sd">                                  training the classifier</span>
+<span class="sd">        :param spans: The spans that represent the character offsets for each </span>
+<span class="sd">                      of the targets given in the targets list.</span>
+<span class="sd">        :param categories: The categories that are within the text</span>
+<span class="sd">        :param category_sentiments: The sentiment of the categories</span>
+<span class="sd">        :returns: An Instance object with all of the above encoded for a</span>
+<span class="sd">                  PyTorch model.</span>
+<span class="sd">        :raises ValueError: If either targets and categories are both None</span>
+<span class="sd">        :raises ValueError: If `self._target_sequences` is True and the passed </span>
+<span class="sd">                            `spans` argument is None.</span>
+<span class="sd">        :raises ValueError: If `self._left_right_contexts` is True and the </span>
+<span class="sd">                            passed `spans` argument is None.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">targets</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">categories</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Either targets or categories must be given if you &#39;</span>
+                             <span class="s1">&#39;want to be predict the sentiment of a target &#39;</span>
+                             <span class="s1">&#39;or a category&#39;</span><span class="p">)</span>
+
+        <span class="n">instance_fields</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Field</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        
+
+        <span class="c1"># Metadata field</span>
+        <span class="n">metadata_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">targets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># need to change this so that it takes into account the case where </span>
+            <span class="c1"># the positions are True but not the target sequences.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_sequences</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_embeddings</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_weights</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">spans</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To create target sequences requires `spans`&#39;</span><span class="p">)</span>
+                <span class="n">spans</span> <span class="o">=</span> <span class="p">[</span><span class="n">Span</span><span class="p">(</span><span class="n">span</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">span</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">spans</span><span class="p">]</span>
+                <span class="n">target_text_object</span> <span class="o">=</span> <span class="n">TargetText</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">spans</span><span class="o">=</span><span class="n">spans</span><span class="p">,</span> 
+                                                <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span> <span class="n">text_id</span><span class="o">=</span><span class="s1">&#39;anything&#39;</span><span class="p">)</span>
+                <span class="n">target_text_object</span><span class="o">.</span><span class="n">force_targets</span><span class="p">()</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">target_text_object</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span>
+                <span class="n">allen_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+                <span class="n">tokens</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">allen_tokens</span><span class="p">]</span>
+                <span class="n">target_text_object</span><span class="p">[</span><span class="s1">&#39;tokenized_text&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokens</span>
+                <span class="n">target_text_object</span><span class="o">.</span><span class="n">sequence_labels</span><span class="p">(</span><span class="n">per_target</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">target_sequences</span> <span class="o">=</span> <span class="n">target_text_object</span><span class="p">[</span><span class="s1">&#39;sequence_labels&#39;</span><span class="p">]</span>
+                <span class="c1"># Need to add the target sequences to the instances</span>
+                <span class="n">in_label</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;I&#39;</span><span class="p">}</span>
+                <span class="n">number_targets</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
+                <span class="n">all_target_tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_targets</span><span class="p">)]</span>
+                <span class="n">target_sequence_fields</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">target_indicators</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">target_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_targets</span><span class="p">):</span>
+                    <span class="n">one_values</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">target_ones</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">allen_tokens</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">token_index</span><span class="p">,</span> <span class="n">token</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">allen_tokens</span><span class="p">):</span>
+                        <span class="n">target_sequence_value</span> <span class="o">=</span> <span class="n">target_sequences</span><span class="p">[</span><span class="n">target_index</span><span class="p">][</span><span class="n">token_index</span><span class="p">]</span>
+                        <span class="n">in_target</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">target_sequence_value</span> <span class="ow">in</span> <span class="n">in_label</span> <span class="k">else</span> <span class="mi">0</span>
+                        <span class="k">if</span> <span class="n">in_target</span><span class="p">:</span>
+                            <span class="n">all_target_tokens</span><span class="p">[</span><span class="n">target_index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">allen_tokens</span><span class="p">[</span><span class="n">token_index</span><span class="p">])</span>
+                            <span class="n">one_value_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">allen_tokens</span><span class="p">)</span>
+                            <span class="n">one_value_list</span><span class="p">[</span><span class="n">token_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                            <span class="n">one_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">one_value_list</span><span class="p">)</span>
+                            <span class="n">target_ones</span><span class="p">[</span><span class="n">token_index</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">one_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">one_values</span><span class="p">)</span>
+                    <span class="n">target_sequence_fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ArrayField</span><span class="p">(</span><span class="n">one_values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">))</span>
+                    <span class="n">target_indicators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target_ones</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_embeddings</span><span class="p">:</span>
+                    <span class="n">target_distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_indicators_to_distances</span><span class="p">(</span><span class="n">target_indicators</span><span class="p">,</span> 
+                                                                            <span class="n">max_distance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_position_distance</span><span class="p">,</span> 
+                                                                            <span class="n">as_string</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="n">target_text_distances</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">target_distance</span> <span class="ow">in</span> <span class="n">target_distances</span><span class="p">:</span>
+                        <span class="n">token_distances</span> <span class="o">=</span> <span class="p">[</span><span class="n">Token</span><span class="p">(</span><span class="n">distance</span><span class="p">)</span> <span class="k">for</span> <span class="n">distance</span> <span class="ow">in</span> <span class="n">target_distance</span><span class="p">]</span>
+                        <span class="n">token_distances</span> <span class="o">=</span> <span class="n">TextField</span><span class="p">(</span><span class="n">token_distances</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_indexers</span><span class="p">)</span>
+                        <span class="n">target_text_distances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token_distances</span><span class="p">)</span>
+                    <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;position_embeddings&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ListField</span><span class="p">(</span><span class="n">target_text_distances</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_position_weights</span><span class="p">:</span>
+                    <span class="n">target_distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_indicators_to_distances</span><span class="p">(</span><span class="n">target_indicators</span><span class="p">,</span> 
+                                                                            <span class="n">max_distance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_max_position_distance</span><span class="p">,</span> 
+                                                                            <span class="n">as_string</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">target_distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">target_distances</span><span class="p">)</span>
+                    <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;position_weights&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArrayField</span><span class="p">(</span><span class="n">target_distances</span><span class="p">,</span> 
+                                                                     <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_sequences</span><span class="p">:</span>
+                    <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;target_sequences&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ListField</span><span class="p">(</span><span class="n">target_sequence_fields</span><span class="p">)</span>
+                <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">TextField</span><span class="p">(</span><span class="n">allen_tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_token_indexers</span><span class="p">)</span>
+                <span class="n">metadata_dict</span><span class="p">[</span><span class="s1">&#39;text words&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tokens</span>
+                <span class="n">metadata_dict</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+                <span class="c1"># update target variable as the targets could have changed due </span>
+                <span class="c1"># to the force_targets function</span>
+                <span class="n">targets</span> <span class="o">=</span> <span class="n">target_text_object</span><span class="p">[</span><span class="s1">&#39;targets&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">all_target_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> 
+                                     <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">]</span>
+            <span class="n">target_fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">TextField</span><span class="p">(</span><span class="n">target_tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_token_indexers</span><span class="p">)</span>  
+                            <span class="k">for</span> <span class="n">target_tokens</span> <span class="ow">in</span> <span class="n">all_target_tokens</span><span class="p">]</span>
+            <span class="n">target_fields</span> <span class="o">=</span> <span class="n">ListField</span><span class="p">(</span><span class="n">target_fields</span><span class="p">)</span>
+            <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;targets&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_fields</span>
+            <span class="c1"># Add the targets and the tokenised targets to the metadata</span>
+            <span class="n">metadata_dict</span><span class="p">[</span><span class="s1">&#39;targets&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">target</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">]</span>
+            <span class="n">metadata_dict</span><span class="p">[</span><span class="s1">&#39;target words&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="n">x</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">target_tokens</span><span class="p">]</span> 
+                                             <span class="k">for</span> <span class="n">target_tokens</span> <span class="ow">in</span> <span class="n">all_target_tokens</span><span class="p">]</span>
+
+            <span class="c1"># Target sentiment if it exists</span>
+            <span class="k">if</span> <span class="n">target_sentiments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">target_sentiments_field</span> <span class="o">=</span> <span class="n">SequenceLabelField</span><span class="p">(</span><span class="n">target_sentiments</span><span class="p">,</span> 
+                                                             <span class="n">target_fields</span><span class="p">,</span>
+                                                             <span class="n">label_namespace</span><span class="o">=</span><span class="s1">&#39;target-sentiment-labels&#39;</span><span class="p">)</span>
+                <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;target_sentiments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_sentiments_field</span>
+
+        <span class="k">if</span> <span class="n">categories</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_use_categories</span><span class="p">:</span>
+            <span class="n">category_fields</span> <span class="o">=</span> <span class="n">TextField</span><span class="p">([</span><span class="n">Token</span><span class="p">(</span><span class="n">category</span><span class="p">)</span> <span class="k">for</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">],</span> 
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">_token_indexers</span><span class="p">)</span>
+            <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">category_fields</span>
+            <span class="c1"># Category sentiment if it exists</span>
+            <span class="k">if</span> <span class="n">category_sentiments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">category_sentiments_field</span> <span class="o">=</span> <span class="n">SequenceLabelField</span><span class="p">(</span><span class="n">category_sentiments</span><span class="p">,</span> 
+                                                               <span class="n">category_fields</span><span class="p">,</span>
+                                                               <span class="n">label_namespace</span><span class="o">=</span><span class="s1">&#39;category-sentiment-labels&#39;</span><span class="p">)</span>
+                <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;category_sentiments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">category_sentiments_field</span>
+            <span class="c1"># Add the categories to the metadata</span>
+            <span class="n">metadata_dict</span><span class="p">[</span><span class="s1">&#39;categories&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">category</span> <span class="k">for</span> <span class="n">category</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s1">&#39;tokens&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">instance_fields</span><span class="p">:</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="n">instance_fields</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">TextField</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_token_indexers</span><span class="p">)</span>
+            <span class="n">metadata_dict</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+            <span class="n">metadata_dict</span><span class="p">[</span><span class="s1">&#39;text words&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">]</span>
+
+        <span class="c1"># If required processes the left and right contexts</span>
+        <span class="n">left_contexts</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">right_contexts</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_left_right_contexts</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">spans</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To create left, right, target contexts requires&#39;</span>
+                                 <span class="s1">&#39; the `spans` of the targets which is None&#39;</span><span class="p">)</span>
+            <span class="n">spans</span> <span class="o">=</span> <span class="p">[</span><span class="n">Span</span><span class="p">(</span><span class="n">span</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">span</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">spans</span><span class="p">]</span>
+            <span class="n">target_text_object</span> <span class="o">=</span> <span class="n">TargetText</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">spans</span><span class="o">=</span><span class="n">spans</span><span class="p">,</span> 
+                                            <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span> <span class="n">text_id</span><span class="o">=</span><span class="s1">&#39;anything&#39;</span><span class="p">)</span>
+            <span class="c1"># left, right, and target contexts for each target in the </span>
+            <span class="c1"># the text</span>
+            <span class="n">left_right_targets</span> <span class="o">=</span> <span class="n">target_text_object</span><span class="o">.</span><span class="n">left_right_target_contexts</span><span class="p">(</span><span class="n">incl_target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_incl_target</span><span class="p">)</span>
+            <span class="n">left_contexts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">right_contexts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">left_right_target</span> <span class="ow">in</span> <span class="n">left_right_targets</span><span class="p">:</span>
+                <span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">left_right_target</span>
+                <span class="n">left_contexts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">left</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reverse_right_context</span><span class="p">:</span>
+                    <span class="n">right_tokens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokenizer</span><span class="o">.</span><span class="n">tokenize</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+                    <span class="n">reversed_right_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">right_tokens</span><span class="p">):</span>
+                        <span class="n">reversed_right_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                    <span class="n">right</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">reversed_right_tokens</span><span class="p">)</span>
+                <span class="n">right_contexts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">left_contexts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">left_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_context_field</span><span class="p">(</span><span class="n">left_contexts</span><span class="p">)</span>
+            <span class="n">instance_fields</span><span class="p">[</span><span class="s2">&quot;left_contexts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">left_field</span>
+        <span class="k">if</span> <span class="n">right_contexts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">right_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_context_field</span><span class="p">(</span><span class="n">right_contexts</span><span class="p">)</span>
+            <span class="n">instance_fields</span><span class="p">[</span><span class="s2">&quot;right_contexts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">right_field</span>
+
+        <span class="n">instance_fields</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MetadataField</span><span class="p">(</span><span class="n">metadata_dict</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">Instance</span><span class="p">(</span><span class="n">instance_fields</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

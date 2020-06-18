@@ -1,0 +1,33 @@
+target\_extraction.allen package
+================================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   target_extraction.allen.dataset_readers
+   target_extraction.allen.models
+   target_extraction.allen.modules
+   target_extraction.allen.predictors
+   target_extraction.allen.token_indexers
+
+Submodules
+----------
+
+target\_extraction.allen.allennlp\_model module
+-----------------------------------------------
+
+.. automodule:: target_extraction.allen.allennlp_model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen
+   :members:
+   :undoc-members:
+   :show-inheritance:

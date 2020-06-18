@@ -1,0 +1,549 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.allen.allennlp_model &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.allen.allennlp_model</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.allen.allennlp_model</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+<span class="kn">from</span> <span class="nn">allennlp.common.params</span> <span class="kn">import</span> <span class="n">Params</span>
+<span class="kn">from</span> <span class="nn">allennlp.commands.train</span> <span class="kn">import</span> <span class="n">train_model_from_file</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.dataset_readers</span> <span class="kn">import</span> <span class="n">DatasetReader</span>
+<span class="kn">from</span> <span class="nn">allennlp.models</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">allennlp.models.archival</span> <span class="kn">import</span> <span class="n">load_archive</span>
+<span class="kn">from</span> <span class="nn">allennlp.predictors</span> <span class="kn">import</span> <span class="n">Predictor</span>
+
+<span class="kn">import</span> <span class="nn">target_extraction</span>
+<span class="kn">from</span> <span class="nn">target_extraction.data_types</span> <span class="kn">import</span> <span class="n">TargetTextCollection</span>
+
+<div class="viewcode-block" id="AllenNLPModel"><a class="viewcode-back" href="../../../target_extraction.allen.html#target_extraction.allen.allennlp_model.AllenNLPModel">[docs]</a><span class="k">class</span> <span class="nc">AllenNLPModel</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is a wrapper for the AllenNLP dataset readers, models, and predictors </span>
+<span class="sd">    so that the input to functions can be </span>
+<span class="sd">    :class:`target_extraction.data_types.TargetTextCollection` objects</span>
+<span class="sd">    and the return a metric or metrics as well as predicitons within the </span>
+<span class="sd">    :class:`target_extraction.data_types.TargetTextCollection` objects. This </span>
+<span class="sd">    is instead of running everything through multiple bash files calling </span>
+<span class="sd">    ``allennlp train`` etc.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_param_fp</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">predictor_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                 <span class="n">save_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param name: Name of the model e.g. ELMO-Target-Extraction</span>
+<span class="sd">        :param model_params_fp: File path to the model parameters that will </span>
+<span class="sd">                                define the AllenNLP model and how to train it.</span>
+<span class="sd">        :param predictor_name: Name of the predictor to be used with the </span>
+<span class="sd">                               AllenNLP model e.g. for a target_tagger model </span>
+<span class="sd">                               the predictor should prbably be `target-tagger`</span>
+<span class="sd">        :param save_dir: Directory to save the model to. This has to be set</span>
+<span class="sd">                         up front as the fit function saves the model each </span>
+<span class="sd">                         epoch.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">=</span> <span class="n">save_dir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_param_fp</span> <span class="o">=</span> <span class="n">model_param_fp</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_predictor_name</span> <span class="o">=</span> <span class="n">predictor_name</span>
+
+<div class="viewcode-block" id="AllenNLPModel.fit"><a class="viewcode-back" href="../../../target_extraction.allen.html#target_extraction.allen.allennlp_model.AllenNLPModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_data</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+            <span class="n">val_data</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span>
+            <span class="n">test_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TargetTextCollection</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given the training, validation, and optionally the test data it will </span>
+<span class="sd">        train the model that is defined in the model params file provided as </span>
+<span class="sd">        argument to the constructor of the class. Once trained the model can </span>
+<span class="sd">        be accessed through the `model` attribute.</span>
+
+<span class="sd">        NOTE: If the test data is given the model only uses it to fit to the </span>
+<span class="sd">        vocabularly that is within the test data, the model NEVER trains on </span>
+<span class="sd">        the test data.</span>
+<span class="sd">        </span>
+<span class="sd">        :param train_data: Training data.</span>
+<span class="sd">        :param val_data: Validation data.</span>
+<span class="sd">        :param test_data: Optional, test data.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">model_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess_and_load_param_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_param_fp</span><span class="p">)</span>
+        <span class="c1"># Ensures that a different random seed is used each time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_random_seeds</span><span class="p">(</span><span class="n">model_params</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">temp_dir</span><span class="p">:</span>
+            <span class="n">train_fp</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="s1">&#39;train_data.json&#39;</span><span class="p">)</span>
+            <span class="n">val_fp</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="s1">&#39;val_data.json&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Write the training and validation data to json Optionally test as </span>
+            <span class="c1"># well</span>
+            <span class="n">train_data</span><span class="o">.</span><span class="n">to_json_file</span><span class="p">(</span><span class="n">train_fp</span><span class="p">)</span>
+            <span class="n">val_data</span><span class="o">.</span><span class="n">to_json_file</span><span class="p">(</span><span class="n">val_fp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">test_data</span><span class="p">:</span>
+                <span class="n">test_fp</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="s1">&#39;test_data.json&#39;</span><span class="p">)</span>
+                <span class="n">test_data</span><span class="o">.</span><span class="n">to_json_file</span><span class="p">(</span><span class="n">test_fp</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_dataset_paths</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">train_fp</span><span class="p">,</span> <span class="n">val_fp</span><span class="p">,</span> <span class="n">test_fp</span><span class="p">)</span>
+                <span class="n">model_params</span><span class="p">[</span><span class="s2">&quot;evaluate_on_test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_add_dataset_paths</span><span class="p">(</span><span class="n">model_params</span><span class="p">,</span> <span class="n">train_fp</span><span class="p">,</span> <span class="n">val_fp</span><span class="p">)</span>
+
+            <span class="n">save_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span>
+            <span class="k">if</span> <span class="n">save_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">save_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="s1">&#39;temp_save_dir&#39;</span><span class="p">)</span>
+            
+            <span class="n">temp_param_fp</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">temp_dir</span><span class="p">,</span> <span class="s1">&#39;temp_param_file.json&#39;</span><span class="p">)</span>
+            <span class="n">model_params</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">temp_param_fp</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+            <span class="n">trained_model</span> <span class="o">=</span> <span class="n">train_model_from_file</span><span class="p">(</span><span class="n">temp_param_fp</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">trained_model</span></div>
+
+    <span class="k">def</span> <span class="nf">_predict_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> 
+                                        <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
+                      <span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                      <span class="n">yield_original_target</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+                      <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> 
+                                          <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+                                         <span class="p">]]:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Iterates over the predictions and yields one prediction at a time.</span>
+<span class="sd">        This is a useful wrapper as it performs the data pre-processing and </span>
+<span class="sd">        assertion checks.</span>
+
+<span class="sd">        The predictions are predicted in batchs so that the model does not </span>
+<span class="sd">        load in lots of data at once and thus have memory issues.</span>
+
+<span class="sd">        :param data: Iterable or list of dictionaries that the predictor can </span>
+<span class="sd">                     take as input e.g. `target-tagger` predictor expects at </span>
+<span class="sd">                     most a `text` key and value.</span>
+<span class="sd">        :param batch_size: Specify the batch size to predict on. If left None </span>
+<span class="sd">                           defaults to 64 unless it is specified in the </span>
+<span class="sd">                           `model_param_fp` within the constructor then </span>
+<span class="sd">                           the batch size from the param file is used. </span>
+<span class="sd">        :param yield_original_target: If True it will then yield the </span>
+<span class="sd">                                      dictionary that has been predicted on.</span>
+<span class="sd">        :yields: A dictionary containing all the values the model outputs e.g.</span>
+<span class="sd">                 For the `target_tagger` model it would return `logits`, </span>
+<span class="sd">                 `class_probabilities`, `mask`, `tags`, `words`, and `text`.</span>
+<span class="sd">                 If `yield_original_target` is True it will then yield a Tuple </span>
+<span class="sd">                 of 2 dictionaries the first being what has already been stated </span>
+<span class="sd">                 and the second being the dictionary that is being predicted on.</span>
+<span class="sd">        :raises AssertionError: If the `model` attribute is None. This can be </span>
+<span class="sd">                                overcome by either fitting or loading a model.</span>
+<span class="sd">        :raises TypeError: If the data given is not of Type List or Iterable.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">no_model_error</span> <span class="o">=</span> <span class="s1">&#39;There is no model to make predictions, either fit &#39;</span>\
+                         <span class="s1">&#39;or load a model to resolve this.&#39;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">no_model_error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+        <span class="n">all_model_params</span> <span class="o">=</span> <span class="n">Params</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_param_fp</span><span class="p">)</span>
+
+        <span class="n">reader_params</span> <span class="o">=</span> <span class="n">all_model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_reader&quot;</span><span class="p">)</span>
+        <span class="n">dataset_reader</span> <span class="o">=</span> <span class="n">DatasetReader</span><span class="o">.</span><span class="n">from_params</span><span class="p">(</span><span class="n">reader_params</span><span class="p">)</span>
+        <span class="n">predictor</span> <span class="o">=</span> <span class="n">Predictor</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_predictor_name</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">dataset_reader</span><span class="p">)</span>
+
+        <span class="c1"># Argument batch size first then model param file and then default 64</span>
+        <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;iterator&#39;</span> <span class="ow">in</span> <span class="n">all_model_params</span><span class="p">:</span>
+                <span class="n">iter_params</span> <span class="o">=</span> <span class="n">all_model_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;iterator&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;batch_size&#39;</span> <span class="ow">in</span> <span class="n">iter_params</span><span class="p">:</span>
+                    <span class="n">batch_size</span> <span class="o">=</span> <span class="n">iter_params</span><span class="p">[</span><span class="s1">&#39;batch_size&#39;</span><span class="p">]</span>
+            <span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span> <span class="ow">or</span> <span class="mi">64</span>
+        
+        <span class="c1"># Data has to be an iterator</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Data given has to be of type </span><span class="si">{</span><span class="n">collections</span><span class="o">.</span><span class="n">Iterable</span><span class="si">}</span><span class="s1">&#39;</span>
+                            <span class="sa">f</span><span class="s1">&#39; and not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">data_exists</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">while</span> <span class="n">data_exists</span><span class="p">:</span>
+            <span class="n">data_batch</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">data_batch</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+                <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+                    <span class="n">data_exists</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">data_batch</span><span class="p">:</span>
+                <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict_batch_json</span><span class="p">(</span><span class="n">data_batch</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">prediction_index</span><span class="p">,</span> <span class="n">prediction</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">predictions</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">yield_original_target</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">data_batch</span><span class="p">[</span><span class="n">prediction_index</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="n">prediction</span>
+
+<div class="viewcode-block" id="AllenNLPModel.predict_into_collection"><a class="viewcode-back" href="../../../target_extraction.allen.html#target_extraction.allen.allennlp_model.AllenNLPModel.predict_into_collection">[docs]</a>    <span class="k">def</span> <span class="nf">predict_into_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span>
+                                <span class="n">key_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+                                <span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                                <span class="n">append_if_exists</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+                                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TargetTextCollection</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param collection: The TargetTextCollection that is to be predicted on </span>
+<span class="sd">                           and to be the store of the predicted data.</span>
+<span class="sd">        :param key_mapping: Dictionary mapping the prediction keys that contain </span>
+<span class="sd">                            the prediction values to the keys that will store </span>
+<span class="sd">                            those prediction values within the collection that </span>
+<span class="sd">                            has been predicted on.</span>
+<span class="sd">        :param batch_size: Specify the batch size to predict on. If left None </span>
+<span class="sd">                           defaults to 64 unless it is specified in the </span>
+<span class="sd">                           `model_param_fp` within the constructor then </span>
+<span class="sd">                           the batch size from the param file is used.</span>
+<span class="sd">        :param append_if_exists: If False and a TargetText within the collection </span>
+<span class="sd">                                 already has a prediction within the given key </span>
+<span class="sd">                                 based on the `key_mapping` then KeyError is </span>
+<span class="sd">                                 raised. </span>
+<span class="sd">        :returns: The collection that was predict on with the new predictions </span>
+<span class="sd">                  within the collection stored in keys that are the values of </span>
+<span class="sd">                  the `key_mapping` argument. Note that all predictions are </span>
+<span class="sd">                  sotred within Lists within their respective keys in the </span>
+<span class="sd">                  collection.</span>
+<span class="sd">        :raises KeyError: If the keys from `key_mapping` is not within the </span>
+<span class="sd">                          prediction dictionary.</span>
+<span class="sd">        :raises KeyError: If `append_if_exists` is False and the a TargetText </span>
+<span class="sd">                          within the collection already has a prediction within</span>
+<span class="sd">                          the given key based on the `key_mapping` then this </span>
+<span class="sd">                          is raised. </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">prediction</span><span class="p">,</span> <span class="n">original_target</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_iter</span><span class="p">(</span><span class="n">collection</span><span class="o">.</span><span class="n">dict_iterator</span><span class="p">(),</span> 
+                                                              <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span> 
+                                                              <span class="n">yield_original_target</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">text_id</span> <span class="o">=</span> <span class="n">original_target</span><span class="p">[</span><span class="s1">&#39;text_id&#39;</span><span class="p">]</span>
+            <span class="c1"># This happens first as we want an error to be raised before any</span>
+            <span class="c1"># data is added to the TargetTextCollection.</span>
+            <span class="k">for</span> <span class="n">prediction_key</span><span class="p">,</span> <span class="n">collection_key</span> <span class="ow">in</span> <span class="n">key_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">prediction_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prediction</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The key </span><span class="si">{</span><span class="n">prediction_key</span><span class="si">}</span><span class="s1"> from `key_mapping`&#39;</span>
+                                   <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">key_mapping</span><span class="si">}</span><span class="s1"> is not within the prediction&#39;</span>
+                                   <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">prediction</span><span class="si">}</span><span class="s1"> for the follwoing TargeText&#39;</span>
+                                   <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">original_target</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            
+            <span class="k">for</span> <span class="n">prediction_key</span><span class="p">,</span> <span class="n">collection_key</span> <span class="ow">in</span> <span class="n">key_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">collection_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">collection</span><span class="p">[</span><span class="n">text_id</span><span class="p">]:</span>
+                    <span class="n">collection</span><span class="p">[</span><span class="n">text_id</span><span class="p">][</span><span class="n">collection_key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">elif</span> <span class="ow">not</span> <span class="n">append_if_exists</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The key </span><span class="si">{</span><span class="n">collection_key</span><span class="si">}</span><span class="s1"> from `key_mapping`&#39;</span>
+                                   <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">key_mapping</span><span class="si">}</span><span class="s1"> already exists within the&#39;</span>
+                                   <span class="sa">f</span><span class="s1">&#39; follwoing TargeText </span><span class="si">{</span><span class="n">original_target</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">collection</span><span class="p">[</span><span class="n">text_id</span><span class="p">][</span><span class="n">collection_key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prediction</span><span class="p">[</span><span class="n">prediction_key</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">collection</span></div>
+
+
+<div class="viewcode-block" id="AllenNLPModel.predict_sequences"><a class="viewcode-back" href="../../../target_extraction.allen.html#target_extraction.allen.allennlp_model.AllenNLPModel.predict_sequences">[docs]</a>    <span class="k">def</span> <span class="nf">predict_sequences</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> 
+                                            <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
+                          <span class="n">batch_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given the data it will predict the sequence labels and return the </span>
+<span class="sd">        confidence socres in those labels as well as the words and text the </span>
+<span class="sd">        prediction was predicting on.</span>
+
+<span class="sd">        :param data: Iterable or list of dictionaries that contains at least </span>
+<span class="sd">                     `text` key and value and if you do not want the </span>
+<span class="sd">                     predictor to do the tokenization then provide `tokens` </span>
+<span class="sd">                     as well. Some model may also expect `pos_tags` which the </span>
+<span class="sd">                     predictor will provide if the `text` key is only provided.</span>
+<span class="sd">        :param batch_size: Specify the batch size to predict on. If left None </span>
+<span class="sd">                           defaults to 64 unless it is specified in the </span>
+<span class="sd">                           `model_param_fp` within the constructor then </span>
+<span class="sd">                           the batch size from the param file is used. </span>
+<span class="sd">        :yields: A dictionary containing all the following keys and values:</span>
+<span class="sd">                 1. `sequence_labels`: A list of predicted sequence labels. </span>
+<span class="sd">                    This will be a List of Strings.</span>
+<span class="sd">                 2. `confidence`: The confidence the model had in predicting </span>
+<span class="sd">                    each sequence label, this comes from the softmax score.</span>
+<span class="sd">                    This will be a List of floats.</span>
+<span class="sd">                 3. `tokens`: The tokens that the confidence and sequence labels </span>
+<span class="sd">                    are associated to</span>
+<span class="sd">                 4. `text`: The text that the tokens/words relate to. </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">:</span> <span class="n">Model</span>
+        <span class="n">label_to_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_token_to_index_vocabulary</span><span class="p">(</span><span class="s1">&#39;labels&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">prediction</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_iter</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">):</span>
+            <span class="n">output_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="c1"># Length of the text</span>
+            <span class="n">sequence_length</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">prediction</span><span class="p">[</span><span class="s1">&#39;mask&#39;</span><span class="p">])</span>
+            
+            <span class="c1"># Sequence labels</span>
+            <span class="n">sequence_labels</span> <span class="o">=</span> <span class="n">prediction</span><span class="p">[</span><span class="s1">&#39;tags&#39;</span><span class="p">][:</span><span class="n">sequence_length</span><span class="p">]</span>
+            <span class="n">output_dict</span><span class="p">[</span><span class="s1">&#39;sequence_labels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sequence_labels</span>
+            
+            <span class="c1"># Confidence scores</span>
+            <span class="c1"># First get the index of predicted lables</span>
+            <span class="n">confidence_indexs</span> <span class="o">=</span> <span class="p">[</span><span class="n">label_to_index</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">sequence_labels</span><span class="p">]</span>
+            <span class="n">confidence_scores</span> <span class="o">=</span> <span class="n">prediction</span><span class="p">[</span><span class="s1">&#39;class_probabilities&#39;</span><span class="p">][:</span><span class="n">sequence_length</span><span class="p">]</span>
+            <span class="n">label_confidence_scores</span> <span class="o">=</span> <span class="p">[]</span> 
+            <span class="k">for</span> <span class="n">scores</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">confidence_scores</span><span class="p">,</span> <span class="n">confidence_indexs</span><span class="p">):</span>
+                <span class="n">label_confidence_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+            <span class="n">output_dict</span><span class="p">[</span><span class="s1">&#39;confidence&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">label_confidence_scores</span>
+            <span class="n">output_dict</span><span class="p">[</span><span class="s1">&#39;tokens&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prediction</span><span class="p">[</span><span class="s1">&#39;words&#39;</span><span class="p">]</span>
+            <span class="n">output_dict</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prediction</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> 
+
+            <span class="k">yield</span> <span class="n">output_dict</span></div>
+
+<div class="viewcode-block" id="AllenNLPModel.load"><a class="viewcode-back" href="../../../target_extraction.allen.html#target_extraction.allen.allennlp_model.AllenNLPModel.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cuda_device</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Loads the model. This does not require you to train the model if the </span>
+<span class="sd">        `save_dir` attribute is pointing to a folder containing a trained model.</span>
+<span class="sd">        This is just a wrapper around the `load_archive` function.</span>
+
+<span class="sd">        :param cuda_device: Whether the loaded model should be loaded on to the </span>
+<span class="sd">                            CPU (-1) or the GPU (0). Default CPU.</span>
+<span class="sd">        :returns: The model that was saved at `self.save_dir` </span>
+<span class="sd">        :raises AssertionError: If the `save_dir` argument is None</span>
+<span class="sd">        :raises FileNotFoundError: If the save directory does not exist.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">save_dir_err</span> <span class="o">=</span> <span class="s1">&#39;Save directory was not set in the constructor of the class&#39;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="p">,</span> <span class="n">save_dir_err</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">archive</span> <span class="o">=</span> <span class="n">load_archive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">/</span> <span class="s2">&quot;model.tar.gz&quot;</span><span class="p">,</span> 
+                                   <span class="n">cuda_device</span><span class="o">=</span><span class="n">cuda_device</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">archive</span><span class="o">.</span><span class="n">model</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;There is nothing at the save dir:</span><span class="se">\n</span><span class="s1">&#39;</span>
+                                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_preprocess_and_load_param_file</span><span class="p">(</span><span class="n">model_param_fp</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Params</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Given a model parameter file it will load it as a Params object and </span>
+<span class="sd">        remove all data fields for the Param object so that these keys can be </span>
+<span class="sd">        added with different values associated to them.</span>
+<span class="sd">        fields (keys) that are removed:</span>
+<span class="sd">        1. train_data_path</span>
+<span class="sd">        2. validation_data_path</span>
+<span class="sd">        3. test_data_path</span>
+<span class="sd">        4. evaluate_on_test</span>
+<span class="sd">        :param model_param_fp: File path to the model parameters that will </span>
+<span class="sd">                               define the AllenNLP model and how to train it.</span>
+<span class="sd">        :returns: The model parameter file as a Params object with the data </span>
+<span class="sd">                  fields removed if they exisited.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">model_param_fp</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">model_param_fp</span><span class="p">)</span>
+        <span class="n">fields_to_remove</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;train_data_path&#39;</span><span class="p">,</span> <span class="s1">&#39;validation_data_path&#39;</span><span class="p">,</span> 
+                            <span class="s1">&#39;test_data_path&#39;</span><span class="p">,</span> <span class="s1">&#39;evaluate_on_test&#39;</span><span class="p">]</span>
+        <span class="n">model_params</span> <span class="o">=</span> <span class="n">Params</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">model_param_fp</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields_to_remove</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">model_params</span><span class="p">:</span>
+                <span class="n">model_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model_params</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_add_dataset_paths</span><span class="p">(</span><span class="n">model_params</span><span class="p">:</span> <span class="n">Params</span><span class="p">,</span> <span class="n">train_fp</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">val_fp</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> 
+                           <span class="n">test_fp</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Give model parameters it will add the given train, validation and </span>
+<span class="sd">        optional test dataset paths to the model parameters.</span>
+<span class="sd">        Does not return anything as the model parameters object is mutable</span>
+<span class="sd">        :param model_params: model parameters to add the dataset paths to</span>
+<span class="sd">        :param train_fp: Path to the training dataset</span>
+<span class="sd">        :param val_fp: Path to the validation dataset</span>
+<span class="sd">        :param test_fp: Optional path to the test dataset</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">model_params</span><span class="p">[</span><span class="s1">&#39;train_data_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">train_fp</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+        <span class="n">model_params</span><span class="p">[</span><span class="s1">&#39;validation_data_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">val_fp</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">test_fp</span><span class="p">:</span>
+            <span class="n">model_params</span><span class="p">[</span><span class="s1">&#39;test_data_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">test_fp</span><span class="o">.</span><span class="n">resolve</span><span class="p">())</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_set_random_seeds</span><span class="p">(</span><span class="n">model_params</span><span class="p">:</span> <span class="n">Params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This ensures to some extent that the experiments are NOT reproducible </span>
+<span class="sd">        so that we can take into account the random seed problem.</span>
+<span class="sd">        Returns nothing as the model_params will be modified as they are a </span>
+<span class="sd">        mutable object.</span>
+<span class="sd">        :param model_params: The parameters of the model</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
+        <span class="n">seed</span><span class="p">,</span> <span class="n">numpy_seed</span><span class="p">,</span> <span class="n">torch_seed</span> <span class="o">=</span> <span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">99999</span><span class="p">)</span> 
+                                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+        <span class="n">model_params</span><span class="p">[</span><span class="s2">&quot;random_seed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">seed</span>
+        <span class="n">model_params</span><span class="p">[</span><span class="s2">&quot;numpy_seed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy_seed</span>
+        <span class="n">model_params</span><span class="p">[</span><span class="s2">&quot;pytorch_seed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch_seed</span>     
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :returns: the name of the model e.g. TDLSTM or IAN</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

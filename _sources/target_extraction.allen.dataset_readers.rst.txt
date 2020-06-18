@@ -1,0 +1,43 @@
+target\_extraction.allen.dataset\_readers package
+=================================================
+
+Submodules
+----------
+
+target\_extraction.allen.dataset\_readers.target\_conll module
+--------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.dataset_readers.target_conll
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.dataset\_readers.target\_extraction module
+-------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.dataset_readers.target_extraction
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.dataset\_readers.target\_sentiment module
+------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.dataset_readers.target_sentiment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.dataset\_readers.text\_sentiment module
+----------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.dataset_readers.text_sentiment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen.dataset_readers
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,29 @@
+target\_extraction.allen.models package
+=======================================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   target_extraction.allen.models.target_sentiment
+
+Submodules
+----------
+
+target\_extraction.allen.models.target\_tagger module
+-----------------------------------------------------
+
+.. automodule:: target_extraction.allen.models.target_tagger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen.models
+   :members:
+   :undoc-members:
+   :show-inheritance:

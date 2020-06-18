@@ -1,0 +1,22 @@
+target\_extraction.allen.token\_indexers package
+================================================
+
+Submodules
+----------
+
+target\_extraction.allen.token\_indexers.custom\_elmo\_indexer module
+---------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.token_indexers.custom_elmo_indexer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen.token_indexers
+   :members:
+   :undoc-members:
+   :show-inheritance:

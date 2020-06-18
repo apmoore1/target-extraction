@@ -1,0 +1,1987 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.analysis package &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">target_extraction.analysis package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-target_extraction.analysis.dataset_plots">target_extraction.analysis.dataset_plots module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.analysis.dataset_statistics">target_extraction.analysis.dataset_statistics module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.analysis.sentiment_error_analysis">target_extraction.analysis.sentiment_error_analysis module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.analysis.sentiment_metrics">target_extraction.analysis.sentiment_metrics module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.analysis.statistical_analysis">target_extraction.analysis.statistical_analysis module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.analysis.util">target_extraction.analysis.util module</a></li>
+<li><a class="reference internal" href="#module-target_extraction.analysis">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>target_extraction.analysis package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/target_extraction.analysis.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="target-extraction-analysis-package">
+<h1>target_extraction.analysis package<a class="headerlink" href="#target-extraction-analysis-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-target_extraction.analysis.dataset_plots">
+<span id="target-extraction-analysis-dataset-plots-module"></span><h2>target_extraction.analysis.dataset_plots module<a class="headerlink" href="#module-target_extraction.analysis.dataset_plots" title="Permalink to this headline">¶</a></h2>
+<p>This module contains plot functions that use the statistics produced from 
+<a class="reference internal" href="#module-target_extraction.analysis.dataset_statistics" title="target_extraction.analysis.dataset_statistics"><code class="xref py py-mod docutils literal notranslate"><span class="pre">target_extraction.analysis.dataset_statistics</span></code></a></p>
+<dl class="function">
+<dt id="target_extraction.analysis.dataset_plots.sentence_length_plot">
+<code class="sig-prename descclassname">target_extraction.analysis.dataset_plots.</code><code class="sig-name descname">sentence_length_plot</code><span class="sig-paren">(</span><em class="sig-param">collections</em>, <em class="sig-param">tokeniser</em>, <em class="sig-param">as_percentage=True</em>, <em class="sig-param">sentences_with_targets_only=True</em>, <em class="sig-param">ax=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/dataset_plots.html#sentence_length_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.dataset_plots.sentence_length_plot" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collections</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>]) – A list of collections to generate sentence length plots
+for.</p></li>
+<li><p><strong>tokenizer</strong> – The tokenizer to use to split the sentences into tokens. See 
+for a module of comptabile tokenisers 
+<a class="reference internal" href="target_extraction.html#module-target_extraction.tokenizers" title="target_extraction.tokenizers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">target_extraction.tokenizers</span></code></a></p></li>
+<li><p><strong>as_percentage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The frequency of the sentence lengths should be 
+normalised with respect to the number of sentences in 
+the relevent dataset and then as a percentage.</p></li>
+<li><p><strong>sentences_with_targets_only</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Only use the sentences that have targets 
+within them.</p></li>
+<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>]) – Optional Axes to plot on too.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A line plot where the X-axis represents that sentence length, 
+Y-axis the frequency of the sentence length, and the color 
+represents the collection.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.dataset_plots.target_length_plot">
+<code class="sig-prename descclassname">target_extraction.analysis.dataset_plots.</code><code class="sig-name descname">target_length_plot</code><span class="sig-paren">(</span><em class="sig-param">collections</em>, <em class="sig-param">target_key</em>, <em class="sig-param">tokeniser</em>, <em class="sig-param">max_target_length=None</em>, <em class="sig-param">cumulative_percentage=False</em>, <em class="sig-param">ax=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/dataset_plots.html#target_length_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.dataset_plots.target_length_plot" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collections</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>]) – A list of collections to generate target length plots 
+for.</p></li>
+<li><p><strong>target_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key within each sample in the collection that contains 
+the list of targets to be analysed. This can also be the 
+predicted target key, which might be useful for error 
+analysis.</p></li>
+<li><p><strong>tokenizer</strong> – The tokenizer to use to split the target(s) into tokens. See 
+for a module of comptabile tokenisers 
+<a class="reference internal" href="target_extraction.html#module-target_extraction.tokenizers" title="target_extraction.tokenizers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">target_extraction.tokenizers</span></code></a></p></li>
+<li><p><strong>max_target_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The maximum target length to plot on the X-axis.</p></li>
+<li><p><strong>cumulative_percentage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If the return should not be percentage of 
+the number of tokens in each target but rather 
+the cumulative percentage of targets with 
+that number of tokens.</p></li>
+<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>]) – Optional Axes to plot on too.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A point plot where the X-axis represents the target length, Y-axis 
+percentage of samples with that target length, and the hue 
+represents the collection.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.analysis.dataset_statistics">
+<span id="target-extraction-analysis-dataset-statistics-module"></span><h2>target_extraction.analysis.dataset_statistics module<a class="headerlink" href="#module-target_extraction.analysis.dataset_statistics" title="Permalink to this headline">¶</a></h2>
+<p>This module allows TargetTextCollection objects to be analysed and report 
+overall statistics.</p>
+<dl class="function">
+<dt id="target_extraction.analysis.dataset_statistics.average_target_per_sentences">
+<code class="sig-prename descclassname">target_extraction.analysis.dataset_statistics.</code><code class="sig-name descname">average_target_per_sentences</code><span class="sig-paren">(</span><em class="sig-param">collection</em>, <em class="sig-param">sentence_must_contain_targets</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/dataset_statistics.html#average_target_per_sentences"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.dataset_statistics.average_target_per_sentences" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Collection to calculate average target per sentence (ATS) 
+on.</p></li>
+<li><p><strong>sentence_must_contain_targets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not the sentences within the 
+collection must contains at least one 
+target. This filtering would affect 
+the value of the dominator stated in 
+the returns.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The ATS for the given collection. Which is: 
+Number of targets / number of sentences</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.dataset_statistics.dataset_target_extraction_statistics">
+<code class="sig-prename descclassname">target_extraction.analysis.dataset_statistics.</code><code class="sig-name descname">dataset_target_extraction_statistics</code><span class="sig-paren">(</span><em class="sig-param">collections</em>, <em class="sig-param">lower_target=True</em>, <em class="sig-param">target_key='targets'</em>, <em class="sig-param">tokeniser=&lt;function spacy_tokenizer.&lt;locals&gt;._spacy_token_to_text&gt;</em>, <em class="sig-param">dataframe_format=False</em>, <em class="sig-param">incl_sentence_statistics=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/dataset_statistics.html#dataset_target_extraction_statistics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.dataset_statistics.dataset_target_extraction_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collections</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>]) – A list of collections</p></li>
+<li><p><strong>lower_target</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the targets before counting them</p></li>
+<li><p><strong>target_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key within each sample in each collection that contains 
+the list of targets to be analysed. This can also be the 
+predicted target key, which might be useful for error 
+analysis.</p></li>
+<li><p><strong>tokenizer</strong> – The tokenizer to use to split the target(s) into tokens. See 
+for a module of comptabile tokenisers 
+<a class="reference internal" href="target_extraction.html#module-target_extraction.tokenizers" title="target_extraction.tokenizers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">target_extraction.tokenizers</span></code></a>. This is required 
+to give statistics on target length.</p></li>
+<li><p><strong>dataframe_format</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True instead of a list of dictionaries the 
+return will be a pandas dataframe</p></li>
+<li><p><strong>incl_sentence_statistics</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If False statistics about the sentence
+will not be included. This is so that 
+the statistics can still be created for 
+datasets that have been anonymised.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><p>A list of dictionaries each containing the statistics for the 
+associated collection. Each dictionary will have the following 
+keys:
+1. Name – this comes from the collection’s name attribute
+2. No. Sentences – number of sentences in the collection
+3. No. Sentences(t) – number of sentence that contain</p>
+<blockquote>
+<div><p>targets.</p>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li><p>No. Targets – number of targets</p></li>
+<li><p>No. Uniq Targets – number of unique targets</p></li>
+<li><p>ATS – Average Target per Sentence (ATS)</p></li>
+<li><p>ATS(t) – ATS but where all sentences in the collection must 
+contain at least one target.</p></li>
+<li><p>TL (1) – Percentage of targets that are length 1 based on the 
+number of tokens.</p></li>
+<li><p>TL (2) – Percentage of targets that are length 2 based on the 
+number of tokens.</p></li>
+<li><p>TL (3+) – Percentage of targets that are length 3+ based on the 
+number of tokens.</p></li>
+<li><p>Mean Sent L – Mean sentence length based on the tokens provided 
+by the <cite>tokenized_text</cite> key in each TargetText within the 
+collections. If this key does not exist then the collection
+will be tokenized using the given tokeniser argument.</p></li>
+<li><p>Mean Sent L(t) – <cite>Mean Sent L</cite> but where all sentences in 
+the collection must contain at least one target.</p></li>
+</ol>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.dataset_statistics.dataset_target_sentiment_statistics">
+<code class="sig-prename descclassname">target_extraction.analysis.dataset_statistics.</code><code class="sig-name descname">dataset_target_sentiment_statistics</code><span class="sig-paren">(</span><em class="sig-param">collections</em>, <em class="sig-param">lower_target=True</em>, <em class="sig-param">target_key='targets'</em>, <em class="sig-param">tokeniser=&lt;function spacy_tokenizer.&lt;locals&gt;._spacy_token_to_text&gt;</em>, <em class="sig-param">sentiment_key='target_sentiments'</em>, <em class="sig-param">dataframe_format=False</em>, <em class="sig-param">incl_sentence_statistics=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/dataset_statistics.html#dataset_target_sentiment_statistics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.dataset_statistics.dataset_target_sentiment_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collections</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>]) – A list of collections</p></li>
+<li><p><strong>lower_target</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the targets before counting them</p></li>
+<li><p><strong>target_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key within each sample in each collection that contains 
+the list of targets to be analysed. This can also be the 
+predicted target key, which might be useful for error 
+analysis.</p></li>
+<li><p><strong>tokenizer</strong> – The tokenizer to use to split the target(s) into tokens. See 
+for a module of comptabile tokenisers 
+<a class="reference internal" href="target_extraction.html#module-target_extraction.tokenizers" title="target_extraction.tokenizers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">target_extraction.tokenizers</span></code></a>. This is required 
+to give statistics on target length.</p></li>
+<li><p><strong>sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key in each TargetText within each collection that 
+contains the True sentiment value.</p></li>
+<li><p><strong>dataframe_format</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True instead of a list of dictionaries the 
+return will be a pandas dataframe</p></li>
+<li><p><strong>incl_sentence_statistics</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If False statistics about the sentence
+will not be included. This is so that 
+the statistics can still be created for 
+datasets that have been anonymised.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]], <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A list of dictionaries each containing the statistics for the 
+associated collection. Each dictionary will have the keys from 
+<a class="reference internal" href="#target_extraction.analysis.dataset_statistics.dataset_target_extraction_statistics" title="target_extraction.analysis.dataset_statistics.dataset_target_extraction_statistics"><code class="xref py py-func docutils literal notranslate"><span class="pre">dataset_target_extraction_statistics()</span></code></a> and the following 
+in addition:
+1. POS (%) – Number (Percentage) of positive targets
+2. NEU (%) – Number (Percentage) of neutral targets
+3. NEG (%) – Number (Percentage) of Negative targets</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.dataset_statistics.get_sentiment_counts">
+<code class="sig-prename descclassname">target_extraction.analysis.dataset_statistics.</code><code class="sig-name descname">get_sentiment_counts</code><span class="sig-paren">(</span><em class="sig-param">collection</em>, <em class="sig-param">sentiment_key</em>, <em class="sig-param">normalised=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/dataset_statistics.html#get_sentiment_counts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.dataset_statistics.get_sentiment_counts" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The collection containing the sentiment data</p></li>
+<li><p><strong>sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key in each TargetText within the collection that 
+contains the True sentiment value.</p></li>
+<li><p><strong>normalised</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to normalise the values in the dictionary 
+by the number of targets in the collection.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dictionary where keys are sentiment values and the keys 
+are the number of times they occur in the collection.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.dataset_statistics.tokens_per_sentence">
+<code class="sig-prename descclassname">target_extraction.analysis.dataset_statistics.</code><code class="sig-name descname">tokens_per_sentence</code><span class="sig-paren">(</span><em class="sig-param">collection</em>, <em class="sig-param">tokeniser</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/dataset_statistics.html#tokens_per_sentence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.dataset_statistics.tokens_per_sentence" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The collection to generate the statistic for.</p></li>
+<li><p><strong>tokeniser</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – The tokenizer to use to split the sentences/texts into 
+tokens. If the collection has already been tokenised then 
+it will use the tokens in the <cite>tokenized_text</cite> key within 
+each sample in the collection else it will produce the 
+tokens within this function and save them to that key as 
+well. For a module of comptabile tokenisers 
+<a class="reference internal" href="target_extraction.html#module-target_extraction.tokenizers" title="target_extraction.tokenizers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">target_extraction.tokenizers</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dictionary of sentence lengths and their frequency.
+<strong>This is a defaultdict where the value will be 0 if the key 
+does not exist.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.dataset_statistics.tokens_per_target">
+<code class="sig-prename descclassname">target_extraction.analysis.dataset_statistics.</code><code class="sig-name descname">tokens_per_target</code><span class="sig-paren">(</span><em class="sig-param">collection</em>, <em class="sig-param">target_key</em>, <em class="sig-param">tokeniser</em>, <em class="sig-param">normalise=False</em>, <em class="sig-param">cumulative_percentage=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/dataset_statistics.html#tokens_per_target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.dataset_statistics.tokens_per_target" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – collection to analyse</p></li>
+<li><p><strong>target_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key within each sample in the collection that contains 
+the list of targets to be analysed. This can also be the 
+predicted target key, which might be useful for error 
+analysis.</p></li>
+<li><p><strong>tokenizer</strong> – The tokenizer to use to split the target(s) into tokens. See 
+for a module of comptabile tokenisers 
+<a class="reference internal" href="target_extraction.html#module-target_extraction.tokenizers" title="target_extraction.tokenizers"><code class="xref py py-mod docutils literal notranslate"><span class="pre">target_extraction.tokenizers</span></code></a></p></li>
+<li><p><strong>normalise</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The values are normalised based on the total number of 
+targets. (This does not change the return if 
+<cite>cumulative_percentage</cite> is True)</p></li>
+<li><p><strong>cumulative_percentage</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If the return should not be frequency counts of 
+the number of tokens in each target but rather 
+the cumulative percentage of targets with 
+that number of tokens.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The dictionary where keys are the target length based on the number 
+of tokens in the target and the values are the number of targets 
+in the dataset that contain that number of tokens (same target can 
+be counted more than once if it exists in the dataset more then 
+once). <strong>This is a defaultdict where the value will be 0 if the key 
+does not exist.</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.analysis.sentiment_error_analysis">
+<span id="target-extraction-analysis-sentiment-error-analysis-module"></span><h2>target_extraction.analysis.sentiment_error_analysis module<a class="headerlink" href="#module-target_extraction.analysis.sentiment_error_analysis" title="Permalink to this headline">¶</a></h2>
+<p>This module is dedicated to creating new TargetTextCollections that are 
+subsamples of the original(s) that will allow the user to analysis the 
+data with respect to some certain property.</p>
+<dl class="data">
+<dt id="target_extraction.analysis.sentiment_error_analysis.ERROR_SPLIT_SUBSET_NAMES">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">ERROR_SPLIT_SUBSET_NAMES</code><em class="property"> = {'DS': ['distinct_sentiment_1', 'distinct_sentiment_2', 'distinct_sentiment_3'], 'NT': ['1-target', 'low-targets', 'med-targets', 'high-targets'], 'TSR': ['unknown_sentiment_known_target', 'unknown_targets', 'known_sentiment_known_target'], 'TSSR': ['1-TSSR', '1-multi-TSSR', 'low-TSSR', 'high-TSSR'], 'n-shot': ['zero-shot', 'low-shot', 'med-shot', 'high-shot']}</em><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.ERROR_SPLIT_SUBSET_NAMES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="exception">
+<dt id="target_extraction.analysis.sentiment_error_analysis.NoSamplesError">
+<em class="property">exception </em><code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">NoSamplesError</code><span class="sig-paren">(</span><em class="sig-param">error_string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#NoSamplesError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.NoSamplesError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>If there are or will be no samples within a Dataset or subset.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="target_extraction.analysis.sentiment_error_analysis.PLOT_SUBSET_ABBREVIATION">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">PLOT_SUBSET_ABBREVIATION</code><em class="property"> = {'1-TSSR': '1', '1-multi-TSSR': '1-Multi', '1-target': '1', 'distinct_sentiment_1': 'DS1', 'distinct_sentiment_2': 'DS2', 'distinct_sentiment_3': 'DS3', 'high-TSSR': 'High', 'high-shot': 'High', 'high-targets': 'High', 'known_sentiment_known_target': 'KSKT', 'low-TSSR': 'Low', 'low-shot': 'Low', 'low-targets': 'Low', 'med-shot': 'Med', 'med-targets': 'Med', 'unknown_sentiment_known_target': 'USKT', 'unknown_targets': 'UT', 'zero-shot': 'Zero'}</em><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.PLOT_SUBSET_ABBREVIATION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="data">
+<dt id="target_extraction.analysis.sentiment_error_analysis.SUBSET_NAMES_ERROR_SPLIT">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">SUBSET_NAMES_ERROR_SPLIT</code><em class="property"> = {}</em><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.SUBSET_NAMES_ERROR_SPLIT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.count_error_key_occurrence">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">count_error_key_occurrence</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">error_key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#count_error_key_occurrence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.count_error_key_occurrence" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The dataset that contains error analysis key which are 
+one hot encoding of whether a target is in that 
+error analysis class or not. Example function that 
+produces these error keys are 
+<code class="xref py py-func docutils literal notranslate"><span class="pre">target_extraction.error_analysis.same_one_sentiment()</span></code></p></li>
+<li><p><strong>error_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the error key e.g. <cite>same_one_sentiment</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The number of targets within the dataset that are in that error
+class.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If the <cite>error_key</cite> does not exist in one or more of the 
+TargetText objects within the <cite>dataset</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.different_sentiment">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">different_sentiment</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">lower=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#different_sentiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.different_sentiment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with an additional key <cite>different_sentiment</cite> for each TargetText object
+in the test collection. This <cite>different_sentiment</cite> key will contain a list 
+the same length as the number of targets in that TargetText object with 
+0’s and 1’s where a 1 represents the associated target has no overlap 
+in sentiment labels between the test and the train.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p>If the TargetText object <cite>targets</cite> is None as in there are no
+targets in that sample then the <cite>different_sentiment</cite> key
+will be represented as an empty list</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The test dataset but with each TargetText object containing a 
+<cite>different_sentiment</cite> key and associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.distinct_sentiment">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">distinct_sentiment</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">separate_labels=False</em>, <em class="sig-param">true_sentiment_key='target_sentiments'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#distinct_sentiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.distinct_sentiment" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The dataset to add the distinct sentiment labels to</p></li>
+<li><p><strong>separate_labels</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True instead of having one error key 
+<cite>distinct_sentiment</cite> which contains a value of 
+a list of the number of distinct sentiments. There
+will be <cite>n</cite> error keys of the format 
+<cite>distinct_sentiment_n</cite> where for each TargetText 
+object each one will contain 0’s apart from the 
+<cite>n</cite> value which is the correct number of 
+distinct sentiments. The value <cite>n</cite> is computed 
+based on the number of unique distinct sentiments 
+in the collection. Example if there are 2 distinct 
+sentiment in the collection {2, 3} and the current 
+TargetText contain 2 targets with 2 distinct 
+sentiments then it will contain the following keys 
+and values: <cite>distinct_sentiment_2</cite>: [1,1] and 
+<cite>distinct_sentiment_3</cite>: [0,0].</p></li>
+<li><p><strong>true_sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Key in the <cite>target_collection</cite> targets that 
+contains the true sentiment scores for each 
+target in the TargetTextCollection.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The same dataset but with each TargetText object containing a 
+<cite>distinct_sentiment</cite> or <cite>distinct_sentiment_n</cite> key(s) and 
+associated number of distinct sentiments that are in that 
+TargetText object per target.</p>
+</dd>
+<dt class="field-even">Example</dt>
+<dd class="field-even"><p>Given a TargetTextCollection that contains a single TargetText 
+object that has three targets where the first two have the label 
+positive and the last is negative it will add the 
+<cite>distinct_sentiment</cite> key to the TargetText object with the
+following value [2,2,2] as there are two unique/distinct 
+sentiments in that TargetText object.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If separate_labels is True and there are no sentiment 
+labels in the collection.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.error_analysis_wrapper">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">error_analysis_wrapper</code><span class="sig-paren">(</span><em class="sig-param">error_function_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#error_analysis_wrapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.error_analysis_wrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>To get a list of all possible function names easily use the <cite>keys</cite> of 
+<cite>target_extraction.analysis.sentiment_error_analysis.ERROR_SPLIT_SUBSET_NAMES</cite>
+dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>error_function_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – This can be either 1. <cite>DS</cite>, 2. <cite>NT</cite>, 3. <cite>TSSR</cite>, 
+4. <cite>n-shot</cite>, 5. <cite>TSR</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>], <a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The relevant error function where all error functions have the same 
+function signature where the input is:
+1. Train TargetTextCollection, 2. Test TargetTextCollection, and 
+3. Lower bool - whether to lower the targets.
+This then returns a the Test TargetTextCollection with the relevant 
+new keys. From the inputs only the Train and Lower are applicable 
+to <cite>n-shot</cite> and <cite>TSR</cite> error function due to them both being 
+global functions and relying on target text information.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the <cite>error_function_name</cite> is not one of the 5 listed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.error_split_df">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">error_split_df</code><span class="sig-paren">(</span><em class="sig-param">train_collection</em>, <em class="sig-param">test_collection</em>, <em class="sig-param">prediction_keys</em>, <em class="sig-param">true_sentiment_key</em>, <em class="sig-param">error_split_and_subset_names</em>, <em class="sig-param">metric_func</em>, <em class="sig-param">metric_kwargs=None</em>, <em class="sig-param">num_cpus=None</em>, <em class="sig-param">lower_targets=True</em>, <em class="sig-param">collection_subsetting=None</em>, <em class="sig-param">include_dataset_size=False</em>, <em class="sig-param">table_format_return=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#error_split_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.error_split_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>This will perform <cite>error_analysis_wrapper</cite> over all <cite>error_split_subset_names</cite>
+keys and then returns the output from <cite>_error_split_df</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The collection that was used to train the models 
+that have made the predictions within 
+<cite>test_collection</cite></p></li>
+<li><p><strong>test_collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The collection where all TargetText’s contain 
+all <cite>prediction_keys</cite>, and <cite>true_sentiment_key</cite>.</p></li>
+<li><p><strong>prediction_keys</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – A list of keys that contain the predicted sentiment 
+scores for each target in the TargetTextCollection</p></li>
+<li><p><strong>true_sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Key that contains the true sentiment scores 
+for each target in the TargetTextCollection</p></li>
+<li><p><strong>error_split_and_subset_names</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – The keys do not matter but the List values 
+must represent error subset names. An 
+example dictionary would be:
+<cite>ERROR_SPLIT_SUBSET_NAMES</cite></p></li>
+<li><p><strong>metric_func</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]) – <p>A Metric function from
+<cite>target_extraction.analysis.sentiment_metrics</cite>. Example</p>
+<blockquote>
+<div><p>metric function is 
+<a class="reference internal" href="#target_extraction.analysis.sentiment_metrics.accuracy" title="target_extraction.analysis.sentiment_metrics.accuracy"><code class="xref py py-func docutils literal notranslate"><span class="pre">target_extraction.analysis.sentiment_metrics.accuracy()</span></code></a></p>
+</div></blockquote>
+</p></li>
+<li><p><strong>metric_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – Keyword arguments to give to the <cite>metric_func</cite> the 
+arguments given are: 1. <cite>target_collection</cite>, 2. <cite>true_sentiment_key</cite>,
+3. <cite>predicted_sentiment_key</cite>, 4. <cite>average</cite>, and 
+5. <cite>array_scores</cite></p></li>
+<li><p><strong>num_cpus</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Number of cpus to use for multiprocessing. The task of 
+subsetting and metric scoring is split down into one 
+task and all tasks are then multiprocessed. This is also 
+done in a Lazy fashion.</p></li>
+<li><p><strong>lower_targets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not the targets should be lowered during the 
+<cite>error_analysis_wrapper</cite> function.</p></li>
+<li><p><strong>collection_subsetting</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]]) – A list of lists where the outer list represents 
+the order of subsetting where as the inner list
+specifies the subset names to subset on. For example
+<cite>[[‘1-TSSR’, ‘high-shot’], [‘distinct_sentiment_2’]]</cite>
+would first subset the <cite>test_collection</cite> so that 
+only samples that are within [‘1-TSSR’, ‘high-shot’]
+subsets are in the collection and then it would 
+subset that collection further so that only 
+‘distinct_sentiment_2’ samples exist in the collection.</p></li>
+<li><p><strong>include_dataset_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The returned DataFrame will have two values the 
+metric associated with the error splits and the 
+size of the dataset from that subset.</p></li>
+<li><p><strong>table_format_return</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If this is True then the return will not be a 
+pivot table but the raw dataframe. This can be 
+more useful as a return format if <cite>include_dataset_size</cite>
+is True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dataframe that has a multi index of [<cite>prediction key</cite>, <cite>run number</cite>]
+and the columns are the error split subset names and the values are 
+the metric associated to those error splits given the prediction 
+key and the model run (run number)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.known_sentiment_known_target">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">known_sentiment_known_target</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">lower=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#known_sentiment_known_target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.known_sentiment_known_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with an additional key <cite>known_sentiment_known_target</cite> for each 
+TargetText object in the test collection. This 
+<cite>known_sentiment_known_target</cite> key will contain a list 
+the same length as the number of targets in that TargetText object with 
+0’s and 1’s where a 1 represents a target that exists in both train and 
+test where that target for that instance in the test set has a sentiment 
+that has been seen before in the training set for that target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p>If the TargetText object <cite>targets</cite> is None as in there are no
+targets in that sample then the <cite>known_sentiment_known_target</cite> key
+will be represented as an empty list</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The test dataset but with each TargetText object containing a 
+<cite>known_sentiment_known_target</cite> key and associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.n_shot_subsets">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">n_shot_subsets</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">lower=True</em>, <em class="sig-param">return_n_values=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#n_shot_subsets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.n_shot_subsets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with 4 additional keys denoted as <cite>zero-shot</cite>, <cite>low-shot</cite>, <cite>med-shot</cite>, and 
+<cite>high-shot</cite>. Each one of these represents a different set of <em>n</em> values 
+within the <em>n-shot</em> setup. The <em>n-shot</em> setup is the number of times the 
+target within the test sample has been seen in the training dataset. The 
+<cite>zero-shot</cite> subset contains all targets that have <em>n=0</em>. The low, med, and 
+high contain increasing values <em>n</em> respectively where each subset will 
+contain approximately 1/3 of all samples in the test dataset once the 
+<cite>zero-shot</cite> subset has been removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+<li><p><strong>return_n_values</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True will return a tuple containing 1. The 
+TargetTextCollection with the new error keys and 
+2. A list of tuples one for each of the error keys 
+stating the values of <em>n</em> that the error keys 
+are associated too.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The test dataset but with each TargetText object containing a 
+<cite>zero-shot</cite>, <cite>low-shot</cite>, <cite>med-shot</cite>, and <cite>high-shot</cite> key and 
+associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.n_shot_targets">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">n_shot_targets</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">n_condition</em>, <em class="sig-param">error_name</em>, <em class="sig-param">lower=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#n_shot_targets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.n_shot_targets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with an additional key denoted by <cite>error_name</cite> argument for each 
+TargetText object in the test collection. This 
+<cite>error_name</cite> key will contain a list 
+the same length as the number of targets in that TargetText object with 
+0’s and 1’s where a 1 represents a target that has meet the <cite>n_condition</cite>.
+This allows you to find the performance of n shot target learning where 
+the <cite>n_condition</cite> can allow you to find zero shot target (targets not seen
+in training but in test (also known as unknown targets)) or find &gt;K shot 
+targets where targets have been seen K or more times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p>If the TargetText object <cite>targets</cite> is None as in there are no
+targets in that sample then the <cite>error_name</cite> argument key
+will be represented as an empty list</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>n_condition</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – A callable that denotes the number of times the target 
+has to be seen in the training dataset to represent a 
+1 in the error key. Example n_condition <cite>lambda x: x&gt;5</cite> this 
+means that a target has to be seen more than 5 times in
+the training set.</p></li>
+<li><p><strong>error_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name of the error key</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The test dataset but with each TargetText object containing a 
+<cite>unknown_sentiment_known_target</cite> key and associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.num_targets_subset">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">num_targets_subset</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">return_n_values=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#num_targets_subset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.num_targets_subset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a dataset it will add the following four error keys: <cite>1-target</cite>,
+<cite>low-targets</cite>, <cite>med-targets</cite>, <cite>high-targets</cite> to each target text object. 
+where each value associated to the error keys are a list of 1’s or 0’s 
+the length of the number of samples where 1 denotes the error key is True 
+and 0 otherwise. <cite>1-target</cite> is 1 when the target text object contains one 
+target. The others are based on the frequency of targets with respect to the 
+number of samples in the dataset where if the target is in the low 1/3 of 
+most frequent targets based on samples then it is 
+binned in the <cite>low-targets</cite>, middle 1/3 <cite>med-targets</cite> etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The dataset to add the following four error keys: <cite>1-target</cite>,
+<cite>low-targets</cite>, <cite>med-targets</cite>, <cite>high-targets</cite>.</p></li>
+<li><p><strong>return_n_values</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to return the number of targets in the 
+sentence are associated to the 4 error keys as a 
+List of Tuples.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The same dataset but with each TargetText object containing those 
+four stated error keys and associated list of 1’s or 0’s denoting 
+if the error key exists or not.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.reduce_collection_by_key_occurrence">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">reduce_collection_by_key_occurrence</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">error_key</em>, <em class="sig-param">associated_keys</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#reduce_collection_by_key_occurrence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.reduce_collection_by_key_occurrence" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The dataset that contains error analysis key which are 
+one hot encoding of whether a target is in that 
+error analysis class or not. Example function that 
+produces these error keys are 
+<code class="xref py py-func docutils literal notranslate"><span class="pre">target_extraction.error_analysis.same_one_sentiment()</span></code></p></li>
+<li><p><strong>error_key</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – Name of the error key e.g. <cite>same_one_sentiment</cite>. Or it can 
+be a list of error keys for which this will reduce the 
+collection so that it includes all samples that contain 
+at least one of these error keys.</p></li>
+<li><p><strong>associated_keys</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The keys that are associated to the target that 
+must be kept and are linked to that target. E.g. 
+<cite>target_sentiments</cite>, <cite>targets</cite>, <cite>spans</cite>, and 
+<cite>subset error keys</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A new TargetTextCollection that contains only those targets and 
+relevant <cite>associated_keys</cite> within the TargetText’s that the
+error analysis key(s) were <cite>True</cite> (1 in the one hot encoding). 
+This could mean that some TargetText’s will no longer exist.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If the <cite>error_key</cite> or one or more of the <cite>associated_keys</cite> 
+does not exist in one or more of the TargetText objects 
+within the <cite>dataset</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.reduce_collection_by_sentiment_class">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">reduce_collection_by_sentiment_class</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">reduce_sentiment</em>, <em class="sig-param">associated_keys</em>, <em class="sig-param">sentiment_key='target_sentiments'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#reduce_collection_by_sentiment_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.reduce_collection_by_sentiment_class" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The dataset that is to be reduced so that it only contains
+the given sentiment class.</p></li>
+<li><p><strong>reduce_sentiment</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The sentiment class that the target must be associated 
+with to be returned in this TargetTextCollection.</p></li>
+<li><p><strong>associated_keys</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The keys that are associated to the target that 
+must be kept and are linked to that target. E.g. 
+<cite>target_sentiments</cite>, <cite>targets</cite>, <cite>spans</cite>, and 
+<cite>subset error keys</cite>.</p></li>
+<li><p><strong>sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key in the TargetText samples within the collection
+that contains the sentiment values to reduce by.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A new TargetTextCollection that contains only those targets and 
+relevant <cite>associated_keys</cite> within the TargetText’s that contains
+the given sentiment.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – If the <cite>error_key</cite> or one or more of the <cite>associated_keys</cite> 
+does not exist in one or more of the TargetText objects 
+within the <cite>dataset</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.same_multi_sentiment">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">same_multi_sentiment</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">lower=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#same_multi_sentiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.same_multi_sentiment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with an additional key <cite>same_multi_sentiment</cite> for each TargetText object
+in the test collection. This <cite>same_multi_sentiment</cite> key will contain a list 
+the same length as the number of targets in that TargetText object with 
+0’s and 1’s where a 1 represents the associated target has the same 
+sentiment labels (more than one sentiment label e.g. positive and negative
+not just positive or not just negative) in the train and test 
+where as the 0 means it does not.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p>If the TargetText object <cite>targets</cite> is None as in there are no
+targets in that sample then the <cite>same_multi_sentiment</cite> key
+will be represented as an empty list</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The test dataset but with each TargetText object containing a 
+<cite>same_multi_sentiment</cite> key and associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.same_one_sentiment">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">same_one_sentiment</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">lower=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#same_one_sentiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.same_one_sentiment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with an additional key <cite>same_one_sentiment</cite> for each TargetText object
+in the test collection. This <cite>same_one_sentiment</cite> key will contain a list 
+the same length as the number of targets in that TargetText object with 
+0’s and 1’s where a 1 represents the associated target has the same one 
+sentiment label in the train and test where as the 0 means it does not.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p>If the TargetText object <cite>targets</cite> is None as in there are no
+targets in that sample then the <cite>same_one_sentiment</cite> key
+will be represented as an empty list</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The test dataset but with each TargetText object containing a 
+<cite>same_one_sentiment</cite> key and associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.similar_sentiment">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">similar_sentiment</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">lower=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#similar_sentiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.similar_sentiment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with an additional key <cite>similar_sentiment</cite> for each TargetText object
+in the test collection. This <cite>similar_sentiment</cite> key will contain a list 
+the same length as the number of targets in that TargetText object with 
+0’s and 1’s where a 1 represents the associated target has occured more 
+than once in the train or test sets with at least some overlap between the 
+test and train sentiments but not identical. E.g. the target <cite>camera</cite> 
+could occur with <cite>positive</cite> and <cite>negative</cite> sentiment in the test set and 
+only <cite>negative</cite> in the train set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p>If the TargetText object <cite>targets</cite> is None as in there are no
+targets in that sample then the <cite>similar_sentiment</cite> key
+will be represented as an empty list</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The test dataset but with each TargetText object containing a 
+<cite>similar_sentiment</cite> key and associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.subset_metrics">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">subset_metrics</code><span class="sig-paren">(</span><em class="sig-param">target_collection</em>, <em class="sig-param">subset_error_key</em>, <em class="sig-param">metric_funcs</em>, <em class="sig-param">metric_names</em>, <em class="sig-param">metric_kwargs</em>, <em class="sig-param">include_dataset_size=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#subset_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.subset_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is most useful to find the metric score of an error subset</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – TargetTextCollection that contains the 
+<cite>subset_error_key</cite> in each TargetText within the 
+collection</p></li>
+<li><p><strong>subset_error_key</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – The error key(s) to reduce the collection by. The samples 
+left will only be those where the error key is True.
+An example of a <cite>subset_error_key</cite> would be 
+<cite>zero-shot</cite> from the <a class="reference internal" href="#target_extraction.analysis.sentiment_error_analysis.n_shot_targets" title="target_extraction.analysis.sentiment_error_analysis.n_shot_targets"><code class="xref py py-func docutils literal notranslate"><span class="pre">n_shot_targets()</span></code></a>. This 
+can also be a list of keys e.g. 
+[<cite>zero-shot</cite>, <cite>low-shot</cite>] from the 
+<a class="reference internal" href="#target_extraction.analysis.sentiment_error_analysis.n_shot_targets" title="target_extraction.analysis.sentiment_error_analysis.n_shot_targets"><code class="xref py py-func docutils literal notranslate"><span class="pre">n_shot_targets()</span></code></a>.</p></li>
+<li><p><strong>metric_funcs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]]) – A list of metric functions from 
+<cite>target_extraction.analysis.sentiment_metrics</cite>. Example
+metric function is 
+<a class="reference internal" href="#target_extraction.analysis.sentiment_metrics.accuracy" title="target_extraction.analysis.sentiment_metrics.accuracy"><code class="xref py py-func docutils literal notranslate"><span class="pre">target_extraction.analysis.sentiment_metrics.accuracy()</span></code></a></p></li>
+<li><p><strong>metric_names</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Names to give to each <cite>metric_funcs</cite></p></li>
+<li><p><strong>metric_kwargs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – Keywords argument to give to the <cite>metric_funcs</cite> the only 
+argument given is the first argument which will always 
+be <cite>target_collection</cite></p></li>
+<li><p><strong>include_dataset_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True the returned dictionary will also include 
+a key <cite>dataset size</cite> that will contain an integer
+specifying the size of the dataset the metric(s) 
+was calculated on.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dictionary where the keys are the <cite>metric_names</cite> and the values 
+are the respective metric applied to the reduced/subsetted dataset.
+Thus if <cite>average</cite> in <cite>metric_kwargs</cite> is True then the return 
+will be Dict[str, float] where as if <cite>array_scores</cite> is True then 
+the return will be Dict[str, List[float]]. If no targets exist in 
+the collection through subsetting then the metric returned is 0.0
+or [0.0] if <cite>array_scores</cite> is true in <cite>metric_kwargs</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.subset_name_to_error_split">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">subset_name_to_error_split</code><span class="sig-paren">(</span><em class="sig-param">subset_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#subset_name_to_error_split"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.subset_name_to_error_split" title="Permalink to this definition">¶</a></dt>
+<dd><p>This in affect inverts the <cite>ERROR_SPLIT_SUBSET_NAMES</cite> dictionary and 
+returns the relevant error split name. It also initialises
+ERROR_SPLIT_SUBSET_NAMES.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>subset_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the subset you want to know which error split
+it has come from.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Associated error split name that the subset name has come from.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.swap_and_reduce">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">swap_and_reduce</code><span class="sig-paren">(</span><em class="sig-param">_collection</em>, <em class="sig-param">subset_key</em>, <em class="sig-param">true_sentiment_key</em>, <em class="sig-param">prediction_keys</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#swap_and_reduce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.swap_and_reduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Furthermore the keys that will be reduced won’t just be the <cite>targets</cite>, <cite>spans</cite>,
+<cite>true_sentiment_key</cite> and all <cite>prediction_keys</cite> but any error subset name from 
+within <cite>PLOT_SUBSET_ABBREVIATION</cite> that is in the TargetTexts in the collection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>_collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – TargetTextCollection to reduce the samples based on the 
+subset_key argument given.</p></li>
+<li><p><strong>subset_key</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – Name of the error key e.g. <cite>same_one_sentiment</cite>. Or it can 
+be a list of error keys for which this will reduce the 
+collection so that it includes all samples that contain 
+at least one of these error keys.</p></li>
+<li><p><strong>true_sentiment</strong> – The key in each TargetText within the collection 
+that contains the true sentiment labels.</p></li>
+<li><p><strong>prediction_keys</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The list of keys in each TargetText 
+where each key contains a list of predicted sentiments.
+These predicted sentiments are expected to be in a 
+list of a list where the outer list defines the 
+number of models trained e.g. number of model runs 
+and the inner list is the length of the number of 
+predictions required for that text/sentence.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A collection that has been reduced based on the subset_key 
+argument. This is a helper function for the 
+<cite>reduce_collection_by_key_occurrence</cite> as this function ensure that 
+the predicted sentiment keys are changed before and after reducing 
+the collection so that they are processed properly as the predicted 
+sentiment labels are of shape (number of model runs, number of sentiments)
+where as all other lists in the TargetText are of (number of sentiments) 
+size. Furthermore if the reduction causes all any of the TargetText’s
+in the collection to have no Targets then that TargetText will be 
+removed from the collection, thus you could have a collection of 
+zero.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.swap_list_dimensions">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">swap_list_dimensions</code><span class="sig-paren">(</span><em class="sig-param">collection</em>, <em class="sig-param">key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#swap_list_dimensions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.swap_list_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The TargetTextCollection to change</p></li>
+<li><p><strong>key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key within the TargetText objects in the collection that 
+contain a List Value of shape (dim 1, dim 2)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The collection but with the <cite>key</cite> values shape changed from 
+(dim 1, dim 2) to (dim 2, dim 1)</p>
+</dd>
+<dt class="field-even">Note</dt>
+<dd class="field-even"><p>This is a useful function when you need to change the predicted 
+values from shape (number runs, number targets) to 
+(number target, number runs) before using the following 
+function <cite>reduce_collection_by_key_occurrence</cite> where one of the 
+<cite>associated_keys</cite> are predicted values. It is required that the 
+sentiment predictions are of shape (number runs, number targets) 
+for the <cite>sentiment_metrics</cite> functions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.tssr_raw">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">tssr_raw</code><span class="sig-paren">(</span><em class="sig-param">dataset</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#tssr_raw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.tssr_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a dataset it will add a continuos number of error keys to each target text 
+object, where each key represents the TSSR value that the associated target 
+is within. Each value associated to the error keys are a list of 1’s or 0’s 
+the length of the number of samples where 1 denotes the error key is True 
+and 0 otherwise. See 
+:py:func`target_extraction.error_analysis.tssr_target_value` for an 
+explanation of how the TSSR value is calculated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The dataset to add the continuos TSSR error keys too.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The same dataset but with each TargetText object containing the 
+continuos TSSR error keys and associated list of 1’s or 0’s 
+denoting if the error key exists or not. The dictionary contains 
+keys which are the TSSR values detected in the dataset and the 
+values are the number of targets that contain that TSSR value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.tssr_subset">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">tssr_subset</code><span class="sig-paren">(</span><em class="sig-param">dataset</em>, <em class="sig-param">return_tssr_boundaries=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#tssr_subset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.tssr_subset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a dataset it will add either <cite>1-multi-TSSR</cite>, <cite>1-TSSR</cite>, <cite>high-TSSR</cite> or <cite>low-TSSR</cite> 
+error keys to each target text object. Each value associated to the error 
+keys are a list of 1’s or 0’s the length of the number of samples where 1 
+denotes the error key is True and 0 otherwise. For more information on how 
+TSSR is calculated see 
+:py:func`target_extraction.error_analysis.tssr_target_value`. Once you know 
+what TSSR is: <cite>1-TSSR</cite> contains all of the targets that have a TSSR value of  
+1 but each one is the only target in the sentence, <cite>1-multi-TSSR</cite> contains 
+all of the targets that have a TSSR value of 1 and the sentence it comes 
+from contain more than one target. <cite>high-TSSR</cite> are targets that are in the 
+top 50% of the TSSR values for this dataset excluding the <cite>1-TSSR</cite> samples, 
+<cite>low-TSSR</cite> are the bottom 50% of the TSSR values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The dataset to add the continuos TSSR error keys too.</p></li>
+<li><p><strong>return_tssr_boundaries</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If to return the TSSR value boundaries for the 
+<cite>1-TSSR</cite>, <cite>high-TSSR</cite>, and <cite>low-TSSR</cite> 
+subsets. NOTE that <cite>1-multi-TSSR</cite> is not 
+in that list as it would have the same 
+TSSR value boundaries as <cite>1-TSSR</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The same dataset but with each TargetText object containing the 
+TSSR subset error keys and associated list of 1’s or 0’s 
+denoting if the error key exists or not. The optional second 
+Tuple return are a list of the tssr boundaries.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="#target_extraction.analysis.sentiment_error_analysis.NoSamplesError" title="target_extraction.analysis.sentiment_error_analysis.NoSamplesError"><strong>NoSamplesError</strong></a> – If there are no samples within a subset.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.tssr_target_value">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">tssr_target_value</code><span class="sig-paren">(</span><em class="sig-param">target_data</em>, <em class="sig-param">current_target_sentiment</em>, <em class="sig-param">subset_values=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#tssr_target_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.tssr_target_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Need to insert the TSSR value equation below:
+`
+`</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_data</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetText" title="target_extraction.data_types.TargetText"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetText</span></code></a>) – The TargetText object that contains the target 
+associated to the <cite>current_target_sentiment</cite></p></li>
+<li><p><strong>current_target_sentiment</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The sentiment value associated to the 
+target you want the TSSR value for.</p></li>
+<li><p><strong>subset_values</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True it produceds to different values for when the
+TSSR value is 1.0. It produces just 1.0 when there 
+is only one target in the sentence and 
+1.1 when there is more than one target in the sentence 
+but all of them are 1.0 TSSR value i.e. the sentence 
+only contains one sentiment.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The TSSR value for a target within <cite>target_data</cite> with 
+<cite>current_target_sentiment</cite> sentiment value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.unknown_sentiment_known_target">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">unknown_sentiment_known_target</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">lower=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#unknown_sentiment_known_target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.unknown_sentiment_known_target" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with an additional key <cite>unknown_sentiment_known_target</cite> for each 
+TargetText object in the test collection. This 
+<cite>unknown_sentiment_known_target</cite> key will contain a list 
+the same length as the number of targets in that TargetText object with 
+0’s and 1’s where a 1 represents a target that exists in both train and 
+test where that target for that instance in the test set has a sentiment 
+that has NOT been seen before in the training set for that target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p>If the TargetText object <cite>targets</cite> is None as in there are no
+targets in that sample then the <cite>unknown_sentiment_known_target</cite> key
+will be represented as an empty list</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The test dataset but with each TargetText object containing a 
+<cite>unknown_sentiment_known_target</cite> key and associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_error_analysis.unknown_targets">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_error_analysis.</code><code class="sig-name descname">unknown_targets</code><span class="sig-paren">(</span><em class="sig-param">test_dataset</em>, <em class="sig-param">train_dataset</em>, <em class="sig-param">lower=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_error_analysis.html#unknown_targets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_error_analysis.unknown_targets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a test and train dataset will return the same test dataset but 
+with an additional key <cite>unknown_targets</cite> for each TargetText object
+in the test collection. This <cite>unknown_targets</cite> key will contain a list 
+the same length as the number of targets in that TargetText object with 
+0’s and 1’s where a 1 represents a target that exists in the test set 
+but not in the train.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Note</dt>
+<dd class="field-odd"><p>If the TargetText object <cite>targets</cite> is None as in there are no
+targets in that sample then the <cite>unknown_targets</cite> key
+will be represented as an empty list</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>test_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Test dataset to sub-sample</p></li>
+<li><p><strong>train_dataset</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Train dataset to reference</p></li>
+<li><p><strong>lower</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to lower case the target words</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The test dataset but with each TargetText object containing a 
+<cite>unknown_targets</cite> key and associated list of values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.analysis.sentiment_metrics">
+<span id="target-extraction-analysis-sentiment-metrics-module"></span><h2>target_extraction.analysis.sentiment_metrics module<a class="headerlink" href="#module-target_extraction.analysis.sentiment_metrics" title="Permalink to this headline">¶</a></h2>
+<p>This module contains functions that expect a TargetTextCollection that contains
+<cite>target_sentiments</cite> key that represent the true sentiment values and a prediction
+key e.g. <cite>sentiment_predictions</cite>. Given these the function will return either a 
+metric score e.g. Accuracy or a list of scores based on the arguments given 
+to the function and if the <cite>sentiment_predictions</cite> key is an array of values.</p>
+<p>Arguments for all functions in this module:</p>
+<ol class="arabic simple">
+<li><p>TargetTextCollection – Contains the true and predicted sentiment scores</p></li>
+<li><p>true_sentiment_key – Key that contains the true sentiment scores 
+for each target in the TargetTextCollection</p></li>
+<li><p>predicted_sentiment_key – Key that contains the predicted sentiment scores  
+for each target in the TargetTextCollection</p></li>
+<li><p>average – If the predicting model was ran <em>N</em> times whether or not to 
+average the score over the <em>N</em> runs. Assumes array_scores is False.</p></li>
+<li><p>array_scores – If average is False and you a model that has predicted 
+<em>N</em> times then this will return the <em>N</em> scores, one for each run.</p></li>
+<li><p>assert_number_labels – Whether or not to assert this many number of unique  
+labels must exist in the true sentiment key. If this is None then the 
+assertion is not raised.</p></li>
+<li><p>ignore_label_differences – If True then the ValueError will not be 
+raised if the predicted sentiment values are not in the true 
+sentiment values. See <a class="reference internal" href="#target_extraction.analysis.sentiment_metrics.get_labels" title="target_extraction.analysis.sentiment_metrics.get_labels"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_labels()</span></code></a> for more details.</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">raises ValueError</dt>
+<dd class="field-odd"><p>If the the prediction model has ran <em>N</em> times where 
+<em>N&gt;1</em> and <cite>average</cite> or <cite>array_scores</cite> are either both 
+True or both False.</p>
+</dd>
+<dt class="field-even">raises ValueError</dt>
+<dd class="field-even"><p>If the number of predictions made per target are 
+different or zero.</p>
+</dd>
+<dt class="field-odd">raises ValueError</dt>
+<dd class="field-odd"><p>If only one set of model prediction exist then 
+<cite>average</cite> and <cite>array_scores</cite> should be False.</p>
+</dd>
+<dt class="field-even">raises KeyError</dt>
+<dd class="field-even"><p>If either the <cite>true_sentiment_key</cite> or 
+<cite>predicted_sentiment_key</cite> does not exist.</p>
+</dd>
+<dt class="field-odd">raises LabelError</dt>
+<dd class="field-odd"><p>If <cite>assert_number_labels</cite> is not None and the number of 
+unique true labels does not equal the <cite>assert_number_labels</cite>
+this is raised.</p>
+</dd>
+</dl>
+<dl class="exception">
+<dt id="target_extraction.analysis.sentiment_metrics.LabelError">
+<em class="property">exception </em><code class="sig-prename descclassname">target_extraction.analysis.sentiment_metrics.</code><code class="sig-name descname">LabelError</code><span class="sig-paren">(</span><em class="sig-param">true_number_unique_labels</em>, <em class="sig-param">number_unique_labels_wanted</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_metrics.html#LabelError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_metrics.LabelError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>If the number of unique labels does not match your expected number of 
+unique labels.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_metrics.accuracy">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_metrics.</code><code class="sig-name descname">accuracy</code><span class="sig-paren">(</span><em class="sig-param">target_collection</em>, <em class="sig-param">true_sentiment_key</em>, <em class="sig-param">predicted_sentiment_key</em>, <em class="sig-param">average</em>, <em class="sig-param">array_scores</em>, <em class="sig-param">assert_number_labels=None</em>, <em class="sig-param">ignore_label_differences=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_metrics.html#accuracy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_metrics.accuracy" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ignore_label_differences</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – See <a class="reference internal" href="#target_extraction.analysis.sentiment_metrics.get_labels" title="target_extraction.analysis.sentiment_metrics.get_labels"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_labels()</span></code></a></p>
+</dd>
+</dl>
+<p>Accuracy score. Description at top of module explains arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_metrics.get_labels">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_metrics.</code><code class="sig-name descname">get_labels</code><span class="sig-paren">(</span><em class="sig-param">target_collection</em>, <em class="sig-param">true_sentiment_key</em>, <em class="sig-param">predicted_sentiment_key</em>, <em class="sig-param">labels_per_text=False</em>, <em class="sig-param">ignore_label_differences=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_metrics.html#get_labels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_metrics.get_labels" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Collection of targets that have true and predicted 
+sentiment values.</p></li>
+<li><p><strong>true_sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Key that contains the true sentiment scores 
+for each target in the TargetTextCollection</p></li>
+<li><p><strong>predicted_sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Key that contains the predicted sentiment   
+scores for each target in the 
+TargetTextCollection. It assumes that the 
+predictions is a List of List where the 
+outer list are the number of model runs and 
+the inner list is the number of targets to 
+predict for, the the second Tuple of the 
+example return for an example of this.</p></li>
+<li><p><strong>labels_per_text</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True instead of returning a List[Any] it will
+return a List[List[Any]] where in the inner list 
+represents the predictions per text rather than in 
+the normal case where it is all predictions ignoring 
+which text they came from.</p></li>
+<li><p><strong>ignore_label_differences</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True then the ValueError will not be 
+raised if the predicted sentiment values 
+are not in the true sentiment values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A tuple of 1; true sentiment value 2; predicted sentiment values. 
+where the predicted sentiment values is a list of predicted 
+sentiment value, one for each models predictions. 
+See <cite>Example of return 2</cite> for an example of what this means 
+where in that example there are two texts/sentences.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the number of predicted sentiment values are not 
+equal to the number true sentiment values.</p></li>
+<li><p><strong>ValueError</strong> – If the labels in the predicted sentiment values are not 
+in the true sentiment values.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Example of return 1</dt>
+<dd class="field-odd"><p>([‘pos’, ‘neg’, ‘neu’], [[‘neg’, ‘pos’, ‘neu’], 
+[‘neu’, ‘pos’, ‘neu’]])</p>
+</dd>
+<dt class="field-even">Example of return 2</dt>
+<dd class="field-even"><p>([[‘pos’], [‘neg’, ‘neu’]], [[[‘neg’], [‘pos’, ‘neu’]], 
+[[‘neu’], [‘pos’, ‘neu’]]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_metrics.macro_f1">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_metrics.</code><code class="sig-name descname">macro_f1</code><span class="sig-paren">(</span><em class="sig-param">target_collection</em>, <em class="sig-param">true_sentiment_key</em>, <em class="sig-param">predicted_sentiment_key</em>, <em class="sig-param">average</em>, <em class="sig-param">array_scores</em>, <em class="sig-param">assert_number_labels=None</em>, <em class="sig-param">ignore_label_differences=True</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_metrics.html#macro_f1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_metrics.macro_f1" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ignore_label_differences</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – See <a class="reference internal" href="#target_extraction.analysis.sentiment_metrics.get_labels" title="target_extraction.analysis.sentiment_metrics.get_labels"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_labels()</span></code></a></p></li>
+<li><p><strong>**kwargs</strong> – <p>These are the keyword arguments to give to the underlying 
+scikit learn <code class="xref py py-func docutils literal notranslate"><span class="pre">f1_metric()</span></code>. Note that the only argument
+that cannot be changed that is given to <code class="xref py py-func docutils literal notranslate"><span class="pre">f1_metric()</span></code>
+is <cite>average</cite>. If you want the F1 score for one label this 
+can still be done by providing the <cite>labels</cite> argument where 
+the value would be the label you want the F1 score for e.g.
+<cite>labels</cite> = [<cite>positive</cite>].</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p>Macro F1 score. Description at top of module explains arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_metrics.metric_error_checks">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_metrics.</code><code class="sig-name descname">metric_error_checks</code><span class="sig-paren">(</span><em class="sig-param">func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_metrics.html#metric_error_checks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_metrics.metric_error_checks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator for the metric functions within this module. Will raise any of 
+the Errors stated above in the module documentation before the metric 
+functions is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.sentiment_metrics.strict_text_accuracy">
+<code class="sig-prename descclassname">target_extraction.analysis.sentiment_metrics.</code><code class="sig-name descname">strict_text_accuracy</code><span class="sig-paren">(</span><em class="sig-param">target_collection</em>, <em class="sig-param">true_sentiment_key</em>, <em class="sig-param">predicted_sentiment_key</em>, <em class="sig-param">average</em>, <em class="sig-param">array_scores</em>, <em class="sig-param">assert_number_labels=None</em>, <em class="sig-param">ignore_label_differences=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/sentiment_metrics.html#strict_text_accuracy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.sentiment_metrics.strict_text_accuracy" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is performed at the text/sentence level where a sample is not denoted 
+as one target but as all targets within a text. A sample is correct if all
+targets within the text have been predicted correctly. This will return the 
+average of the correct predictions. Strict Text ACcuracy also known as STAC.</p>
+<p>This metric also assumes that all the texts within the <cite>target_collection</cite>
+also contains at least one target. If it does not a ValueError will be raised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ignore_label_differences</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – See <a class="reference internal" href="#target_extraction.analysis.sentiment_metrics.get_labels" title="target_extraction.analysis.sentiment_metrics.get_labels"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_labels()</span></code></a></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.analysis.statistical_analysis">
+<span id="target-extraction-analysis-statistical-analysis-module"></span><h2>target_extraction.analysis.statistical_analysis module<a class="headerlink" href="#module-target_extraction.analysis.statistical_analysis" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="target_extraction.analysis.statistical_analysis.find_k_estimator">
+<code class="sig-prename descclassname">target_extraction.analysis.statistical_analysis.</code><code class="sig-name descname">find_k_estimator</code><span class="sig-paren">(</span><em class="sig-param">p_values</em>, <em class="sig-param">alpha</em>, <em class="sig-param">method='B'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/statistical_analysis.html#find_k_estimator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.statistical_analysis.find_k_estimator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of p-values returns the number of those p-values that are
+significant at the level of alpha according to either the Bonferroni or
+Fisher correction method.
+This code has come from <a class="reference external" href="https://aclanthology.coli.uni-saarland.de/papers/Q17-1033/q17-1033">Dror et al. 2017 paper</a>.
+Code base for the paper <a class="reference external" href="https://github.com/rtmdrr/replicability-analysis-NLP/blob/master/Replicability_Analysis.py">here</a>
+Fisher is used if the p-values have come from an independent set i.e. method
+p-values results from independent datasets. Bonferroni used if this
+independent assumption is not True.</p>
+<p><strong>Fisher</strong> is currently not implemented.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p_values</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – list of p-values.</p></li>
+<li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – significance level.</p></li>
+<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – ‘B’ for Bonferroni</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Number of datasets that are significant at the level of alpha for
+the p_values given.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>NotImplementedError</strong> – If <cite>F</cite> is given for the <cite>method</cite> argument.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.statistical_analysis.one_tailed_p_value">
+<code class="sig-prename descclassname">target_extraction.analysis.statistical_analysis.</code><code class="sig-name descname">one_tailed_p_value</code><span class="sig-paren">(</span><em class="sig-param">scores_1</em>, <em class="sig-param">scores_2</em>, <em class="sig-param">assume_normal</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/statistical_analysis.html#one_tailed_p_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.statistical_analysis.one_tailed_p_value" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scores_1</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The scores e.g. list of accuracy values that reprsent one 
+model/methods results (multiple scores can come from running 
+the same model/method over different random seeds and/or 
+dataset splits).</p></li>
+<li><p><strong>scores_2</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Same as <cite>scores_1</cite> but coming from a different method/model</p></li>
+<li><p><strong>assume_normal</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If the the scores are assumed to come from a normal 
+distribution. See the following guide by 
+<a class="reference external" href="https://arxiv.org/pdf/1809.01448.pdf">Dror and Reichart 2018</a>
+to know if your metric/scores can be assumed to be normal or 
+not. The test used when the scores are normal is the 
+Welch’s t-test. When not normal it is the 
+Wilcoxon signed-rank test.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The p-value of a one-tailed test to determine if <cite>scores_1</cite> is 
+better than <cite>scores_2</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.analysis.util">
+<span id="target-extraction-analysis-util-module"></span><h2>target_extraction.analysis.util module<a class="headerlink" href="#module-target_extraction.analysis.util" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="target_extraction.analysis.util.add_metadata_to_df">
+<code class="sig-prename descclassname">target_extraction.analysis.util.</code><code class="sig-name descname">add_metadata_to_df</code><span class="sig-paren">(</span><em class="sig-param">df</em>, <em class="sig-param">target_collection</em>, <em class="sig-param">metadata_prediction_key</em>, <em class="sig-param">metadata_keys=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/util.html#add_metadata_to_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.util.add_metadata_to_df" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – A DataFrame that contains at least one column named <cite>prediction key</cite>
+of which the values in <cite>prediction key</cite> releate to the keys within
+TargetTextCollection that store the related to predicted values</p></li>
+<li><p><strong>target_collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – The collection that stores <cite>prediction key</cite> and 
+the metadata within <cite>target_collection.metadata</cite></p></li>
+<li><p><strong>metadata_prediction_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The key that stores all of the metadata 
+associated to the <cite>prediction key</cite> values 
+within <cite>target_collection.metadata</cite></p></li>
+<li><p><strong>metadata_keys</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – If not None will only add the metadata keys that relate 
+to the <cite>prediction key</cite> that are stated in this list of 
+Strings else will add all.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The <cite>df</cite> dataframe but with new columns that are the names of the 
+metadata fields with the values being the values from those metadata
+fields that relate to the <cite>prediction key</cite> value.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>KeyError</strong> – If any of the <cite>prediction key</cite> values are not keys within 
+the TargetTextCollection targets.</p></li>
+<li><p><strong>KeyError</strong> – If any of the prediction key values in the dataframe are not 
+in the <cite>target_collection</cite> metadata.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.util.combine_metrics">
+<code class="sig-prename descclassname">target_extraction.analysis.util.</code><code class="sig-name descname">combine_metrics</code><span class="sig-paren">(</span><em class="sig-param">metric_df</em>, <em class="sig-param">other_metric_df</em>, <em class="sig-param">other_metric_name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/util.html#combine_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.util.combine_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>metric_df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – DataFrame that contains all the metrics to be kept</p></li>
+<li><p><strong>other_metric_df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – Contains metric scores that are to be added to a copy 
+of <cite>metric_df</cite></p></li>
+<li><p><strong>other_metric_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the column of the metric scores to be copied
+from <cite>other_metric_df</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A copy of the <cite>metric_df</cite> with a new column <cite>other_metric_name</cite>
+that contains the other metric scores.</p>
+</dd>
+<dt class="field-even">Note</dt>
+<dd class="field-even"><p>This assumes that the two dataframes come from 
+<a class="reference internal" href="#target_extraction.analysis.util.metric_df" title="target_extraction.analysis.util.metric_df"><code class="xref py py-func docutils literal notranslate"><span class="pre">target_extraction.analysis.util.metric_df()</span></code></a> with the argument 
+<cite>include_run_number</cite> as True. This is due to the columns used to 
+combine the metric scores are <cite>prediction key</cite> and <cite>run number</cite>.</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>KeyError</strong> – If <cite>prediction key</cite> and <cite>run number</cite> are not columns 
+within <cite>metric_df</cite> and <cite>other_metric_df</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.util.create_subset_heatmap">
+<code class="sig-prename descclassname">target_extraction.analysis.util.</code><code class="sig-name descname">create_subset_heatmap</code><span class="sig-paren">(</span><em class="sig-param">subset_df</em>, <em class="sig-param">value_column</em>, <em class="sig-param">pivot_table_agg_func=None</em>, <em class="sig-param">font_label_size=10</em>, <em class="sig-param">cubehelix_palette_kwargs=None</em>, <em class="sig-param">value_range=None</em>, <em class="sig-param">lines=True</em>, <em class="sig-param">line_color='k'</em>, <em class="sig-param">vertical_lines_index=None</em>, <em class="sig-param">horizontal_lines_index=None</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">heatmap_kwargs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/util.html#create_subset_heatmap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.util.create_subset_heatmap" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>subset_df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – A DataFrame that contains the following columns: 
+1. Error Split, 2. Error Subset, 3. Dataset, 
+and 4. <cite>value_column</cite></p></li>
+<li><p><strong>value_column</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The column that contains the value to be plotted in the 
+heatmap.</p></li>
+<li><p><strong>pivot_table_agg_func</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – As a pivot table is created to create the heatmap.
+This allows the replacement default aggregation 
+function (np.mean) with a custom function. The 
+pivot table aggregates the <cite>value_column</cite> by 
+Dataset, Error Split, and Error Subset.</p></li>
+<li><p><strong>font_label_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Font sizes of the labels on the returned plot</p></li>
+<li><p><strong>cubehelix_palette_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – Keywords arguments to give to the 
+seaborn.cubehelix_palette
+<a class="reference external" href="https://seaborn.pydata.org/generated/seaborn.cubehelix_palette.html">https://seaborn.pydata.org/generated/seaborn.cubehelix_palette.html</a>.
+Default produces white to dark red.</p></li>
+<li><p><strong>value_range</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – This can also be interpreted as the values allowed in 
+the color range and should cover at least all unique 
+values in <cite>value_column</cite>.</p></li>
+<li><p><strong>lines</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not lines should appear on the plot to define the 
+different error splits.</p></li>
+<li><p><strong>line_color</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Color of the lines if the lines are to be displayed. The 
+choice of color names can be found here: 
+<a class="reference external" href="https://matplotlib.org/3.1.1/gallery/color/named_colors.html#sphx-glr-gallery-color-named-colors-py">https://matplotlib.org/3.1.1/gallery/color/named_colors.html#sphx-glr-gallery-color-named-colors-py</a></p></li>
+<li><p><strong>vertical_lines_index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – The index of the lines in vertical/column 
+direction. If None default is [0,3,7,11,15,18]</p></li>
+<li><p><strong>horizontal_lines_index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – The index of the lines in vertical/column 
+direction. If None default is [0,1,2,3]</p></li>
+<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>]) – A matplotlib Axes to give to the seaborn function to plot the 
+heatmap on to.</p></li>
+<li><p><strong>heatmap_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – Keyword arguments to pass to the seaborn.heatmap 
+function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A heatmap where the Y-axis represents the datasets, X-axis 
+represents the Error subsets formatted when appropriate with the 
+Error split name, and the values come from the <cite>value_column</cite>. The 
+heatmap assumes the <cite>value_column</cite> contains discrete values as the 
+color bar is discrete rather than continuos. If you want a continuos 
+color bar it is recommended that you use Seaborn heatmap.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.util.long_format_metrics">
+<code class="sig-prename descclassname">target_extraction.analysis.util.</code><code class="sig-name descname">long_format_metrics</code><span class="sig-paren">(</span><em class="sig-param">metric_df</em>, <em class="sig-param">metric_column_names</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/util.html#long_format_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.util.long_format_metrics" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>metric_df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – DataFrame from <a class="reference internal" href="#target_extraction.analysis.util.metric_df" title="target_extraction.analysis.util.metric_df"><code class="xref py py-func docutils literal notranslate"><span class="pre">target_extraction.analysis.util.metric_df()</span></code></a>
+that contains more than one metric score e.g. Accuracy and
+Macro F1</p></li>
+<li><p><strong>metric_column_names</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The list of the metrics columns names that exist  
+in <cite>metric_df</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A long format metric version of the <cite>metric_df</cite> e.g. converts a 
+DataFrame that contains <cite>Accuracy</cite> and <cite>Macro F1</cite> scores to a
+DataFrame that contains <cite>Metric</cite> and <cite>Metric Score</cite> columns where 
+the <cite>Metric</cite> column contains either <cite>Accuracy</cite> or <cite>Macro F1</cite> score 
+and the <cite>Metric Score</cite> contains the relevant metric score. This 
+will increase the number of row in <cite>metric_df</cite> by <em>N</em> where 
+<em>N</em> is the length of <cite>metric_column_names</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.util.metric_df">
+<code class="sig-prename descclassname">target_extraction.analysis.util.</code><code class="sig-name descname">metric_df</code><span class="sig-paren">(</span><em class="sig-param">target_collection</em>, <em class="sig-param">metric_function</em>, <em class="sig-param">true_sentiment_key</em>, <em class="sig-param">predicted_sentiment_keys</em>, <em class="sig-param">average</em>, <em class="sig-param">array_scores</em>, <em class="sig-param">assert_number_labels=None</em>, <em class="sig-param">ignore_label_differences=True</em>, <em class="sig-param">metric_name='metric'</em>, <em class="sig-param">include_run_number=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/util.html#metric_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.util.metric_df" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Collection of targets that have true and predicted 
+sentiment values.</p></li>
+<li><p><strong>metric_function</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]) – A metric function from 
+<a class="reference internal" href="#module-target_extraction.analysis.sentiment_metrics" title="target_extraction.analysis.sentiment_metrics"><code class="xref py py-func docutils literal notranslate"><span class="pre">target_extraction.analysis.sentiment_metrics()</span></code></a></p></li>
+<li><p><strong>true_sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Key in the <cite>target_collection</cite> targets that 
+contains the true sentiment scores for each 
+target in the TargetTextCollection</p></li>
+<li><p><strong>predicted_sentiment_keys</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The name of the predicted sentiment keys 
+within the TargetTextCollection for 
+which the metric function should be applied
+to.</p></li>
+<li><p><strong>average</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – For each predicted sentiment key it will return the 
+average metric score across the <em>N</em> predictions made for 
+each predicted sentiment key.</p></li>
+<li><p><strong>array_scores</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If average is False then this will return all of the 
+<em>N</em> model runs metric scores.</p></li>
+<li><p><strong>assert_number_labels</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Whether or not to assert this many number of unique  
+labels must exist in the true sentiment key. 
+If this is None then the assertion is not raised.</p></li>
+<li><p><strong>ignore_label_differences</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True then the ValueError will not be 
+raised if the predicted sentiment values 
+are not in the true sentiment values.</p></li>
+<li><p><strong>metric_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name to give to the metric value column.</p></li>
+<li><p><strong>include_run_number</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <cite>array_scores</cite> is True then this will add an 
+extra column to the returned dataframe (<cite>run number</cite>) 
+which will include the model run number. This can 
+be used to uniquely identify each row when combined 
+with the <cite>prediction key</cite> string.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A pandas DataFrame with two columns: 1. The prediction 
+key string 2. The metric value. Where the number of rows in the 
+DataFrame is either Number of prediction keys when <cite>average</cite> is 
+<cite>True</cite> or Number of prediction keys * Number of model runs when 
+<cite>array_scores</cite> is <cite>True</cite></p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <cite>include_run_number</cite> is True and <cite>array_scores</cite> is 
+False.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.util.metric_p_values">
+<code class="sig-prename descclassname">target_extraction.analysis.util.</code><code class="sig-name descname">metric_p_values</code><span class="sig-paren">(</span><em class="sig-param">data_split_df</em>, <em class="sig-param">better_split</em>, <em class="sig-param">compare_splits</em>, <em class="sig-param">datasets</em>, <em class="sig-param">metric_names_assume_normals</em>, <em class="sig-param">better_and_compare_column_name='Model'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/util.html#metric_p_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.util.metric_p_values" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_split_df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – The DataFrame that contains at least the following 
+columns: 1. value for <cite>better_and_compare_column_name</cite>,
+2. <cite>Dataset</cite>, and 3. all <cite>metric name</cite></p></li>
+<li><p><strong>better_split</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name of the model you are testing if it is better
+than all other models in the <cite>compare_splits</cite></p></li>
+<li><p><strong>compare_splits</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The name of the models you assume are no different 
+in score to the <cite>better_split</cite> model.</p></li>
+<li><p><strong>datasets</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Datasets to test the hypothesis on.</p></li>
+<li><p><strong>metric_names_assume_normals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]]) – A list of Tuples that contain 
+(metric name, assumed to be normal)
+where the <cite>assumed to be normal</cite> is False 
+or True based on whether the metric scores 
+from <cite>metric name</cite> column can be assumed to be 
+normal or not. e.g. [(<cite>Accuracy</cite>, True)]</p></li>
+<li><p><strong>better_and_compare_column_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The column that contains the 
+<cite>better_split</cite> and <cite>compare_splits</cite> 
+values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A DataFrame containing the following columns: 1. Metric, 2. Dataset,
+3. P-Value, 4. Compared {better_and_compare_column_name}, and 5.
+Better {better_and_compare_column_name}. Where it tests that one 
+Model is statistically better than the compare models on each 
+given dataset for each metric given.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.util.overall_metric_results">
+<code class="sig-prename descclassname">target_extraction.analysis.util.</code><code class="sig-name descname">overall_metric_results</code><span class="sig-paren">(</span><em class="sig-param">collection</em>, <em class="sig-param">prediction_keys=None</em>, <em class="sig-param">true_sentiment_key='target_sentiments'</em>, <em class="sig-param">strict_accuracy_metrics=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/util.html#overall_metric_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.util.overall_metric_results" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>collection</strong> (<a class="reference internal" href="target_extraction.html#target_extraction.data_types.TargetTextCollection" title="target_extraction.data_types.TargetTextCollection"><code class="xref py py-class docutils literal notranslate"><span class="pre">TargetTextCollection</span></code></a>) – Dataset that contains all of the results. Furthermore it 
+should have the name attribute as something meaningful 
+e.g. <cite>Laptop</cite> for the Laptop dataset.</p></li>
+<li><p><strong>prediction_keys</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – A list of prediction keys that you want the results 
+for. If None then it will get all of the prediction 
+keys from 
+<cite>collection.metadatap[‘predicted_target_sentiment_key’]</cite>.</p></li>
+<li><p><strong>true_sentiment_key</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Key in the <cite>target_collection</cite> targets that 
+contains the true sentiment scores for each 
+target in the TargetTextCollection.</p></li>
+<li><p><strong>strict_accuracy_metrics</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If this is True the dataframe will also 
+contain three additional columns: ‘STAC’,
+‘STAC 1’, and ‘STAC Multi’. Where ‘STAC’
+is the Strict Target Accuracy (STAC) on the 
+whole dataset, ‘STAC 1’ and ‘STAC Multi’ is 
+the STAC metric performed on the subset of 
+the dataset that contain either one unique 
+sentiment or more than one unique sentiment 
+per text respectively.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A pandas dataframe with the following columns: <cite>[‘prediction key’, 
+‘run number’, ‘Accuracy’, ‘Macro F1’, ‘Dataset’]</cite>. The <cite>Dataset</cite>
+column will contain one unique value and that will come from 
+the <cite>name</cite> attribute of the <cite>collection</cite>. The DataFrame will 
+also contain columns and values from the associated metadata see
+<a class="reference internal" href="#target_extraction.analysis.util.add_metadata_to_df" title="target_extraction.analysis.util.add_metadata_to_df"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_metadata_to_df()</span></code></a> for more details.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="target_extraction.analysis.util.plot_error_subsets">
+<code class="sig-prename descclassname">target_extraction.analysis.util.</code><code class="sig-name descname">plot_error_subsets</code><span class="sig-paren">(</span><em class="sig-param">metric_df</em>, <em class="sig-param">df_column_name</em>, <em class="sig-param">df_row_name</em>, <em class="sig-param">df_x_name</em>, <em class="sig-param">df_y_name</em>, <em class="sig-param">df_hue_name='Model'</em>, <em class="sig-param">seaborn_plot_name='pointplot'</em>, <em class="sig-param">seaborn_kwargs=None</em>, <em class="sig-param">legend_column=0</em>, <em class="sig-param">figsize=None</em>, <em class="sig-param">legend_bbox_to_anchor=(-0.13</em>, <em class="sig-param">1.1)</em>, <em class="sig-param">fontsize=14</em>, <em class="sig-param">legend_fontsize=10</em>, <em class="sig-param">tick_font_size=12</em>, <em class="sig-param">title_on_every_plot=False</em>, <em class="sig-param">df_overall_metric=None</em>, <em class="sig-param">overall_seaborn_plot_name=None</em>, <em class="sig-param">overall_seaborn_kwargs=None</em>, <em class="sig-param">df_dataset_size=None</em>, <em class="sig-param">dataset_h_line_offset=0.2</em>, <em class="sig-param">dataset_h_line_color='k'</em>, <em class="sig-param">h_line_legend_name='Dataset Size (Number of Samples)'</em>, <em class="sig-param">h_line_legend_bbox_to_anchor=None</em>, <em class="sig-param">dataset_y_label='Dataset Size\n(Number of Samples)'</em>, <em class="sig-param">gridspec_kw=None</em>, <em class="sig-param">row_order=None</em>, <em class="sig-param">column_order=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/target_extraction/analysis/util.html#plot_error_subsets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#target_extraction.analysis.util.plot_error_subsets" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is named what it is as it is a good way to visualise the 
+different error subsets and thus error splits after running different 
+error functions from 
+:py:func`target_extraction.analysis.sentiment_error_analysis.error_analysis_wrapper`
+and further more if you are exploring them over different datasets. 
+To create a graph with these different error analysis subsets, Models, and datasets 
+the following column and row names may be useful: <cite>df_column_name</cite> = <cite>Dataset</cite>,
+<cite>df_row_name</cite> = <cite>Error Split</cite>, <cite>df_x_name</cite> = <cite>Error Subset</cite>, <cite>df_y_name</cite> 
+= <cite>Accuracy (%)</cite>, and <cite>df_hue_name</cite> = <cite>Model</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>metric_df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – A DataFrame that will</p></li>
+<li><p><strong>df_column_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the column in <cite>metric_df</cite> that will be used 
+to determine the categorical variables to facet the 
+column part of the returned figure</p></li>
+<li><p><strong>df_row_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the column in <cite>metric_df</cite> that will be used 
+to determine the categorical variables to facet the 
+row part of the returned figure</p></li>
+<li><p><strong>df_x_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the column in <cite>metric_df</cite> that will be used to 
+represent the X-axis in the figure.</p></li>
+<li><p><strong>df_y_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the column in <cite>metric_df</cite> that will be used to 
+represent the Y-axis in the figure.</p></li>
+<li><p><strong>df_hue_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the column in <cite>metric_df</cite> that will be used to 
+represent the hue in the figure</p></li>
+<li><p><strong>seaborn_plot_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the seaborn plotting function to use as 
+the plots within the figure</p></li>
+<li><p><strong>seaborn_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – The key word arguments to give to the seaborn 
+plotting function.</p></li>
+<li><p><strong>legend_column</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Which column in the figure the legend should be 
+associated too. The row the legend is associated 
+with is fixed at row 0.</p></li>
+<li><p><strong>figsize</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – Size of the figure, this is passed to the 
+<code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.subplots()</span></code> as an argument.</p></li>
+<li><p><strong>legend_bbox_to_anchor</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Where the legend box should be within the 
+figure. This is passed as the <cite>bbox_to_anchor</cite>
+argument to 
+<code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.Axes.legend()</span></code></p></li>
+<li><p><strong>fontsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Size of the font for the title, y-axis label, and 
+x-axis label.</p></li>
+<li><p><strong>legend_fontsize</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Size of the font for the legend.</p></li>
+<li><p><strong>tick_font_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Size of the font on the y and x axis ticks.</p></li>
+<li><p><strong>title_on_every_plot</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to have the title above every 
+plot in the grid or just over the top row 
+of plots.</p></li>
+<li><p><strong>df_overall_metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Name of the column in <cite>metric_df</cite> that stores 
+the overall metric score for the entire dataset 
+and not just the <cite>subsets</cite>.</p></li>
+<li><p><strong>overall_seaborn_plot_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Same as the <cite>seaborn_plot_name</cite> but for 
+plotting the overall metric</p></li>
+<li><p><strong>overall_seaborn_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – Same as the <cite>seaborn_kwargs</cite> but for the 
+overall metric plot.</p></li>
+<li><p><strong>df_dataset_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Name of the column in <cite>metric_df</cite> that stores 
+the dataset size for one of the X-axis. If 
+this is given it will create h_lines for each 
+X-axis representing the dataset size</p></li>
+<li><p><strong>dataset_h_line_offset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – +/- offsets indicating the length of each 
+hline</p></li>
+<li><p><strong>dataset_h_line_color</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Color of the hline</p></li>
+<li><p><strong>h_line_legend_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name to give to the h_line legend.</p></li>
+<li><p><strong>h_line_legend_bbox_to_anchor</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – Where the h line legend box should be within the 
+figure. This is passed as the <cite>bbox_to_anchor</cite>
+argument to 
+<code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.Axes.legend()</span></code></p></li>
+<li><p><strong>dataset_y_label</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The Y-Label for the right hand side Y-axis.</p></li>
+<li><p><strong>gridspec_kw</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – <code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.subplots()</span></code> <cite>gridspec_kw</cite> argument</p></li>
+<li><p><strong>row_order</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – A list of all unique <cite>df_row_name</cite> values in the order 
+the rows should appear in.</p></li>
+<li><p><strong>column_order</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – A list of all unique <cite>df_column_name</cite> values in the order 
+the columns should appear in.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Figure</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A tuple of 1. The figure  2. The associated axes within the 
+figure. The figure will contain N x M plots where N is the number 
+of unique values in the <cite>metric_df</cite> <cite>df_column_name</cite> column and 
+M is the number of unique values in the <cite>metric_df</cite> 
+<cite>df_row_name</cite> column.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-target_extraction.analysis">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-target_extraction.analysis" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

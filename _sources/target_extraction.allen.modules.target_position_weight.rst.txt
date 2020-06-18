@@ -1,0 +1,29 @@
+target\_extraction.allen.modules.target\_position\_weight package
+=================================================================
+
+Submodules
+----------
+
+target\_extraction.allen.modules.target\_position\_weight.relative\_target\_position\_weight module
+---------------------------------------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.modules.target_position_weight.relative_target_position_weight
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.modules.target\_position\_weight.target\_position\_weight module
+-----------------------------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.modules.target_position_weight.target_position_weight
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen.modules.target_position_weight
+   :members:
+   :undoc-members:
+   :show-inheritance:

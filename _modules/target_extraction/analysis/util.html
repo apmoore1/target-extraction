@@ -1,0 +1,902 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.analysis.util &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.analysis.util</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.analysis.util</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+
+<span class="kn">from</span> <span class="nn">target_extraction.data_types</span> <span class="kn">import</span> <span class="n">TargetTextCollection</span><span class="p">,</span> <span class="n">TargetText</span>
+<span class="kn">from</span> <span class="nn">target_extraction.analysis</span> <span class="kn">import</span> <span class="n">sentiment_metrics</span>
+<span class="kn">from</span> <span class="nn">target_extraction.analysis.sentiment_error_analysis</span> <span class="kn">import</span> <span class="p">(</span><span class="n">distinct_sentiment</span><span class="p">,</span>
+                                                                 <span class="n">swap_list_dimensions</span><span class="p">,</span>
+                                                                 <span class="n">reduce_collection_by_key_occurrence</span><span class="p">,</span>
+                                                                 <span class="n">swap_and_reduce</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">target_extraction.analysis.statistical_analysis</span> <span class="kn">import</span> <span class="n">one_tailed_p_value</span>
+<div class="viewcode-block" id="metric_df"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.util.metric_df">[docs]</a><span class="k">def</span> <span class="nf">metric_df</span><span class="p">(</span><span class="n">target_collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+              <span class="n">metric_function</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TargetTextCollection</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> 
+                                         <span class="nb">bool</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">],</span> 
+                                        <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]],</span>
+              <span class="n">true_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">predicted_sentiment_keys</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> 
+              <span class="n">average</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">array_scores</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> 
+              <span class="n">assert_number_labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+              <span class="n">ignore_label_differences</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> 
+              <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;metric&#39;</span><span class="p">,</span> 
+              <span class="n">include_run_number</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param target_collection: Collection of targets that have true and predicted </span>
+<span class="sd">                              sentiment values.</span>
+<span class="sd">    :param metric_function: A metric function from </span>
+<span class="sd">                            :py:func:`target_extraction.analysis.sentiment_metrics`</span>
+<span class="sd">    :param true_sentiment_key: Key in the `target_collection` targets that </span>
+<span class="sd">                               contains the true sentiment scores for each </span>
+<span class="sd">                               target in the TargetTextCollection</span>
+<span class="sd">    :param predicted_sentiment_keys: The name of the predicted sentiment keys </span>
+<span class="sd">                                     within the TargetTextCollection for </span>
+<span class="sd">                                     which the metric function should be applied</span>
+<span class="sd">                                     to.</span>
+<span class="sd">    :param average: For each predicted sentiment key it will return the </span>
+<span class="sd">                    average metric score across the *N* predictions made for </span>
+<span class="sd">                    each predicted sentiment key.</span>
+<span class="sd">    :param array_scores: If average is False then this will return all of the </span>
+<span class="sd">                         *N* model runs metric scores.</span>
+<span class="sd">    :param assert_number_labels: Whether or not to assert this many number of unique  </span>
+<span class="sd">                                 labels must exist in the true sentiment key. </span>
+<span class="sd">                                 If this is None then the assertion is not raised.</span>
+<span class="sd">    :param ignore_label_differences: If True then the ValueError will not be </span>
+<span class="sd">                                     raised if the predicted sentiment values </span>
+<span class="sd">                                     are not in the true sentiment values.</span>
+<span class="sd">    :param metric_name: The name to give to the metric value column.</span>
+<span class="sd">    :param include_run_number: If `array_scores` is True then this will add an </span>
+<span class="sd">                               extra column to the returned dataframe (`run number`) </span>
+<span class="sd">                               which will include the model run number. This can </span>
+<span class="sd">                               be used to uniquely identify each row when combined </span>
+<span class="sd">                               with the `prediction key` string.</span>
+<span class="sd">    :returns: A pandas DataFrame with two columns: 1. The prediction </span>
+<span class="sd">              key string 2. The metric value. Where the number of rows in the </span>
+<span class="sd">              DataFrame is either Number of prediction keys when `average` is </span>
+<span class="sd">              `True` or Number of prediction keys * Number of model runs when </span>
+<span class="sd">              `array_scores` is `True`</span>
+<span class="sd">    :raises ValueError: If `include_run_number` is True and `array_scores` is </span>
+<span class="sd">                        False.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">include_run_number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">array_scores</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Can only have `include_run_number` as True if &#39;</span>
+                         <span class="s1">&#39;`array_scores` is also True&#39;</span><span class="p">)</span>
+    <span class="n">df_predicted_keys</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">df_metric_values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">df_run_numbers</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">predicted_sentiment_key</span> <span class="ow">in</span> <span class="n">predicted_sentiment_keys</span><span class="p">:</span>
+        <span class="n">metric_scroes</span> <span class="o">=</span> <span class="n">metric_function</span><span class="p">(</span><span class="n">target_collection</span><span class="p">,</span> <span class="n">true_sentiment_key</span><span class="p">,</span> 
+                                        <span class="n">predicted_sentiment_key</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="n">average</span><span class="p">,</span> 
+                                        <span class="n">array_scores</span><span class="o">=</span><span class="n">array_scores</span><span class="p">,</span> 
+                                        <span class="n">assert_number_labels</span><span class="o">=</span><span class="n">assert_number_labels</span><span class="p">,</span>
+                                        <span class="n">ignore_label_differences</span><span class="o">=</span><span class="n">ignore_label_differences</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metric_scroes</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">metric_index</span><span class="p">,</span> <span class="n">metric_score</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">metric_scroes</span><span class="p">):</span>
+                <span class="n">df_metric_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric_score</span><span class="p">)</span>
+                <span class="n">df_predicted_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predicted_sentiment_key</span><span class="p">)</span>
+                <span class="n">df_run_numbers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric_index</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df_metric_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric_scroes</span><span class="p">)</span>
+            <span class="n">df_predicted_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predicted_sentiment_key</span><span class="p">)</span>
+    <span class="n">df_dict</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">df_metric_values</span><span class="p">,</span> 
+               <span class="s1">&#39;prediction key&#39;</span><span class="p">:</span> <span class="n">df_predicted_keys</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">include_run_number</span><span class="p">:</span>
+        <span class="n">df_dict</span><span class="p">[</span><span class="s1">&#39;run number&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_run_numbers</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">df_dict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="metric_p_values"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.util.metric_p_values">[docs]</a><span class="k">def</span> <span class="nf">metric_p_values</span><span class="p">(</span><span class="n">data_split_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">better_split</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                    <span class="n">compare_splits</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">datasets</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> 
+                    <span class="n">metric_names_assume_normals</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]],</span>
+                    <span class="n">better_and_compare_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Model&#39;</span>
+                    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param data_split_df: The DataFrame that contains at least the following </span>
+<span class="sd">                            columns: 1. value for `better_and_compare_column_name`,</span>
+<span class="sd">                            2. `Dataset`, and 3. all `metric name` </span>
+<span class="sd">    :param better_split: The name of the model you are testing if it is better</span>
+<span class="sd">                        than all other models in the `compare_splits`</span>
+<span class="sd">    :param compare_splits: The name of the models you assume are no different </span>
+<span class="sd">                            in score to the `better_split` model.</span>
+<span class="sd">    :param datasets: Datasets to test the hypothesis on.</span>
+<span class="sd">    :param metric_names_assume_normals: A list of Tuples that contain </span>
+<span class="sd">                                        (metric name, assumed to be normal)</span>
+<span class="sd">                                        where the `assumed to be normal` is False </span>
+<span class="sd">                                        or True based on whether the metric scores </span>
+<span class="sd">                                        from `metric name` column can be assumed to be </span>
+<span class="sd">                                        normal or not. e.g. [(`Accuracy`, True)]</span>
+<span class="sd">    :param better_and_compare_column_name: The column that contains the </span>
+<span class="sd">                                            `better_split` and `compare_splits` </span>
+<span class="sd">                                            values.</span>
+<span class="sd">    :returns: A DataFrame containing the following columns: 1. Metric, 2. Dataset,</span>
+<span class="sd">              3. P-Value, 4. Compared {better_and_compare_column_name}, and 5.</span>
+<span class="sd">              Better {better_and_compare_column_name}. Where it tests that one </span>
+<span class="sd">              Model is statistically better than the compare models on each </span>
+<span class="sd">              given dataset for each metric given.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">temp_df</span> <span class="o">=</span> <span class="n">data_split_df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">better_df</span> <span class="o">=</span> <span class="n">temp_df</span><span class="p">[</span><span class="n">temp_df</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">better_and_compare_column_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span><span class="o">==</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">better_split</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+    
+    <span class="n">compare_values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">better_values</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dataset_names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">metric_names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">p_values</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">compare_split</span> <span class="ow">in</span> <span class="n">compare_splits</span><span class="p">:</span>
+        <span class="n">compare_df</span> <span class="o">=</span> <span class="n">temp_df</span><span class="p">[</span><span class="n">temp_df</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">better_and_compare_column_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span><span class="o">==</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">compare_split</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
+            <span class="n">better_dataset_df</span> <span class="o">=</span> <span class="n">better_df</span><span class="p">[</span><span class="n">better_df</span><span class="p">[</span><span class="s1">&#39;Dataset&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">dataset</span><span class="p">]</span>
+            <span class="n">compare_dataset_df</span> <span class="o">=</span> <span class="n">compare_df</span><span class="p">[</span><span class="n">compare_df</span><span class="p">[</span><span class="s1">&#39;Dataset&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">dataset</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">metric_name</span><span class="p">,</span> <span class="n">assume_normal</span> <span class="ow">in</span> <span class="n">metric_names_assume_normals</span><span class="p">:</span>
+                <span class="n">better_scores</span> <span class="o">=</span> <span class="n">better_dataset_df</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+                <span class="n">compare_scores</span> <span class="o">=</span> <span class="n">compare_dataset_df</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+                <span class="n">p_value</span> <span class="o">=</span> <span class="n">one_tailed_p_value</span><span class="p">(</span><span class="n">better_scores</span><span class="p">,</span> <span class="n">compare_scores</span><span class="p">,</span> 
+                                             <span class="n">assume_normal</span><span class="o">=</span><span class="n">assume_normal</span><span class="p">)</span>
+                
+                <span class="n">p_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p_value</span><span class="p">)</span>
+                <span class="n">metric_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric_name</span><span class="p">)</span>
+                <span class="n">dataset_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+                <span class="n">compare_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">compare_split</span><span class="p">)</span>
+                <span class="n">better_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">better_split</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="sa">f</span><span class="s1">&#39;Compared </span><span class="si">{</span><span class="n">better_and_compare_column_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">compare_values</span><span class="p">,</span> 
+                         <span class="s1">&#39;Metric&#39;</span><span class="p">:</span> <span class="n">metric_names</span><span class="p">,</span> 
+                         <span class="s1">&#39;Dataset&#39;</span><span class="p">:</span> <span class="n">dataset_names</span><span class="p">,</span> 
+                         <span class="s1">&#39;P-Value&#39;</span><span class="p">:</span> <span class="n">p_values</span><span class="p">,</span>
+                         <span class="sa">f</span><span class="s1">&#39;Better </span><span class="si">{</span><span class="n">better_and_compare_column_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">better_values</span> 
+                        <span class="p">})</span></div>
+
+<div class="viewcode-block" id="add_metadata_to_df"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.util.add_metadata_to_df">[docs]</a><span class="k">def</span> <span class="nf">add_metadata_to_df</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">target_collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+                       <span class="n">metadata_prediction_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                       <span class="n">metadata_keys</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param df: A DataFrame that contains at least one column named `prediction key`</span>
+<span class="sd">               of which the values in `prediction key` releate to the keys within</span>
+<span class="sd">               TargetTextCollection that store the related to predicted values</span>
+<span class="sd">    :param target_collection: The collection that stores `prediction key` and </span>
+<span class="sd">                              the metadata within `target_collection.metadata`</span>
+<span class="sd">    :param metadata_prediction_key: The key that stores all of the metadata </span>
+<span class="sd">                                    associated to the `prediction key` values </span>
+<span class="sd">                                    within `target_collection.metadata`</span>
+<span class="sd">    :param metadata_keys: If not None will only add the metadata keys that relate </span>
+<span class="sd">                          to the `prediction key` that are stated in this list of </span>
+<span class="sd">                          Strings else will add all.</span>
+<span class="sd">    :returns: The `df` dataframe but with new columns that are the names of the </span>
+<span class="sd">              metadata fields with the values being the values from those metadata</span>
+<span class="sd">              fields that relate to the `prediction key` value.</span>
+<span class="sd">    :raises KeyError: If any of the `prediction key` values are not keys within </span>
+<span class="sd">                      the TargetTextCollection targets.</span>
+<span class="sd">    :raises KeyError: If any of the prediction key values in the dataframe are not </span>
+<span class="sd">                      in the `target_collection` metadata.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="n">target_collection</span><span class="o">.</span><span class="n">metadata</span>
+    <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">df</span>
+    <span class="k">if</span> <span class="n">metadata_prediction_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">df</span>
+    <span class="n">prediction_keys</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;prediction key&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">prediction_key</span> <span class="ow">in</span> <span class="n">prediction_keys</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">target_text</span> <span class="ow">in</span> <span class="n">target_collection</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">target_text</span><span class="p">:</span> <span class="n">TargetText</span>
+            <span class="n">target_text</span><span class="o">.</span><span class="n">_key_error</span><span class="p">(</span><span class="n">prediction_key</span><span class="p">)</span>
+    
+    
+    <span class="n">metadata_prediction_data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">metadata</span><span class="p">[</span><span class="n">metadata_prediction_key</span><span class="p">]</span>
+    <span class="n">prediction_key_metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">metadata_column_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    
+    <span class="k">for</span> <span class="n">prediction_key</span> <span class="ow">in</span> <span class="n">prediction_keys</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prediction_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata_prediction_data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The following prediction key </span><span class="si">{</span><span class="n">prediction_key</span><span class="si">}</span><span class="s1"> is &#39;</span>
+                           <span class="sa">f</span><span class="s1">&#39;not in the metadata </span><span class="si">{</span><span class="n">metadata_prediction_key</span><span class="si">}</span><span class="s1"> &#39;</span>
+                           <span class="sa">f</span><span class="s1">&#39;dictionary </span><span class="si">{</span><span class="n">metadata_prediction_data</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">column_name</span><span class="p">,</span> <span class="n">column_value</span> <span class="ow">in</span> <span class="n">metadata_prediction_data</span><span class="p">[</span><span class="n">prediction_key</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Skip metadata columns that are to be skipped as stated in the</span>
+            <span class="c1"># arguments</span>
+            <span class="k">if</span> <span class="n">metadata_keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">column_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metadata_keys</span><span class="p">:</span>
+                    <span class="k">continue</span>
+            <span class="n">prediction_key_metadata</span><span class="p">[</span><span class="n">prediction_key</span><span class="p">][</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">column_value</span>
+            <span class="n">metadata_column_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">column_name</span><span class="p">)</span>
+    <span class="c1"># default values for the metadata</span>
+    <span class="k">for</span> <span class="n">metadata_column</span> <span class="ow">in</span> <span class="n">metadata_column_names</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">metadata_column</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="c1"># Add the metadata to the dataframe</span>
+    <span class="k">for</span> <span class="n">prediction_key</span><span class="p">,</span> <span class="n">name_value</span> <span class="ow">in</span> <span class="n">prediction_key_metadata</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">column_name</span><span class="p">,</span> <span class="n">column_value</span> <span class="ow">in</span> <span class="n">name_value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;prediction key&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">prediction_key</span><span class="p">,</span> <span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">column_value</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="combine_metrics"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.util.combine_metrics">[docs]</a><span class="k">def</span> <span class="nf">combine_metrics</span><span class="p">(</span><span class="n">metric_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">other_metric_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+                    <span class="n">other_metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param metric_df: DataFrame that contains all the metrics to be kept</span>
+<span class="sd">    :param other_metric_df: Contains metric scores that are to be added to a copy </span>
+<span class="sd">                            of `metric_df`</span>
+<span class="sd">    :param other_metric_name: Name of the column of the metric scores to be copied</span>
+<span class="sd">                              from `other_metric_df`</span>
+<span class="sd">    :returns: A copy of the `metric_df` with a new column `other_metric_name`</span>
+<span class="sd">            that contains the other metric scores.</span>
+<span class="sd">    :Note: This assumes that the two dataframes come from </span>
+<span class="sd">           :py:func:`target_extraction.analysis.util.metric_df` with the argument </span>
+<span class="sd">           `include_run_number` as True. This is due to the columns used to </span>
+<span class="sd">           combine the metric scores are `prediction key` and `run number`.</span>
+<span class="sd">    :raises KeyError: If `prediction key` and `run number` are not columns </span>
+<span class="sd">                      within `metric_df` and `other_metric_df`</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">index_keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;prediction key&#39;</span><span class="p">,</span> <span class="s1">&#39;run number&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">df_name</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="p">[(</span><span class="s1">&#39;metric_df&#39;</span><span class="p">,</span> <span class="n">metric_df</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;other_metric_df&#39;</span><span class="p">,</span> <span class="n">other_metric_df</span><span class="p">)]:</span>
+        <span class="n">df_columns</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+        <span class="k">for</span> <span class="n">index_key</span> <span class="ow">in</span> <span class="n">index_keys</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">index_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df_columns</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The following column </span><span class="si">{</span><span class="n">index_key</span><span class="si">}</span><span class="s1"> does not&#39;</span>
+                                   <span class="sa">f</span><span class="s1">&#39;exist in </span><span class="si">{</span><span class="n">df_name</span><span class="si">}</span><span class="s1"> dataframe. The following&#39;</span>
+                                   <span class="sa">f</span><span class="s1">&#39; columns do exist </span><span class="si">{</span><span class="n">df_columns</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="n">new_metric_df</span> <span class="o">=</span> <span class="n">metric_df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">new_metric_df</span> <span class="o">=</span> <span class="n">new_metric_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_keys</span><span class="p">)</span>
+    <span class="n">other_metric_scores</span> <span class="o">=</span> <span class="n">other_metric_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">index_keys</span><span class="p">)[</span><span class="n">other_metric_name</span><span class="p">]</span>
+    <span class="n">new_metric_df</span><span class="p">[</span><span class="n">other_metric_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">other_metric_scores</span>
+    <span class="n">new_metric_df</span> <span class="o">=</span> <span class="n">new_metric_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">new_metric_df</span></div>
+
+<div class="viewcode-block" id="long_format_metrics"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.util.long_format_metrics">[docs]</a><span class="k">def</span> <span class="nf">long_format_metrics</span><span class="p">(</span><span class="n">metric_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+                        <span class="n">metric_column_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param metric_df: DataFrame from :py:func:`target_extraction.analysis.util.metric_df`</span>
+<span class="sd">                      that contains more than one metric score e.g. Accuracy and</span>
+<span class="sd">                      Macro F1</span>
+<span class="sd">    :param metric_column_names: The list of the metrics columns names that exist  </span>
+<span class="sd">                                in `metric_df`</span>
+<span class="sd">    :returns: A long format metric version of the `metric_df` e.g. converts a </span>
+<span class="sd">              DataFrame that contains `Accuracy` and `Macro F1` scores to a</span>
+<span class="sd">              DataFrame that contains `Metric` and `Metric Score` columns where </span>
+<span class="sd">              the `Metric` column contains either `Accuracy` or `Macro F1` score </span>
+<span class="sd">              and the `Metric Score` contains the relevant metric score. This </span>
+<span class="sd">              will increase the number of row in `metric_df` by *N* where </span>
+<span class="sd">              *N* is the length of `metric_column_names`.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">metric_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">metric_column</span> <span class="ow">in</span> <span class="n">metric_column_names</span><span class="p">:</span>
+        <span class="n">columns</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">metric_column</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">metric_df</span><span class="p">,</span> <span class="n">id_vars</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span> <span class="n">value_vars</span><span class="o">=</span><span class="n">metric_column_names</span><span class="p">,</span> 
+                   <span class="n">var_name</span><span class="o">=</span><span class="s1">&#39;Metric&#39;</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s1">&#39;Metric Score&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="overall_metric_results"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.util.overall_metric_results">[docs]</a><span class="k">def</span> <span class="nf">overall_metric_results</span><span class="p">(</span><span class="n">collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+                           <span class="n">prediction_keys</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                           <span class="n">true_sentiment_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;target_sentiments&#39;</span><span class="p">,</span>
+                           <span class="n">strict_accuracy_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+                           <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param collection: Dataset that contains all of the results. Furthermore it </span>
+<span class="sd">                       should have the name attribute as something meaningful </span>
+<span class="sd">                       e.g. `Laptop` for the Laptop dataset.</span>
+<span class="sd">    :param prediction_keys: A list of prediction keys that you want the results </span>
+<span class="sd">                            for. If None then it will get all of the prediction </span>
+<span class="sd">                            keys from </span>
+<span class="sd">                            `collection.metadatap[&#39;predicted_target_sentiment_key&#39;]`.</span>
+<span class="sd">    :param true_sentiment_key: Key in the `target_collection` targets that </span>
+<span class="sd">                               contains the true sentiment scores for each </span>
+<span class="sd">                               target in the TargetTextCollection.</span>
+<span class="sd">    :param strict_accuracy_metrics: If this is True the dataframe will also </span>
+<span class="sd">                                    contain three additional columns: &#39;STAC&#39;,</span>
+<span class="sd">                                    &#39;STAC 1&#39;, and &#39;STAC Multi&#39;. Where &#39;STAC&#39;</span>
+<span class="sd">                                    is the Strict Target Accuracy (STAC) on the </span>
+<span class="sd">                                    whole dataset, &#39;STAC 1&#39; and &#39;STAC Multi&#39; is </span>
+<span class="sd">                                    the STAC metric performed on the subset of </span>
+<span class="sd">                                    the dataset that contain either one unique </span>
+<span class="sd">                                    sentiment or more than one unique sentiment </span>
+<span class="sd">                                    per text respectively.</span>
+<span class="sd">    :returns: A pandas dataframe with the following columns: `[&#39;prediction key&#39;, </span>
+<span class="sd">              &#39;run number&#39;, &#39;Accuracy&#39;, &#39;Macro F1&#39;, &#39;Dataset&#39;]`. The `Dataset`</span>
+<span class="sd">              column will contain one unique value and that will come from </span>
+<span class="sd">              the `name` attribute of the `collection`. The DataFrame will </span>
+<span class="sd">              also contain columns and values from the associated metadata see</span>
+<span class="sd">              :py:func:`add_metadata_to_df` for more details.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+
+    <span class="k">if</span> <span class="n">prediction_keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">prediction_keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">collection</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;predicted_target_sentiment_key&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">acc_df</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="n">sentiment_metrics</span><span class="o">.</span><span class="n">accuracy</span><span class="p">,</span> 
+                       <span class="n">true_sentiment_key</span><span class="p">,</span> <span class="n">prediction_keys</span><span class="p">,</span>
+                       <span class="n">array_scores</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">assert_number_labels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+                       <span class="n">metric_name</span><span class="o">=</span><span class="s1">&#39;Accuracy&#39;</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">include_run_number</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">acc_df</span> <span class="o">=</span> <span class="n">add_metadata_to_df</span><span class="p">(</span><span class="n">acc_df</span><span class="p">,</span> <span class="n">collection</span><span class="p">,</span> <span class="s1">&#39;predicted_target_sentiment_key&#39;</span><span class="p">)</span>
+    <span class="n">f1_df</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="n">sentiment_metrics</span><span class="o">.</span><span class="n">macro_f1</span><span class="p">,</span> 
+                      <span class="n">true_sentiment_key</span><span class="p">,</span> <span class="n">prediction_keys</span><span class="p">,</span>
+                      <span class="n">array_scores</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">assert_number_labels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+                      <span class="n">metric_name</span><span class="o">=</span><span class="s1">&#39;Macro F1&#39;</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">include_run_number</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">combined_df</span> <span class="o">=</span> <span class="n">combine_metrics</span><span class="p">(</span><span class="n">acc_df</span><span class="p">,</span> <span class="n">f1_df</span><span class="p">,</span> <span class="s1">&#39;Macro F1&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">strict_accuracy_metrics</span><span class="p">:</span>
+        <span class="n">collection_copy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span>
+        <span class="n">collection_copy</span> <span class="o">=</span> <span class="n">distinct_sentiment</span><span class="p">(</span><span class="n">collection_copy</span><span class="p">,</span> <span class="n">separate_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                                             <span class="n">true_sentiment_key</span><span class="o">=</span><span class="n">true_sentiment_key</span><span class="p">)</span>
+        <span class="n">stac_multi_collection</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">collection_copy</span><span class="p">)</span>
+        <span class="n">stac_multi_collection</span> <span class="o">=</span> <span class="n">swap_and_reduce</span><span class="p">(</span><span class="n">stac_multi_collection</span><span class="p">,</span> 
+                                               <span class="p">[</span><span class="s1">&#39;distinct_sentiment_2&#39;</span><span class="p">,</span> <span class="s1">&#39;distinct_sentiment_3&#39;</span><span class="p">],</span>
+                                               <span class="n">true_sentiment_key</span><span class="p">,</span> 
+                                               <span class="n">prediction_keys</span><span class="p">)</span>
+        <span class="n">stac_multi</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">(</span><span class="n">stac_multi_collection</span><span class="p">,</span> <span class="n">sentiment_metrics</span><span class="o">.</span><span class="n">strict_text_accuracy</span><span class="p">,</span> 
+                              <span class="n">true_sentiment_key</span><span class="p">,</span> <span class="n">prediction_keys</span><span class="p">,</span>
+                              <span class="n">array_scores</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">assert_number_labels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+                               <span class="n">metric_name</span><span class="o">=</span><span class="s1">&#39;STAC Multi&#39;</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                               <span class="n">include_run_number</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">combined_df</span> <span class="o">=</span> <span class="n">combine_metrics</span><span class="p">(</span><span class="n">combined_df</span><span class="p">,</span> <span class="n">stac_multi</span><span class="p">,</span> <span class="s1">&#39;STAC Multi&#39;</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">stac_multi_collection</span>
+        <span class="n">stac_1_collection</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">collection_copy</span><span class="p">)</span>
+        <span class="n">stac_1_collection</span> <span class="o">=</span> <span class="n">swap_and_reduce</span><span class="p">(</span><span class="n">stac_1_collection</span><span class="p">,</span> 
+                                           <span class="s1">&#39;distinct_sentiment_1&#39;</span><span class="p">,</span>
+                                            <span class="n">true_sentiment_key</span><span class="p">,</span> 
+                                            <span class="n">prediction_keys</span><span class="p">)</span>
+        <span class="n">stac_1</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">(</span><span class="n">stac_1_collection</span><span class="p">,</span> <span class="n">sentiment_metrics</span><span class="o">.</span><span class="n">strict_text_accuracy</span><span class="p">,</span> 
+                           <span class="n">true_sentiment_key</span><span class="p">,</span> <span class="n">prediction_keys</span><span class="p">,</span>
+                           <span class="n">array_scores</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">assert_number_labels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+                           <span class="n">metric_name</span><span class="o">=</span><span class="s1">&#39;STAC 1&#39;</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                           <span class="n">include_run_number</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">combined_df</span> <span class="o">=</span> <span class="n">combine_metrics</span><span class="p">(</span><span class="n">combined_df</span><span class="p">,</span> <span class="n">stac_1</span><span class="p">,</span> <span class="s1">&#39;STAC 1&#39;</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">stac_1_collection</span>
+        <span class="k">del</span> <span class="n">collection_copy</span>
+        <span class="n">stac</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="n">sentiment_metrics</span><span class="o">.</span><span class="n">strict_text_accuracy</span><span class="p">,</span> 
+                         <span class="n">true_sentiment_key</span><span class="p">,</span> <span class="n">prediction_keys</span><span class="p">,</span>
+                         <span class="n">array_scores</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">assert_number_labels</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+                         <span class="n">metric_name</span><span class="o">=</span><span class="s1">&#39;STAC&#39;</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                         <span class="n">include_run_number</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">combined_df</span> <span class="o">=</span> <span class="n">combine_metrics</span><span class="p">(</span><span class="n">combined_df</span><span class="p">,</span> <span class="n">stac</span><span class="p">,</span> <span class="s1">&#39;STAC&#39;</span><span class="p">)</span>
+
+    <span class="n">combined_df</span><span class="p">[</span><span class="s1">&#39;Dataset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">collection</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">*</span> <span class="n">combined_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">combined_df</span></div>
+
+<div class="viewcode-block" id="plot_error_subsets"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.util.plot_error_subsets">[docs]</a><span class="k">def</span> <span class="nf">plot_error_subsets</span><span class="p">(</span><span class="n">metric_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">df_column_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                       <span class="n">df_row_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">df_x_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">df_y_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                       <span class="n">df_hue_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Model&#39;</span><span class="p">,</span> 
+                       <span class="n">seaborn_plot_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;pointplot&#39;</span><span class="p">,</span>
+                       <span class="n">seaborn_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">legend_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                       <span class="n">figsize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">legend_bbox_to_anchor</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.13</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">),</span>
+                       <span class="n">fontsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">14</span><span class="p">,</span> <span class="n">legend_fontsize</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                       <span class="n">tick_font_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span> 
+                       <span class="n">title_on_every_plot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                       <span class="n">df_overall_metric</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">overall_seaborn_plot_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">overall_seaborn_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">df_dataset_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">dataset_h_line_offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+                       <span class="n">dataset_h_line_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span>
+                       <span class="n">h_line_legend_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Dataset Size (Number of Samples)&#39;</span><span class="p">,</span>
+                       <span class="n">h_line_legend_bbox_to_anchor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">dataset_y_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Dataset Size</span><span class="se">\n</span><span class="s1">(Number of Samples)&#39;</span><span class="p">,</span>
+                       <span class="n">gridspec_kw</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">row_order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">column_order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> 
+                                  <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span><span class="p">]]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This function is named what it is as it is a good way to visualise the </span>
+<span class="sd">    different error subsets and thus error splits after running different </span>
+<span class="sd">    error functions from </span>
+<span class="sd">    :py:func`target_extraction.analysis.sentiment_error_analysis.error_analysis_wrapper`</span>
+<span class="sd">    and further more if you are exploring them over different datasets. </span>
+<span class="sd">    To create a graph with these different error analysis subsets, Models, and datasets </span>
+<span class="sd">    the following column and row names may be useful: `df_column_name` = `Dataset`,</span>
+<span class="sd">    `df_row_name` = `Error Split`, `df_x_name` = `Error Subset`, `df_y_name` </span>
+<span class="sd">    = `Accuracy (%)`, and `df_hue_name` = `Model`.</span>
+
+<span class="sd">    :param metric_df: A DataFrame that will </span>
+<span class="sd">    :param df_column_name: Name of the column in `metric_df` that will be used </span>
+<span class="sd">                           to determine the categorical variables to facet the </span>
+<span class="sd">                           column part of the returned figure</span>
+<span class="sd">    :param df_row_name: Name of the column in `metric_df` that will be used </span>
+<span class="sd">                        to determine the categorical variables to facet the </span>
+<span class="sd">                        row part of the returned figure</span>
+<span class="sd">    :param df_x_name: Name of the column in `metric_df` that will be used to </span>
+<span class="sd">                      represent the X-axis in the figure.</span>
+<span class="sd">    :param df_y_name: Name of the column in `metric_df` that will be used to </span>
+<span class="sd">                      represent the Y-axis in the figure.</span>
+<span class="sd">    :param df_hue_name: Name of the column in `metric_df` that will be used to </span>
+<span class="sd">                        represent the hue in the figure</span>
+<span class="sd">    :param seaborn_plot_name: Name of the seaborn plotting function to use as </span>
+<span class="sd">                              the plots within the figure</span>
+<span class="sd">    :param seaborn_kwargs: The key word arguments to give to the seaborn </span>
+<span class="sd">                           plotting function.</span>
+<span class="sd">    :param legend_column: Which column in the figure the legend should be </span>
+<span class="sd">                          associated too. The row the legend is associated </span>
+<span class="sd">                          with is fixed at row 0.</span>
+<span class="sd">    :param figsize: Size of the figure, this is passed to the </span>
+<span class="sd">                    :py:func:`matplotlib.pyplot.subplots` as an argument.</span>
+<span class="sd">    :param legend_bbox_to_anchor: Where the legend box should be within the </span>
+<span class="sd">                                  figure. This is passed as the `bbox_to_anchor`</span>
+<span class="sd">                                  argument to </span>
+<span class="sd">                                  :py:func:`matplotlib.pyplot.Axes.legend`</span>
+<span class="sd">    :param fontsize: Size of the font for the title, y-axis label, and </span>
+<span class="sd">                     x-axis label.</span>
+<span class="sd">    :param legend_fontsize: Size of the font for the legend.</span>
+<span class="sd">    :param tick_font_size: Size of the font on the y and x axis ticks.</span>
+<span class="sd">    :param title_on_every_plot: Whether or not to have the title above every </span>
+<span class="sd">                                plot in the grid or just over the top row </span>
+<span class="sd">                                of plots.</span>
+<span class="sd">    :param df_overall_metric: Name of the column in `metric_df` that stores </span>
+<span class="sd">                              the overall metric score for the entire dataset </span>
+<span class="sd">                              and not just the `subsets`.</span>
+<span class="sd">    :param overall_seaborn_plot_name: Same as the `seaborn_plot_name` but for </span>
+<span class="sd">                                      plotting the overall metric</span>
+<span class="sd">    :param overall_seaborn_kwargs: Same as the `seaborn_kwargs` but for the </span>
+<span class="sd">                                   overall metric plot.</span>
+<span class="sd">    :param df_dataset_size: Name of the column in `metric_df` that stores </span>
+<span class="sd">                            the dataset size for one of the X-axis. If </span>
+<span class="sd">                            this is given it will create h_lines for each </span>
+<span class="sd">                            X-axis representing the dataset size</span>
+<span class="sd">    :param dataset_h_line_offset: +/- offsets indicating the length of each </span>
+<span class="sd">                                  hline</span>
+<span class="sd">    :param dataset_h_line_color: Color of the hline</span>
+<span class="sd">    :param h_line_legend_name: Name to give to the h_line legend.</span>
+<span class="sd">    :param h_line_legend_bbox_to_anchor: Where the h line legend box should be within the </span>
+<span class="sd">                                         figure. This is passed as the `bbox_to_anchor`</span>
+<span class="sd">                                         argument to </span>
+<span class="sd">                                         :py:func:`matplotlib.pyplot.Axes.legend`</span>
+<span class="sd">    :param dataset_y_label: The Y-Label for the right hand side Y-axis.</span>
+<span class="sd">    :param gridspec_kw: :py:func:`matplotlib.pyplot.subplots` `gridspec_kw` argument</span>
+<span class="sd">    :param row_order: A list of all unique `df_row_name` values in the order </span>
+<span class="sd">                      the rows should appear in.</span>
+<span class="sd">    :param column_order: A list of all unique `df_column_name` values in the order </span>
+<span class="sd">                         the columns should appear in.</span>
+<span class="sd">    :returns: A tuple of 1. The figure  2. The associated axes within the </span>
+<span class="sd">              figure. The figure will contain N x M plots where N is the number </span>
+<span class="sd">              of unique values in the `metric_df` `df_column_name` column and </span>
+<span class="sd">              M is the number of unique values in the `metric_df` </span>
+<span class="sd">              `df_row_name` column.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">plot_error_split</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> 
+                        <span class="n">error_axs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span><span class="p">],</span> 
+                        <span class="n">column_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                        <span class="n">first_row</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">last_row</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+                        <span class="n">number_hue_values</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="n">h_line_legend_bbox_to_anchor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">col_index</span><span class="p">,</span> <span class="n">column_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">column_names</span><span class="p">):</span>
+            <span class="n">_df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">df_column_name</span><span class="p">]</span><span class="o">==</span><span class="n">column_name</span><span class="p">]</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">error_axs</span><span class="p">[</span><span class="n">col_index</span><span class="p">]</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">sns</span><span class="p">,</span> <span class="n">seaborn_plot_name</span><span class="p">)(</span><span class="n">x</span><span class="o">=</span><span class="n">df_x_name</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">df_y_name</span><span class="p">,</span> 
+                                            <span class="n">hue</span><span class="o">=</span><span class="n">df_hue_name</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">_df</span><span class="p">,</span> 
+                                            <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">seaborn_kwargs</span><span class="p">)</span>
+            <span class="c1"># Required if plotting the overall metrics</span>
+            <span class="k">if</span> <span class="n">df_overall_metric</span><span class="p">:</span>
+                <span class="n">_temp_overall_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">=</span> <span class="n">_df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">_temp_overall_df</span> <span class="o">=</span> <span class="n">_temp_overall_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">df_y_name</span><span class="p">)</span>
+                <span class="n">_temp_overall_df</span> <span class="o">=</span> <span class="n">_temp_overall_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="n">df_overall_metric</span><span class="p">:</span> <span class="n">df_y_name</span><span class="p">})</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="n">sns</span><span class="p">,</span> <span class="n">overall_seaborn_plot_name</span><span class="p">)(</span><span class="n">x</span><span class="o">=</span><span class="n">df_x_name</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">df_y_name</span><span class="p">,</span> 
+                                                        <span class="n">hue</span><span class="o">=</span><span class="n">df_hue_name</span><span class="p">,</span> 
+                                                        <span class="n">data</span><span class="o">=</span><span class="n">_temp_overall_df</span><span class="p">,</span> 
+                                                        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> 
+                                                        <span class="o">**</span><span class="n">overall_seaborn_kwargs</span><span class="p">)</span>
+            
+            <span class="c1"># Y axis labelling</span>
+            <span class="n">row_name</span> <span class="o">=</span> <span class="n">_df</span><span class="p">[</span><span class="n">df_row_name</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+            <span class="n">row_name_err</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;There should only be one unique row name </span><span class="si">{row_name}</span><span class="s1"> &#39;</span>
+                            <span class="sa">f</span><span class="s1">&#39;from the row column </span><span class="si">{</span><span class="n">df_row_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_name</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">row_name_err</span>
+            <span class="n">row_name</span> <span class="o">=</span> <span class="n">row_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">col_index</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">df_row_name</span><span class="si">}</span><span class="s1">=</span><span class="si">{</span><span class="n">row_name</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">df_y_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> 
+                            <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+            <span class="c1"># X axis labelling</span>
+            <span class="k">if</span> <span class="n">last_row</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">df_x_name</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="c1"># Title</span>
+            <span class="k">if</span> <span class="n">first_row</span> <span class="ow">or</span> <span class="n">title_on_every_plot</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">df_column_name</span><span class="si">}</span><span class="s1">=</span><span class="si">{</span><span class="n">column_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+            <span class="c1"># Legend</span>
+            <span class="k">if</span> <span class="n">col_index</span> <span class="o">==</span> <span class="n">legend_column</span> <span class="ow">and</span> <span class="n">first_row</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">bbox_to_anchor</span><span class="o">=</span><span class="n">legend_bbox_to_anchor</span><span class="p">,</span> 
+                          <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;lower left&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">legend_fontsize</span><span class="p">,</span> 
+                          <span class="n">ncol</span><span class="o">=</span><span class="n">number_hue_values</span><span class="p">,</span> <span class="n">borderaxespad</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">get_legend</span><span class="p">()</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+            
+            <span class="k">if</span> <span class="n">df_dataset_size</span><span class="p">:</span>
+                <span class="n">dataset_ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>
+                <span class="c1"># only if it is the last column</span>
+                <span class="k">if</span> <span class="n">col_index</span> <span class="o">==</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">column_names</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="n">dataset_ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">dataset_y_label</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fontsize</span><span class="p">)</span>
+                <span class="n">dataset_sizes</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">x_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">x_tick_label</span><span class="o">.</span><span class="n">get_text</span><span class="p">()</span> 
+                            <span class="k">for</span> <span class="n">x_tick_label</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">()]</span>
+                <span class="k">for</span> <span class="n">x_value</span> <span class="ow">in</span> <span class="n">x_values</span><span class="p">:</span>
+                    <span class="n">dataset_size</span> <span class="o">=</span> <span class="n">_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">_df</span><span class="p">[</span><span class="n">df_x_name</span><span class="p">]</span><span class="o">==</span><span class="n">x_value</span><span class="p">][</span><span class="n">df_dataset_size</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+                    <span class="n">dataset_size</span> <span class="o">=</span> <span class="n">dataset_size</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                    <span class="k">assert</span> <span class="mi">1</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_size</span><span class="p">)</span>
+                    <span class="n">dataset_sizes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset_size</span><span class="p">)</span>
+    
+                <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">dataset_size</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dataset_sizes</span><span class="p">):</span>
+                    <span class="n">x_indexes</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span> <span class="o">-</span> <span class="n">dataset_h_line_offset</span><span class="p">,</span> 
+                                 <span class="n">index</span> <span class="o">+</span> <span class="n">dataset_h_line_offset</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">col_index</span> <span class="o">==</span> <span class="n">legend_column</span> <span class="ow">and</span> <span class="n">first_row</span><span class="p">:</span>
+                        <span class="n">dataset_ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="n">dataset_size</span><span class="p">,</span> <span class="n">x_indexes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x_indexes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> 
+                                          <span class="n">linestyles</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">dataset_h_line_color</span><span class="p">,</span>
+                                          <span class="n">label</span><span class="o">=</span><span class="n">h_line_legend_name</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">h_line_legend_bbox_to_anchor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">h_line_legend_bbox_0</span><span class="p">,</span> <span class="n">h_line_legend_bbox_1</span> <span class="o">=</span> <span class="n">legend_bbox_to_anchor</span>
+                            <span class="n">h_line_legend_bbox_1</span> <span class="o">=</span> <span class="n">h_line_legend_bbox_1</span> <span class="o">+</span> <span class="mf">0.1</span>
+                            <span class="n">h_line_legend_bbox_to_anchor</span> <span class="o">=</span> <span class="p">(</span><span class="n">h_line_legend_bbox_0</span><span class="p">,</span> <span class="n">h_line_legend_bbox_1</span><span class="p">)</span>
+                        <span class="n">dataset_ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">bbox_to_anchor</span><span class="o">=</span><span class="n">h_line_legend_bbox_to_anchor</span><span class="p">,</span> 
+                                          <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;lower left&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">legend_fontsize</span><span class="p">,</span> 
+                                          <span class="n">borderaxespad</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">dataset_ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="n">dataset_size</span><span class="p">,</span> <span class="n">x_indexes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x_indexes</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> 
+                                          <span class="n">linestyles</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span> 
+                                          <span class="n">color</span><span class="o">=</span><span class="n">dataset_h_line_color</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;xtick&#39;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">tick_font_size</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;ytick&#39;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">tick_font_size</span><span class="p">)</span>
+    <span class="c1"># Seaborn plotting options</span>
+    <span class="k">if</span> <span class="n">seaborn_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">seaborn_plot_name</span><span class="o">==</span><span class="s1">&#39;pointplot&#39;</span><span class="p">:</span>
+        <span class="n">seaborn_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;join&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;ci&#39;</span><span class="p">:</span> <span class="s1">&#39;sd&#39;</span><span class="p">,</span> <span class="s1">&#39;dodge&#39;</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span> 
+                          <span class="s1">&#39;capsize&#39;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">}</span>
+    <span class="k">elif</span> <span class="n">seaborn_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">seaborn_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># Ensure that all the values in hue column will always be the same</span>
+    <span class="n">hue_values</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">[</span><span class="n">df_hue_name</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">number_hue_values</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hue_values</span><span class="p">)</span>
+    <span class="n">palette</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">hue_values</span><span class="p">,</span> <span class="n">sns</span><span class="o">.</span><span class="n">color_palette</span><span class="p">()))</span>
+    <span class="n">seaborn_kwargs</span><span class="p">[</span><span class="s1">&#39;palette&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">palette</span>
+
+    <span class="c1"># Determine the number of rows</span>
+    <span class="n">row_names</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">[</span><span class="n">df_row_name</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">num_rows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_names</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">row_order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">row_order_error</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The `row_order` argument </span><span class="si">{</span><span class="n">row_order</span><span class="si">}</span><span class="s1"> should contain&#39;</span>
+                           <span class="s1">&#39;the same values as the unique values in the &#39;</span>
+                           <span class="sa">f</span><span class="s1">&#39;`df_row_name` </span><span class="si">{</span><span class="n">df_row_name</span><span class="si">}</span><span class="s1"> column which are </span><span class="si">{</span><span class="n">row_names</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">row_order</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">row_names</span><span class="p">),</span> <span class="n">row_order_error</span>
+        <span class="n">row_names</span> <span class="o">=</span> <span class="n">row_order</span>
+    <span class="c1"># Number of columns</span>
+    <span class="n">column_names</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">[</span><span class="n">df_column_name</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">number_columns</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">column_names</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">column_order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">column_order_error</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The `column_order` argument </span><span class="si">{</span><span class="n">column_order</span><span class="si">}</span><span class="s1"> &#39;</span>
+                              <span class="s1">&#39;should contain the same values as the unique &#39;</span>
+                              <span class="sa">f</span><span class="s1">&#39;values in the `df_column_name` </span><span class="si">{</span><span class="n">df_column_name</span><span class="si">}</span><span class="s1"> &#39;</span>
+                              <span class="sa">f</span><span class="s1">&#39;column which are </span><span class="si">{</span><span class="n">column_names</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">set</span><span class="p">(</span><span class="n">column_order</span><span class="p">)</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">column_names</span><span class="p">),</span> <span class="n">column_order_error</span>
+        <span class="n">column_names</span> <span class="o">=</span> <span class="n">column_order</span>
+
+    <span class="k">if</span> <span class="n">figsize</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">length</span> <span class="o">=</span> <span class="n">num_rows</span> <span class="o">*</span> <span class="mi">4</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="n">number_columns</span> <span class="o">*</span> <span class="mi">5</span>
+        <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gridspec_kw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">df_dataset_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">gridspec_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;wspace&#39;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gridspec_kw</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="n">num_rows</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="n">number_columns</span><span class="p">,</span> 
+                            <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">,</span> <span class="n">gridspec_kw</span><span class="o">=</span><span class="n">gridspec_kw</span><span class="p">)</span>
+    <span class="c1"># row </span>
+    <span class="k">if</span> <span class="n">num_rows</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># columns</span>
+        <span class="k">for</span> <span class="n">row_index</span><span class="p">,</span> <span class="n">row_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">row_names</span><span class="p">):</span>
+            <span class="n">row_metric_df</span> <span class="o">=</span> <span class="n">metric_df</span><span class="p">[</span><span class="n">metric_df</span><span class="p">[</span><span class="n">df_row_name</span><span class="p">]</span><span class="o">==</span><span class="n">row_name</span><span class="p">]</span>
+            <span class="n">row_axs</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="n">row_index</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">row_index</span> <span class="o">==</span> <span class="p">(</span><span class="n">num_rows</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">plot_error_split</span><span class="p">(</span><span class="n">row_metric_df</span><span class="p">,</span> <span class="n">row_axs</span><span class="p">,</span> <span class="n">column_names</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> 
+                                 <span class="kc">True</span><span class="p">,</span> <span class="n">number_hue_values</span><span class="p">,</span> <span class="n">h_line_legend_bbox_to_anchor</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">row_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">plot_error_split</span><span class="p">(</span><span class="n">row_metric_df</span><span class="p">,</span> <span class="n">row_axs</span><span class="p">,</span> <span class="n">column_names</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> 
+                                 <span class="kc">False</span><span class="p">,</span> <span class="n">number_hue_values</span><span class="p">,</span> <span class="n">h_line_legend_bbox_to_anchor</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">plot_error_split</span><span class="p">(</span><span class="n">row_metric_df</span><span class="p">,</span> <span class="n">row_axs</span><span class="p">,</span> <span class="n">column_names</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> 
+                                 <span class="kc">False</span><span class="p">,</span> <span class="n">number_hue_values</span><span class="p">,</span> <span class="n">h_line_legend_bbox_to_anchor</span><span class="p">)</span>
+    <span class="c1"># Only 1 row but multiple columns</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plot_error_split</span><span class="p">(</span><span class="n">metric_df</span><span class="p">,</span> <span class="n">axs</span><span class="p">,</span> <span class="n">column_names</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> 
+                         <span class="n">number_hue_values</span><span class="p">,</span> <span class="n">h_line_legend_bbox_to_anchor</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span></div>
+
+<div class="viewcode-block" id="create_subset_heatmap"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.util.create_subset_heatmap">[docs]</a><span class="k">def</span> <span class="nf">create_subset_heatmap</span><span class="p">(</span><span class="n">subset_df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">value_column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                          <span class="n">pivot_table_agg_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">],</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">font_label_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+                          <span class="n">cubehelix_palette_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">value_range</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">lines</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">line_color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span>
+                          <span class="n">vertical_lines_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">horizontal_lines_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">pyplot</span><span class="o">.</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">heatmap_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">pyplot</span><span class="o">.</span><span class="n">Axes</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param subset_df: A DataFrame that contains the following columns: </span>
+<span class="sd">                      1. Error Split, 2. Error Subset, 3. Dataset, </span>
+<span class="sd">                      and 4. `value_column`</span>
+<span class="sd">    :param value_column: The column that contains the value to be plotted in the </span>
+<span class="sd">                         heatmap.</span>
+<span class="sd">    :param pivot_table_agg_func: As a pivot table is created to create the heatmap.</span>
+<span class="sd">                                 This allows the replacement default aggregation </span>
+<span class="sd">                                 function (np.mean) with a custom function. The </span>
+<span class="sd">                                 pivot table aggregates the `value_column` by </span>
+<span class="sd">                                 Dataset, Error Split, and Error Subset.</span>
+<span class="sd">    :param font_label_size: Font sizes of the labels on the returned plot</span>
+<span class="sd">    :param cubehelix_palette_kwargs: Keywords arguments to give to the </span>
+<span class="sd">                                     seaborn.cubehelix_palette</span>
+<span class="sd">                                     https://seaborn.pydata.org/generated/seaborn.cubehelix_palette.html.</span>
+<span class="sd">                                     Default produces white to dark red.</span>
+<span class="sd">    :param value_range: This can also be interpreted as the values allowed in </span>
+<span class="sd">                        the color range and should cover at least all unique </span>
+<span class="sd">                        values in `value_column`.</span>
+<span class="sd">    :param lines: Whether or not lines should appear on the plot to define the </span>
+<span class="sd">                  different error splits.</span>
+<span class="sd">    :param line_color: Color of the lines if the lines are to be displayed. The </span>
+<span class="sd">                       choice of color names can be found here: </span>
+<span class="sd">                       https://matplotlib.org/3.1.1/gallery/color/named_colors.html#sphx-glr-gallery-color-named-colors-py</span>
+<span class="sd">    :param vertical_lines_index: The index of the lines in vertical/column </span>
+<span class="sd">                                 direction. If None default is [0,3,7,11,15,18]</span>
+<span class="sd">    :param horizontal_lines_index: The index of the lines in vertical/column </span>
+<span class="sd">                                   direction. If None default is [0,1,2,3]</span>
+<span class="sd">    :param ax: A matplotlib Axes to give to the seaborn function to plot the </span>
+<span class="sd">               heatmap on to.</span>
+<span class="sd">    :param heatmap_kwargs: Keyword arguments to pass to the seaborn.heatmap </span>
+<span class="sd">                           function</span>
+<span class="sd">    :returns: A heatmap where the Y-axis represents the datasets, X-axis </span>
+<span class="sd">              represents the Error subsets formatted when appropriate with the </span>
+<span class="sd">              Error split name, and the values come from the `value_column`. The </span>
+<span class="sd">              heatmap assumes the `value_column` contains discrete values as the </span>
+<span class="sd">              color bar is discrete rather than continuos. If you want a continuos </span>
+<span class="sd">              color bar it is recommended that you use Seaborn heatmap.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">df_copy</span> <span class="o">=</span> <span class="n">subset_df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">format_error_split</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;Error Split&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;Error Split&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;DS&quot;</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">df_copy</span><span class="p">[</span><span class="s1">&#39;Formatted Error Split&#39;</span><span class="p">]</span> <span class="o">=</span>  <span class="n">df_copy</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">format_error_split</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">combined_split_subset</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;Formatted Error Split&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;Error Subset&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">df_copy</span><span class="p">[</span><span class="s1">&#39;Combined Error Subset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_copy</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">combined_split_subset</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pivot_table_agg_func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pivot_table_agg_func</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span>
+    <span class="n">df_copy</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">pivot_table</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">df_copy</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">value_column</span><span class="p">,</span> 
+                             <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Combined Error Subset&#39;</span><span class="p">],</span> 
+                             <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Dataset&#39;</span><span class="p">],</span> <span class="n">aggfunc</span><span class="o">=</span><span class="n">pivot_table_agg_func</span><span class="p">)</span>
+
+    <span class="n">column_order</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DS1&#39;</span><span class="p">,</span> <span class="s1">&#39;DS2&#39;</span><span class="p">,</span> <span class="s1">&#39;DS3&#39;</span><span class="p">,</span> <span class="s1">&#39;TSSR 1&#39;</span><span class="p">,</span> <span class="s1">&#39;TSSR 1-Multi&#39;</span><span class="p">,</span> <span class="s1">&#39;TSSR High&#39;</span><span class="p">,</span> 
+                    <span class="s1">&#39;TSSR Low&#39;</span><span class="p">,</span> <span class="s1">&#39;NT 1&#39;</span><span class="p">,</span> <span class="s1">&#39;NT Low&#39;</span><span class="p">,</span> <span class="s1">&#39;NT Med&#39;</span><span class="p">,</span> <span class="s1">&#39;NT High&#39;</span><span class="p">,</span> 
+                    <span class="s1">&#39;n-shot Zero&#39;</span><span class="p">,</span> <span class="s1">&#39;n-shot Low&#39;</span><span class="p">,</span> <span class="s1">&#39;n-shot Med&#39;</span><span class="p">,</span> <span class="s1">&#39;n-shot High&#39;</span><span class="p">,</span> 
+                    <span class="s1">&#39;TSR USKT&#39;</span><span class="p">,</span> <span class="s1">&#39;TSR UT&#39;</span><span class="p">,</span> <span class="s1">&#39;TSR KSKT&#39;</span><span class="p">]</span>
+    <span class="c1"># Remove columns in the column order that do not exist as a column</span>
+    <span class="n">temp_column_order</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">columns_that_exist</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">df_copy</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">column_order</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns_that_exist</span><span class="p">:</span>
+            <span class="n">temp_column_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">column</span><span class="p">)</span>
+    <span class="n">column_order</span> <span class="o">=</span> <span class="n">temp_column_order</span>
+    <span class="n">df_copy</span> <span class="o">=</span> <span class="n">df_copy</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">column_order</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;xtick&#39;</span><span class="p">,</span><span class="n">labelsize</span><span class="o">=</span><span class="n">font_label_size</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s1">&#39;ytick&#39;</span><span class="p">,</span><span class="n">labelsize</span><span class="o">=</span><span class="n">font_label_size</span><span class="p">)</span>
+    <span class="n">unique_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">df_copy</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">value_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">unique_values</span> <span class="o">=</span> <span class="n">value_range</span>
+    <span class="n">num_unique_values</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_values</span><span class="p">)</span>
+    <span class="n">color_bar_spacing</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">unique_values</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_unique_values</span>
+    <span class="n">half_bar_spacing</span> <span class="o">=</span> <span class="n">color_bar_spacing</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">colorbar_values</span> <span class="o">=</span> <span class="p">[(</span><span class="n">i</span> <span class="o">*</span> <span class="n">color_bar_spacing</span><span class="p">)</span> <span class="o">+</span> <span class="n">half_bar_spacing</span> 
+                       <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_values</span><span class="p">))]</span>
+    <span class="k">if</span> <span class="n">cubehelix_palette_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cubehelix_palette_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;hue&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;gamma&#39;</span><span class="p">:</span> <span class="mf">2.2</span><span class="p">,</span> <span class="s1">&#39;light&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> 
+                                    <span class="s1">&#39;dark&#39;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">}</span>
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">cubehelix_palette</span><span class="p">(</span><span class="n">n_colors</span><span class="o">=</span><span class="n">num_unique_values</span><span class="p">,</span> 
+                                 <span class="o">**</span><span class="n">cubehelix_palette_kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">heatmap_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">heatmap_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">vmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">unique_values</span><span class="p">)</span> 
+    <span class="n">vmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">unique_values</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">df_copy</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span> <span class="n">linecolor</span><span class="o">=</span><span class="s1">&#39;lightgray&#39;</span><span class="p">,</span> 
+                         <span class="n">cmap</span><span class="o">=</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">ListedColormap</span><span class="p">(</span><span class="n">cmap</span><span class="p">),</span>
+                         <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="o">**</span><span class="n">heatmap_kwargs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">df_copy</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span> <span class="n">linecolor</span><span class="o">=</span><span class="s1">&#39;lightgray&#39;</span><span class="p">,</span> 
+                         <span class="n">cmap</span><span class="o">=</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">ListedColormap</span><span class="p">(</span><span class="n">cmap</span><span class="p">),</span>
+                         <span class="n">vmin</span><span class="o">=</span><span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">vmax</span><span class="p">,</span> <span class="o">**</span><span class="n">heatmap_kwargs</span><span class="p">)</span>
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">collections</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">colorbar</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">(</span><span class="n">colorbar_values</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">(</span><span class="n">unique_values</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Error Subset&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">font_label_size</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Dataset&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">font_label_size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vertical_lines_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">vertical_lines_index</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">11</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="mi">18</span><span class="p">]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">vlines</span><span class="p">(</span><span class="n">vertical_lines_index</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">line_color</span><span class="p">,</span> <span class="o">*</span><span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">horizontal_lines_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">horizontal_lines_index</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="n">horizontal_lines_index</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">line_color</span><span class="p">,</span> <span class="o">*</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">ax</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

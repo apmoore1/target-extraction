@@ -1,0 +1,514 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.analysis.sentiment_metrics &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.analysis.sentiment_metrics</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.analysis.sentiment_metrics</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This module contains functions that expect a TargetTextCollection that contains</span>
+<span class="sd">`target_sentiments` key that represent the true sentiment values and a prediction</span>
+<span class="sd">key e.g. `sentiment_predictions`. Given these the function will return either a </span>
+<span class="sd">metric score e.g. Accuracy or a list of scores based on the arguments given </span>
+<span class="sd">to the function and if the `sentiment_predictions` key is an array of values.</span>
+
+<span class="sd">Arguments for all functions in this module:</span>
+
+<span class="sd">1. TargetTextCollection -- Contains the true and predicted sentiment scores</span>
+<span class="sd">2. true_sentiment_key -- Key that contains the true sentiment scores </span>
+<span class="sd">   for each target in the TargetTextCollection</span>
+<span class="sd">3. predicted_sentiment_key -- Key that contains the predicted sentiment scores  </span>
+<span class="sd">   for each target in the TargetTextCollection</span>
+<span class="sd">4. average -- If the predicting model was ran *N* times whether or not to </span>
+<span class="sd">   average the score over the *N* runs. Assumes array_scores is False.</span>
+<span class="sd">5. array_scores -- If average is False and you a model that has predicted </span>
+<span class="sd">   *N* times then this will return the *N* scores, one for each run.</span>
+<span class="sd">6. assert_number_labels -- Whether or not to assert this many number of unique  </span>
+<span class="sd">   labels must exist in the true sentiment key. If this is None then the </span>
+<span class="sd">   assertion is not raised.</span>
+<span class="sd">7. ignore_label_differences -- If True then the ValueError will not be </span>
+<span class="sd">   raised if the predicted sentiment values are not in the true </span>
+<span class="sd">   sentiment values. See :py:func:`get_labels` for more details.</span>
+
+<span class="sd">:raises ValueError: If the the prediction model has ran *N* times where </span>
+<span class="sd">                    *N&gt;1* and `average` or `array_scores` are either both </span>
+<span class="sd">                    True or both False.</span>
+<span class="sd">:raises ValueError: If the number of predictions made per target are </span>
+<span class="sd">                    different or zero. </span>
+<span class="sd">:raises ValueError: If only one set of model prediction exist then </span>
+<span class="sd">                    `average` and `array_scores` should be False.</span>
+<span class="sd">:raises KeyError: If either the `true_sentiment_key` or </span>
+<span class="sd">                  `predicted_sentiment_key` does not exist.</span>
+<span class="sd">:raises LabelError: If `assert_number_labels` is not None and the number of </span>
+<span class="sd">                    unique true labels does not equal the `assert_number_labels`</span>
+<span class="sd">                    this is raised.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span>
+<span class="kn">import</span> <span class="nn">statistics</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">f1_score</span>
+
+<span class="kn">from</span> <span class="nn">target_extraction.data_types</span> <span class="kn">import</span> <span class="n">TargetTextCollection</span><span class="p">,</span> <span class="n">TargetText</span>
+
+<div class="viewcode-block" id="LabelError"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.sentiment_metrics.LabelError">[docs]</a><span class="k">class</span> <span class="nc">LabelError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+   <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">   If the number of unique labels does not match your expected number of </span>
+<span class="sd">   unique labels.</span>
+<span class="sd">   &#39;&#39;&#39;</span>
+   <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">true_number_unique_labels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+                <span class="n">number_unique_labels_wanted</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        :param true_number_unique_labels: Number of unique labels that came </span>
+<span class="sd">                                          from the dataset</span>
+<span class="sd">        :param number_unique_labels_wanted: Expected number of unique labels </span>
+<span class="sd">                                            that should be in the dataset.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">error_string</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Number of unique labels in the dataset &#39;</span>
+                        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">true_number_unique_labels</span><span class="si">}</span><span class="s1">. The number of unique &#39;</span>
+                        <span class="s1">&#39;labels expected in the dataset &#39;</span>
+                        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">number_unique_labels_wanted</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">error_string</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="metric_error_checks"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.sentiment_metrics.metric_error_checks">[docs]</a><span class="k">def</span> <span class="nf">metric_error_checks</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TargetTextCollection</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> 
+                                        <span class="nb">bool</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">],</span> 
+                                       <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span>
+                        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TargetTextCollection</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span>
+                                       <span class="nb">bool</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">],</span>
+                                      <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Decorator for the metric functions within this module. Will raise any of </span>
+<span class="sd">    the Errors stated above in the module documentation before the metric </span>
+<span class="sd">    functions is called.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">target_collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+                <span class="n">true_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">predicted_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                <span class="n">average</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">array_scores</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> 
+                <span class="n">assert_number_labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">ignore_label_differences</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span>
+                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+        <span class="c1"># Check that the TargetTextCollection contains both the true and </span>
+        <span class="c1"># predicted sentiment keys</span>
+        <span class="n">unique_label_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">total_number_model_predictions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">target_object</span> <span class="ow">in</span> <span class="n">target_collection</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">target_object</span><span class="p">:</span> <span class="n">TargetText</span>
+            <span class="n">target_object</span><span class="o">.</span><span class="n">_key_error</span><span class="p">(</span><span class="n">true_sentiment_key</span><span class="p">)</span>
+            <span class="n">target_object</span><span class="o">.</span><span class="n">_key_error</span><span class="p">(</span><span class="n">predicted_sentiment_key</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">true_label</span> <span class="ow">in</span> <span class="n">target_object</span><span class="p">[</span><span class="n">true_sentiment_key</span><span class="p">]:</span>
+                <span class="n">unique_label_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">true_label</span><span class="p">)</span>
+            <span class="c1"># Cannot have inconsistent number of model predictions</span>
+            <span class="n">number_model_predictions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_object</span><span class="p">[</span><span class="n">predicted_sentiment_key</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">total_number_model_predictions</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">total_number_model_predictions</span> <span class="o">=</span> <span class="n">number_model_predictions</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">total_number_model_predictions</span> <span class="o">!=</span> <span class="n">number_model_predictions</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The number of predictions made per &#39;</span>
+                                     <span class="s1">&#39;Target within the collection is different&#39;</span>
+                                     <span class="sa">f</span><span class="s1">&#39;. This TargetText could have no targets&#39;</span>
+                                     <span class="s1">&#39; within the collection thus this error &#39;</span>
+                                     <span class="s1">&#39;will be raise. TargetText that has an error&#39;</span>
+                                     <span class="sa">f</span><span class="s1">&#39; </span><span class="si">{</span><span class="n">target_object</span><span class="si">}</span><span class="se">\n</span><span class="s1">The number of predcitions&#39;</span>
+                                     <span class="sa">f</span><span class="s1">&#39; that this object should have: </span><span class="si">{</span><span class="n">total_number_model_predictions</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="c1"># Cannot have zero predictions</span>
+        <span class="k">if</span> <span class="n">total_number_model_predictions</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The number of predictions made per target are zero&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Perform the LabelError check</span>
+        <span class="k">if</span> <span class="n">assert_number_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">number_unique_labels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_label_set</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">number_unique_labels</span> <span class="o">!=</span> <span class="n">assert_number_labels</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">LabelError</span><span class="p">(</span><span class="n">number_unique_labels</span><span class="p">,</span> <span class="n">assert_number_labels</span><span class="p">)</span>
+        <span class="c1"># If the dataset has one model prediction per target then average and </span>
+        <span class="c1"># array_scores should be False</span>
+        <span class="k">if</span> <span class="n">number_model_predictions</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">average</span> <span class="ow">or</span> <span class="n">array_scores</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;When only one set of predictions per target&#39;</span>
+                                 <span class="s1">&#39; then `average` and `array_scores` have to &#39;</span>
+                                 <span class="s1">&#39;be both False&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">average</span> <span class="o">==</span> <span class="n">array_scores</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;As the number of model predictions is &gt; 1 &#39;</span>
+                                 <span class="s1">&#39;then either `average` or `array_scores` have &#39;</span>
+                                 <span class="s1">&#39;to be True but not both.&#39;</span><span class="p">)</span> 
+        <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="n">target_collection</span><span class="p">,</span> <span class="n">true_sentiment_key</span><span class="p">,</span> 
+                    <span class="n">predicted_sentiment_key</span><span class="p">,</span> <span class="n">average</span><span class="p">,</span> <span class="n">array_scores</span><span class="p">,</span> 
+                    <span class="n">assert_number_labels</span><span class="p">,</span> <span class="n">ignore_label_differences</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapper</span></div>
+
+<div class="viewcode-block" id="get_labels"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.sentiment_metrics.get_labels">[docs]</a><span class="k">def</span> <span class="nf">get_labels</span><span class="p">(</span><span class="n">target_collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+               <span class="n">true_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">predicted_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+               <span class="n">labels_per_text</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+               <span class="n">ignore_label_differences</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+               <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]],</span> 
+                          <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]]]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param target_collection: Collection of targets that have true and predicted </span>
+<span class="sd">                              sentiment values.</span>
+<span class="sd">    :param true_sentiment_key: Key that contains the true sentiment scores </span>
+<span class="sd">                               for each target in the TargetTextCollection</span>
+<span class="sd">    :param predicted_sentiment_key: Key that contains the predicted sentiment   </span>
+<span class="sd">                                    scores for each target in the </span>
+<span class="sd">                                    TargetTextCollection. It assumes that the </span>
+<span class="sd">                                    predictions is a List of List where the </span>
+<span class="sd">                                    outer list are the number of model runs and </span>
+<span class="sd">                                    the inner list is the number of targets to </span>
+<span class="sd">                                    predict for, the the second Tuple of the </span>
+<span class="sd">                                    example return for an example of this.</span>
+<span class="sd">    :param labels_per_text: If True instead of returning a List[Any] it will</span>
+<span class="sd">                            return a List[List[Any]] where in the inner list </span>
+<span class="sd">                            represents the predictions per text rather than in </span>
+<span class="sd">                            the normal case where it is all predictions ignoring </span>
+<span class="sd">                            which text they came from.</span>
+<span class="sd">    :param ignore_label_differences: If True then the ValueError will not be </span>
+<span class="sd">                                     raised if the predicted sentiment values </span>
+<span class="sd">                                     are not in the true sentiment values.</span>
+<span class="sd">    :returns: A tuple of 1; true sentiment value 2; predicted sentiment values. </span>
+<span class="sd">              where the predicted sentiment values is a list of predicted </span>
+<span class="sd">              sentiment value, one for each models predictions. </span>
+<span class="sd">              See `Example of return 2` for an example of what this means </span>
+<span class="sd">              where in that example there are two texts/sentences.</span>
+<span class="sd">    :raises ValueError: If the number of predicted sentiment values are not </span>
+<span class="sd">                        equal to the number true sentiment values.</span>
+<span class="sd">    :raises ValueError: If the labels in the predicted sentiment values are not </span>
+<span class="sd">                        in the true sentiment values.</span>
+<span class="sd">    :Example of return 1: ([&#39;pos&#39;, &#39;neg&#39;, &#39;neu&#39;], [[&#39;neg&#39;, &#39;pos&#39;, &#39;neu&#39;], </span>
+<span class="sd">                             [&#39;neu&#39;, &#39;pos&#39;, &#39;neu&#39;]])</span>
+<span class="sd">    :Example of return 2: ([[&#39;pos&#39;], [&#39;neg&#39;, &#39;neu&#39;]], [[[&#39;neg&#39;], [&#39;pos&#39;, &#39;neu&#39;]], </span>
+<span class="sd">                           [[&#39;neu&#39;], [&#39;pos&#39;, &#39;neu&#39;]]])</span>
+<span class="sd">    &#39;&#39;&#39;</span> 
+    <span class="n">all_predicted_values</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">all_true_values</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">target_object</span> <span class="ow">in</span> <span class="n">target_collection</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">target_object</span><span class="p">:</span> <span class="n">TargetText</span>
+        
+        <span class="n">true_values</span> <span class="o">=</span> <span class="n">target_object</span><span class="p">[</span><span class="n">true_sentiment_key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">labels_per_text</span><span class="p">:</span>
+            <span class="n">all_true_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">true_values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">all_true_values</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">true_values</span><span class="p">)</span>
+
+        <span class="n">predicted_values_lists</span> <span class="o">=</span> <span class="n">target_object</span><span class="p">[</span><span class="n">predicted_sentiment_key</span><span class="p">]</span>
+        <span class="c1"># Create a list per model predictions</span>
+        <span class="k">if</span> <span class="n">all_predicted_values</span> <span class="o">==</span> <span class="p">[]:</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">predicted_values_lists</span><span class="p">:</span>
+                <span class="n">all_predicted_values</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">prediction_list</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">predicted_values_lists</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">labels_per_text</span><span class="p">:</span>
+                <span class="n">all_predicted_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prediction_list</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">all_predicted_values</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">prediction_list</span><span class="p">)</span>
+    <span class="c1"># Check that the number of values in the predicted values is the same as </span>
+    <span class="c1"># the number of values in the true list</span>
+    <span class="n">true_number_values</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_true_values</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prediction_list</span> <span class="ow">in</span> <span class="n">all_predicted_values</span><span class="p">:</span>
+        <span class="n">number_predictions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prediction_list</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">number_predictions</span> <span class="o">!=</span> <span class="n">true_number_values</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Number targets predicted </span><span class="si">{</span><span class="n">number_predictions</span><span class="si">}</span><span class="s1">. &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;Number of targets </span><span class="si">{</span><span class="n">true_number_values</span><span class="si">}</span><span class="s1">. &#39;</span>
+                             <span class="s1">&#39;These should be the same!&#39;</span><span class="p">)</span>
+    <span class="c1"># Check that the values in True are the same as those in predicted</span>
+    <span class="k">if</span> <span class="n">labels_per_text</span><span class="p">:</span>
+        <span class="n">unique_true_values</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">value</span> <span class="k">for</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">all_true_values</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">unique_true_values</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_true_values</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">prediction_list</span> <span class="ow">in</span> <span class="n">all_predicted_values</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">labels_per_text</span><span class="p">:</span>
+            <span class="n">unique_predicted_values</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">value</span> <span class="k">for</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">prediction_list</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unique_predicted_values</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">prediction_list</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">unique_predicted_values</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">unique_true_values</span><span class="p">)</span> <span class="ow">and</span> 
+            <span class="ow">not</span> <span class="n">ignore_label_differences</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Values in the predicted sentiment are not in the&#39;</span>
+                             <span class="s1">&#39; True sentiment values. Values in predicted &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">unique_predicted_values</span><span class="si">}</span><span class="s1">, values in True &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">unique_true_values</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">all_true_values</span><span class="p">,</span> <span class="n">all_predicted_values</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="accuracy"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.sentiment_metrics.accuracy">[docs]</a><span class="nd">@metric_error_checks</span>
+<span class="k">def</span> <span class="nf">accuracy</span><span class="p">(</span><span class="n">target_collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+             <span class="n">true_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">predicted_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+             <span class="n">average</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">array_scores</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> 
+             <span class="n">assert_number_labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="n">ignore_label_differences</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param ignore_label_differences: See :py:func:`get_labels`</span>
+
+<span class="sd">    Accuracy score. Description at top of module explains arguments.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">true_values</span><span class="p">,</span> <span class="n">predicted_values_list</span> <span class="o">=</span> <span class="n">get_labels</span><span class="p">(</span><span class="n">target_collection</span><span class="p">,</span> 
+                                                    <span class="n">true_sentiment_key</span><span class="p">,</span> 
+                                                    <span class="n">predicted_sentiment_key</span><span class="p">,</span>
+                                                    <span class="n">ignore_label_differences</span><span class="o">=</span><span class="n">ignore_label_differences</span><span class="p">)</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">predicted_values</span> <span class="ow">in</span> <span class="n">predicted_values_list</span><span class="p">:</span>
+        <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">true_values</span><span class="p">,</span> <span class="n">predicted_values</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">average</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">array_scores</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scores</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="mi">1</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="macro_f1"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.sentiment_metrics.macro_f1">[docs]</a><span class="nd">@metric_error_checks</span>
+<span class="k">def</span> <span class="nf">macro_f1</span><span class="p">(</span><span class="n">target_collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+             <span class="n">true_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">predicted_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+             <span class="n">average</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">array_scores</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> 
+             <span class="n">assert_number_labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+             <span class="n">ignore_label_differences</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+             <span class="o">**</span><span class="n">kwargs</span>
+             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    :param ignore_label_differences: See :py:func:`get_labels`</span>
+<span class="sd">    :param **kwargs: These are the keyword arguments to give to the underlying </span>
+<span class="sd">                     scikit learn :py:func:`f1_metric`. Note that the only argument</span>
+<span class="sd">                     that cannot be changed that is given to :py:func:`f1_metric`</span>
+<span class="sd">                     is `average`. If you want the F1 score for one label this </span>
+<span class="sd">                     can still be done by providing the `labels` argument where </span>
+<span class="sd">                     the value would be the label you want the F1 score for e.g.</span>
+<span class="sd">                     `labels` = [`positive`].</span>
+
+<span class="sd">    Macro F1 score. Description at top of module explains arguments.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">true_values</span><span class="p">,</span> <span class="n">predicted_values_list</span> <span class="o">=</span> <span class="n">get_labels</span><span class="p">(</span><span class="n">target_collection</span><span class="p">,</span> 
+                                                    <span class="n">true_sentiment_key</span><span class="p">,</span> 
+                                                    <span class="n">predicted_sentiment_key</span><span class="p">,</span>
+                                                    <span class="n">ignore_label_differences</span><span class="o">=</span><span class="n">ignore_label_differences</span><span class="p">)</span>
+    <span class="n">scores</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">predicted_values</span> <span class="ow">in</span> <span class="n">predicted_values_list</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;average&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;macro&#39;</span>
+        <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f1_score</span><span class="p">(</span><span class="n">true_values</span><span class="p">,</span> <span class="n">predicted_values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">average</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">array_scores</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scores</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="mi">1</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="strict_text_accuracy"><a class="viewcode-back" href="../../../target_extraction.analysis.html#target_extraction.analysis.sentiment_metrics.strict_text_accuracy">[docs]</a><span class="nd">@metric_error_checks</span>
+<span class="k">def</span> <span class="nf">strict_text_accuracy</span><span class="p">(</span><span class="n">target_collection</span><span class="p">:</span> <span class="n">TargetTextCollection</span><span class="p">,</span> 
+                         <span class="n">true_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">predicted_sentiment_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                         <span class="n">average</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">array_scores</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> 
+                         <span class="n">assert_number_labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">ignore_label_differences</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+                         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is performed at the text/sentence level where a sample is not denoted </span>
+<span class="sd">    as one target but as all targets within a text. A sample is correct if all</span>
+<span class="sd">    targets within the text have been predicted correctly. This will return the </span>
+<span class="sd">    average of the correct predictions. Strict Text ACcuracy also known as STAC.</span>
+
+<span class="sd">    This metric also assumes that all the texts within the `target_collection`</span>
+<span class="sd">    also contains at least one target. If it does not a ValueError will be raised.</span>
+
+<span class="sd">    :param ignore_label_differences: See :py:func:`get_labels`</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">true_values</span><span class="p">,</span> <span class="n">predicted_values_list</span> <span class="o">=</span> <span class="n">get_labels</span><span class="p">(</span><span class="n">target_collection</span><span class="p">,</span> 
+                                                    <span class="n">true_sentiment_key</span><span class="p">,</span> 
+                                                    <span class="n">predicted_sentiment_key</span><span class="p">,</span> 
+                                                    <span class="n">labels_per_text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                    <span class="n">ignore_label_differences</span><span class="o">=</span><span class="n">ignore_label_differences</span><span class="p">)</span>
+    <span class="n">true_values</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span>
+    <span class="n">predicted_values_list</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]]</span>
+    
+    <span class="n">scores</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">num_texts</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">true_values</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">predicted_values</span> <span class="ow">in</span> <span class="n">predicted_values_list</span><span class="p">:</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">true_value</span><span class="p">,</span> <span class="n">predicted_value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">true_values</span><span class="p">,</span> <span class="n">predicted_values</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">true_value</span> <span class="o">==</span> <span class="n">predicted_value</span><span class="p">:</span>
+                <span class="n">score</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">score</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_texts</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">average</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">array_scores</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">scores</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="mi">1</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

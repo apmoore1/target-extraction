@@ -1,0 +1,29 @@
+target\_extraction.allen.predictors package
+===========================================
+
+Submodules
+----------
+
+target\_extraction.allen.predictors.target\_sentiment module
+------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.predictors.target_sentiment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.predictors.target\_tagger module
+---------------------------------------------------------
+
+.. automodule:: target_extraction.allen.predictors.target_tagger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen.predictors
+   :members:
+   :undoc-members:
+   :show-inheritance:

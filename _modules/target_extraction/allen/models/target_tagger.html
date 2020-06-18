@@ -1,0 +1,612 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.allen.models.target_tagger &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.allen.models.target_tagger</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.allen.models.target_tagger</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span>
+
+<span class="kn">from</span> <span class="nn">allennlp.common.checks</span> <span class="kn">import</span> <span class="n">check_dimensions_match</span><span class="p">,</span> <span class="n">ConfigurationError</span>
+<span class="kn">from</span> <span class="nn">allennlp.data</span> <span class="kn">import</span> <span class="n">Vocabulary</span>
+<span class="kn">from</span> <span class="nn">allennlp.modules</span> <span class="kn">import</span> <span class="n">Seq2SeqEncoder</span><span class="p">,</span> <span class="n">TimeDistributed</span><span class="p">,</span> <span class="n">TextFieldEmbedder</span>
+<span class="kn">from</span> <span class="nn">allennlp.modules</span> <span class="kn">import</span> <span class="n">ConditionalRandomField</span><span class="p">,</span> <span class="n">FeedForward</span>
+<span class="kn">from</span> <span class="nn">allennlp.modules.conditional_random_field</span> <span class="kn">import</span> <span class="n">allowed_transitions</span>
+<span class="kn">from</span> <span class="nn">allennlp.modules.input_variational_dropout</span> <span class="kn">import</span> <span class="n">InputVariationalDropout</span>
+<span class="kn">from</span> <span class="nn">allennlp.models.model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">allennlp.modules.token_embedders</span> <span class="kn">import</span> <span class="n">Embedding</span>
+<span class="kn">from</span> <span class="nn">allennlp.nn</span> <span class="kn">import</span> <span class="n">InitializerApplicator</span><span class="p">,</span> <span class="n">RegularizerApplicator</span>
+<span class="kn">import</span> <span class="nn">allennlp.nn.util</span> <span class="k">as</span> <span class="nn">util</span>
+<span class="kn">from</span> <span class="nn">allennlp.training.metrics</span> <span class="kn">import</span> <span class="n">CategoricalAccuracy</span><span class="p">,</span> <span class="n">SpanBasedF1Measure</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">overrides</span> <span class="kn">import</span> <span class="n">overrides</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch.nn.modules.linear</span> <span class="kn">import</span> <span class="n">Linear</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+<div class="viewcode-block" id="TargetTagger"><a class="viewcode-back" href="../../../../target_extraction.allen.models.html#target_extraction.allen.models.target_tagger.TargetTagger">[docs]</a><span class="nd">@Model</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;target_tagger&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">TargetTagger</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The ``TargetTagger`` encodes a sequence of text with an optional </span>
+<span class="sd">    ``Seq2SeqEncoder``, then uses either Conditional Random Field </span>
+<span class="sd">    or simply a softmax model to predict a tag for each token in the sequence.</span>
+
+<span class="sd">    This is in affect the same as the ``CrfTagger`` with the following </span>
+<span class="sd">    differences:</span>
+<span class="sd">    </span>
+<span class="sd">    1. It allows you to not have to use a ``Seq2SeqEncoder``</span>
+<span class="sd">    2. It allows you to not have to use a ``CRF`` module but rather use a </span>
+<span class="sd">       the simpler softmax over the logits</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vocab : ``Vocabulary``, required</span>
+<span class="sd">        A Vocabulary, required in order to compute sizes for input/output projections.</span>
+<span class="sd">    text_field_embedder : ``TextFieldEmbedder``, required</span>
+<span class="sd">        Used to embed the tokens ``TextField`` we get as input to the model.</span>
+<span class="sd">    pos_tag_embedding : ``Embedding``, optional (default=None).</span>
+<span class="sd">        Used to embed the ``pos_tags`` ``SequenceLabelField`` we get as input to the model.</span>
+<span class="sd">    pos_tag_loss: ``float``, optional (default=None)</span>
+<span class="sd">        Whether to predict POS tags as an auxilary loss. The float here would </span>
+<span class="sd">        represent the amount to scale that loss in the overall loss function.</span>
+<span class="sd">        The POS tags are predicted using a CRF if the main task uses a CRF else </span>
+<span class="sd">        like the main task it will use greedy decoding based on softmax. NOTE </span>
+<span class="sd">        we assume always that the label encoding for POS tags are of BIO format.</span>
+<span class="sd">    encoder : ``Seq2SeqEncoder``, optional (default=None)</span>
+<span class="sd">        The encoder that we will use in between embedding tokens and predicting output tags.</span>
+<span class="sd">    label_namespace : ``str``, optional (default=``labels``)</span>
+<span class="sd">        This is needed to compute the SpanBasedF1Measure metric.</span>
+<span class="sd">        Unless you did something unusual, the default value should be what you want.</span>
+<span class="sd">    feedforward : ``FeedForward``, optional, (default = None).</span>
+<span class="sd">        An optional feedforward layer to apply after the encoder.</span>
+<span class="sd">    label_encoding : ``str``, optional (default=``None``)</span>
+<span class="sd">        Label encoding to use when calculating span f1 and constraining</span>
+<span class="sd">        the CRF at decoding time . Valid options are &quot;BIO&quot;, &quot;BIOUL&quot;, &quot;IOB1&quot;, &quot;BMES&quot;.</span>
+<span class="sd">        Required if ``calculate_span_f1`` or ``constrain_crf_decoding`` is true.</span>
+<span class="sd">    crf: ``bool``, optional (default=``True``)</span>
+<span class="sd">         Whether to use a CRF, if not then it just chooses the max label over </span>
+<span class="sd">         the softmax (greedy decoding).</span>
+<span class="sd">    include_start_end_transitions : ``bool``, optional (default=``True``)</span>
+<span class="sd">        Whether to include start and end transition parameters in the CRF.</span>
+<span class="sd">    constrain_crf_decoding : ``bool``, optional (default=``None``)</span>
+<span class="sd">        If ``True``, the CRF is constrained at decoding time to</span>
+<span class="sd">        produce valid sequences of tags. If this is ``True``, then</span>
+<span class="sd">        ``label_encoding`` is required. If ``None`` and</span>
+<span class="sd">        label_encoding is specified, this is set to ``True``.</span>
+<span class="sd">        If ``None`` and label_encoding is not specified, it defaults</span>
+<span class="sd">        to ``False``.</span>
+<span class="sd">    calculate_span_f1 : ``bool``, optional (default=``None``)</span>
+<span class="sd">        Calculate span-level F1 metrics during training. If this is ``True``, then</span>
+<span class="sd">        ``label_encoding`` is required. If ``None`` and</span>
+<span class="sd">        label_encoding is specified, this is set to ``True``.</span>
+<span class="sd">        If ``None`` and label_encoding is not specified, it defaults</span>
+<span class="sd">        to ``False``.</span>
+<span class="sd">    dropout:  ``float``, optional (default=``None``). Use `Variational Dropout </span>
+<span class="sd">              &lt;https://arxiv.org/abs/1512.05287&gt;`_ for sequence and normal </span>
+<span class="sd">              dropout for non sequences.</span>
+<span class="sd">    verbose_metrics : ``bool``, optional (default = False)</span>
+<span class="sd">        If true, metrics will be returned per label class in addition</span>
+<span class="sd">        to the overall statistics.</span>
+<span class="sd">    initializer : ``InitializerApplicator``, optional (default=``InitializerApplicator()``)</span>
+<span class="sd">        Used to initialize the model parameters.</span>
+<span class="sd">    regularizer : ``RegularizerApplicator``, optional (default=``None``)</span>
+<span class="sd">        If provided, will be used to calculate the regularization penalty during training.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab</span><span class="p">:</span> <span class="n">Vocabulary</span><span class="p">,</span>
+                 <span class="n">text_field_embedder</span><span class="p">:</span> <span class="n">TextFieldEmbedder</span><span class="p">,</span>
+                 <span class="n">pos_tag_embedding</span><span class="p">:</span> <span class="n">Embedding</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">pos_tag_loss</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                 <span class="n">label_namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;labels&quot;</span><span class="p">,</span>
+                 <span class="n">encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Seq2SeqEncoder</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">feedforward</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FeedForward</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">label_encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">crf</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">include_start_end_transitions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">constrain_crf_decoding</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">calculate_span_f1</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">dropout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">verbose_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">initializer</span><span class="p">:</span> <span class="n">InitializerApplicator</span> <span class="o">=</span> <span class="n">InitializerApplicator</span><span class="p">(),</span>
+                 <span class="n">regularizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RegularizerApplicator</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">vocab</span><span class="p">,</span> <span class="n">regularizer</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos_tag_loss</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">pos_tag_embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pos_tag_err</span> <span class="o">=</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model uses POS tags but the Vocabulary </span><span class="si">{</span><span class="n">vocab</span><span class="si">}</span><span class="s2"> &quot;</span>
+                           <span class="s2">&quot;does not contain `pos_tags` namespace&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;pos_tags&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vocab</span><span class="o">.</span><span class="n">_token_to_index</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="n">pos_tag_err</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">vocab</span><span class="o">.</span><span class="n">_token_to_index</span><span class="p">[</span><span class="s1">&#39;pos_tags&#39;</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="n">pos_tag_err</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_namespace</span> <span class="o">=</span> <span class="n">label_namespace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_field_embedder</span> <span class="o">=</span> <span class="n">text_field_embedder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_embedding</span> <span class="o">=</span> <span class="n">pos_tag_embedding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_vocab_size</span><span class="p">(</span><span class="n">label_namespace</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_verbose_metrics</span> <span class="o">=</span> <span class="n">verbose_metrics</span>
+
+        <span class="n">embedding_output_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_field_embedder</span><span class="o">.</span><span class="n">get_output_dim</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">embedding_output_dim</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_embedding</span><span class="o">.</span><span class="n">get_output_dim</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">dropout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variational_dropout</span> <span class="o">=</span> <span class="n">InputVariationalDropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_feedforward</span> <span class="o">=</span> <span class="n">feedforward</span>
+
+        <span class="k">if</span> <span class="n">feedforward</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_dim</span> <span class="o">=</span> <span class="n">feedforward</span><span class="o">.</span><span class="n">get_output_dim</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">get_output_dim</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_dim</span> <span class="o">=</span> <span class="n">embedding_output_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tag_projection_layer</span> <span class="o">=</span> <span class="n">TimeDistributed</span><span class="p">(</span><span class="n">Linear</span><span class="p">(</span><span class="n">output_dim</span><span class="p">,</span>
+                                                           <span class="bp">self</span><span class="o">.</span><span class="n">num_tags</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_loss</span> <span class="o">=</span> <span class="n">pos_tag_loss</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_loss</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_pos_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_vocab_size</span><span class="p">(</span><span class="s2">&quot;pos_tags&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_projection_layer</span> <span class="o">=</span> <span class="n">TimeDistributed</span><span class="p">(</span><span class="n">Linear</span><span class="p">(</span><span class="n">output_dim</span><span class="p">,</span>
+                                                                   <span class="bp">self</span><span class="o">.</span><span class="n">num_pos_tags</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pos_crf</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">crf</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pos_crf</span> <span class="o">=</span> <span class="n">ConditionalRandomField</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_pos_tags</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
+                                                      <span class="kc">False</span><span class="p">)</span>
+
+
+        <span class="c1"># if  constrain_crf_decoding and calculate_span_f1 are not</span>
+        <span class="c1"># provided, (i.e., they&#39;re None), set them to True</span>
+        <span class="c1"># if label_encoding is provided and False if it isn&#39;t.</span>
+        <span class="k">if</span> <span class="n">crf</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">constrain_crf_decoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">constrain_crf_decoding</span> <span class="o">=</span> <span class="n">label_encoding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">calculate_span_f1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">calculate_span_f1</span> <span class="o">=</span> <span class="n">label_encoding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">label_encoding</span> <span class="o">=</span> <span class="n">label_encoding</span>
+        <span class="k">if</span> <span class="n">constrain_crf_decoding</span> <span class="ow">and</span> <span class="n">crf</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">label_encoding</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;constrain_crf_decoding is True, but &quot;</span>
+                                         <span class="s2">&quot;no label_encoding was specified.&quot;</span><span class="p">)</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_index_to_token_vocabulary</span><span class="p">(</span><span class="n">label_namespace</span><span class="p">)</span>
+            <span class="n">constraints</span> <span class="o">=</span> <span class="n">allowed_transitions</span><span class="p">(</span><span class="n">label_encoding</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">constraints</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">crf</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">include_start_end_transitions</span> <span class="o">=</span> <span class="n">include_start_end_transitions</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">crf</span> <span class="o">=</span> <span class="n">ConditionalRandomField</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">num_tags</span><span class="p">,</span> <span class="n">constraints</span><span class="p">,</span>
+                    <span class="n">include_start_end_transitions</span><span class="o">=</span><span class="n">include_start_end_transitions</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">crf</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;accuracy&quot;</span><span class="p">:</span> <span class="n">CategoricalAccuracy</span><span class="p">(),</span>
+                <span class="s2">&quot;accuracy3&quot;</span><span class="p">:</span> <span class="n">CategoricalAccuracy</span><span class="p">(</span><span class="n">top_k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calculate_span_f1</span> <span class="o">=</span> <span class="n">calculate_span_f1</span>
+        <span class="k">if</span> <span class="n">calculate_span_f1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">label_encoding</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;calculate_span_f1 is True, but &quot;</span>
+                                         <span class="s2">&quot;no label_encoding was specified.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_f1_metric</span> <span class="o">=</span> <span class="n">SpanBasedF1Measure</span><span class="p">(</span><span class="n">vocab</span><span class="p">,</span>
+                                                 <span class="n">tag_namespace</span><span class="o">=</span><span class="n">label_namespace</span><span class="p">,</span>
+                                                 <span class="n">label_encoding</span><span class="o">=</span><span class="n">label_encoding</span><span class="p">)</span>
+        <span class="c1"># If performing POS tagging would be good to keep updated on POS </span>
+        <span class="c1"># accuracy</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_loss</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;POS_accuracy&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">CategoricalAccuracy</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">check_dimensions_match</span><span class="p">(</span><span class="n">embedding_output_dim</span><span class="p">,</span> <span class="n">encoder</span><span class="o">.</span><span class="n">get_input_dim</span><span class="p">(),</span>
+                                   <span class="s2">&quot;text field embedding dim&quot;</span><span class="p">,</span> <span class="s2">&quot;encoder input dim&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">feedforward</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">check_dimensions_match</span><span class="p">(</span><span class="n">encoder</span><span class="o">.</span><span class="n">get_output_dim</span><span class="p">(),</span> <span class="n">feedforward</span><span class="o">.</span><span class="n">get_input_dim</span><span class="p">(),</span>
+                                   <span class="s2">&quot;encoder output dim&quot;</span><span class="p">,</span> <span class="s2">&quot;feedforward input dim&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">feedforward</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">encoder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">check_dimensions_match</span><span class="p">(</span><span class="n">embedding_output_dim</span><span class="p">,</span> <span class="n">feedforward</span><span class="o">.</span><span class="n">get_input_dim</span><span class="p">(),</span>
+                                   <span class="s2">&quot;text field output dim&quot;</span><span class="p">,</span> <span class="s2">&quot;feedforward input dim&quot;</span><span class="p">)</span>
+        <span class="n">initializer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TargetTagger.get_softmax_labels"><a class="viewcode-back" href="../../../../target_extraction.allen.models.html#target_extraction.allen.models.target_tagger.TargetTagger.get_softmax_labels">[docs]</a>    <span class="k">def</span> <span class="nf">get_softmax_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">class_probabilities</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span>
+                           <span class="n">mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This method has copied a large chunck of code from the </span>
+<span class="sd">        `SimpleTagger.decode &lt;https://github.com/allenai/allennlp/blob/master/allennlp/models/simple_tagger.py&gt;`_ </span>
+<span class="sd">        method.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        class_probabilities : A tensor containing the softmax scores for the </span>
+<span class="sd">                              tags.</span>
+<span class="sd">        mask: A Tensor of 1&#39;s and 0&#39;s indicating whether a word exists.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A List of Lists where each inner list contains integers representing </span>
+<span class="sd">        the most likely tag label index based on the softmax scores. Only</span>
+<span class="sd">        returns the tag label indexs for words that exist based on the mask</span>
+<span class="sd">        provided. </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
+        <span class="n">all_predictions</span> <span class="o">=</span> <span class="n">class_probabilities</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="n">prediction_mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">all_predictions</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">predictions_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_predictions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">all_predictions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">predictions_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_predictions</span><span class="p">]</span>
+        <span class="n">all_tags_indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">prediction_index</span><span class="p">,</span> <span class="n">predictions</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">predictions_list</span><span class="p">):</span>
+            <span class="n">sequence_length</span> <span class="o">=</span> <span class="n">prediction_mask</span><span class="p">[</span><span class="n">prediction_index</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">tag_indices</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[:</span><span class="n">sequence_length</span><span class="p">]</span>
+            <span class="n">all_tags_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tag_indices</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">all_tags_indices</span></div>
+
+<div class="viewcode-block" id="TargetTagger.forward"><a class="viewcode-back" href="../../../../target_extraction.allen.models.html#target_extraction.allen.models.target_tagger.TargetTagger.forward">[docs]</a>    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+                <span class="n">tokens</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">],</span>
+                <span class="n">pos_tags</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">tags</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">metadata</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="c1"># pylint: disable=arguments-differ</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        tokens : ``Dict[str, torch.LongTensor]``, required</span>
+<span class="sd">            The output of ``TextField.as_array()``, which should typically be passed directly to a</span>
+<span class="sd">            ``TextFieldEmbedder``. This output is a dictionary mapping keys to ``TokenIndexer``</span>
+<span class="sd">            tensors.  At its most basic, using a ``SingleIdTokenIndexer`` this is: ``{&quot;tokens&quot;:</span>
+<span class="sd">            Tensor(batch_size, num_tokens)}``. This dictionary will have the same keys as were used</span>
+<span class="sd">            for the ``TokenIndexers`` when you created the ``TextField`` representing your</span>
+<span class="sd">            sequence.  The dictionary is designed to be passed directly to a ``TextFieldEmbedder``,</span>
+<span class="sd">            which knows how to combine different word representations into a single vector per</span>
+<span class="sd">            token in your input.</span>
+<span class="sd">        pos_tags : ``torch.LongTensor``, optional (default = ``None``)</span>
+<span class="sd">            A torch tensor representing the sequence of POS tags of shape</span>
+<span class="sd">            ``(batch_size, num_tokens)``</span>
+<span class="sd">        tags : ``torch.LongTensor``, optional (default = ``None``)</span>
+<span class="sd">            A torch tensor representing the sequence of integer gold class labels of shape</span>
+<span class="sd">            ``(batch_size, num_tokens)``.</span>
+<span class="sd">        metadata : ``List[Dict[str, Any]]``, optional, (default = None)</span>
+<span class="sd">            metadata containg the original words in the sentence to be tagged under a &#39;words&#39; key</span>
+<span class="sd">            as well as the original text under a &#39;text&#39; key.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        An output dictionary consisting of:</span>
+
+<span class="sd">        logits : ``torch.FloatTensor``</span>
+<span class="sd">            The logits that are the output of the ``tag_projection_layer``</span>
+<span class="sd">        class_probabilities: ``torch.FloatTensor``</span>
+<span class="sd">            A tensor of shape ``(batch_size, num_tokens, tag_vocab_size)`` </span>
+<span class="sd">            representing a distribution of the tag classes per word. NOTE </span>
+<span class="sd">            that when using the CRF the highest class probability does not </span>
+<span class="sd">            mean that will be the tag as that might not be globally optimal </span>
+<span class="sd">            for the sentence.</span>
+<span class="sd">        mask : ``torch.LongTensor``</span>
+<span class="sd">            The text field mask for the input tokens</span>
+<span class="sd">        tags : ``List[List[int]]``</span>
+<span class="sd">            The predicted tags using the Viterbi algorithm if CRF is being used </span>
+<span class="sd">            else they are from the max over the logits using the softmax </span>
+<span class="sd">            approach.</span>
+<span class="sd">        loss : ``torch.FloatTensor``, optional</span>
+<span class="sd">            A scalar loss to be optimised. Only computed if gold label ``tags`` are provided.</span>
+<span class="sd">        words : ``List[str]``, optional</span>
+<span class="sd">            A list of tokens that were the original input into the model</span>
+<span class="sd">        text : ``str``, optional</span>
+<span class="sd">            A string that was the original text that the tokens have come from.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+
+        <span class="n">embedded_text_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_field_embedder</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">get_text_field_mask</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+
+        <span class="c1"># Add the pos embedding</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pos_tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">embedded_pos_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_embedding</span><span class="p">(</span><span class="n">pos_tags</span><span class="p">)</span>
+            <span class="n">embedded_text_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">embedded_text_input</span><span class="p">,</span> <span class="n">embedded_pos_tags</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_embedding</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;Model uses a POS embedding, &quot;</span>
+                                     <span class="s2">&quot;but no POS tags were passed.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">encoded_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variational_dropout</span><span class="p">(</span><span class="n">embedded_text_input</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+            <span class="n">encoded_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">encoded_text</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">encoded_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variational_dropout</span><span class="p">(</span><span class="n">encoded_text</span><span class="p">)</span>
+
+        <span class="c1"># Dropout is applied after each layer for feed forward if specified </span>
+        <span class="c1"># in the config.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feedforward</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">encoded_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_feedforward</span><span class="p">(</span><span class="n">encoded_text</span><span class="p">)</span>
+
+        <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag_projection_layer</span><span class="p">(</span><span class="n">encoded_text</span><span class="p">)</span>
+        <span class="n">batch_size</span><span class="p">,</span> <span class="n">sequence_length</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">embedded_text_input</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+        <span class="n">reshaped_log_probs</span> <span class="o">=</span> <span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_tags</span><span class="p">)</span>
+        <span class="n">class_probabilities</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">reshaped_log_probs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">([</span><span class="n">batch_size</span><span class="p">,</span> 
+                                                                            <span class="n">sequence_length</span><span class="p">,</span>
+                                                                            <span class="bp">self</span><span class="o">.</span><span class="n">num_tags</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">crf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">best_paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">crf</span><span class="o">.</span><span class="n">viterbi_tags</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+            <span class="c1"># Just get the tags and ignore the score.</span>
+            <span class="n">predicted_tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">best_paths</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">predicted_tags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_softmax_labels</span><span class="p">(</span><span class="n">class_probabilities</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;logits&quot;</span><span class="p">:</span> <span class="n">logits</span><span class="p">,</span> <span class="s2">&quot;mask&quot;</span><span class="p">:</span> <span class="n">mask</span><span class="p">,</span> <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">predicted_tags</span><span class="p">,</span>
+                  <span class="s2">&quot;class_probabilities&quot;</span><span class="p">:</span> <span class="n">class_probabilities</span><span class="p">}</span>
+        <span class="c1"># Convert it to bool tensor.</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">==</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Handle either the CRF or Greedy decoder cases.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">crf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Add negative log-likelihood as loss</span>
+                <span class="n">log_likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">crf</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                <span class="n">output</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">log_likelihood</span>
+
+                <span class="c1"># Represent viterbi tags as &quot;class probabilities&quot; that we can</span>
+                <span class="c1"># feed into the metrics</span>
+                <span class="n">metric_class_probabilities</span> <span class="o">=</span> <span class="n">logits</span> <span class="o">*</span> <span class="mf">0.</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">instance_tags</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">predicted_tags</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">tag_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">instance_tags</span><span class="p">):</span>
+                        <span class="n">metric_class_probabilities</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">tag_id</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">loss</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">sequence_cross_entropy_with_logits</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                <span class="n">output</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loss</span>
+                <span class="n">metric_class_probabilities</span> <span class="o">=</span> <span class="n">logits</span>
+
+            <span class="k">for</span> <span class="n">metric_name</span><span class="p">,</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">metric_name</span> <span class="o">!=</span> <span class="s1">&#39;POS_accuracy&#39;</span><span class="p">:</span>
+                    <span class="n">metric</span><span class="p">(</span><span class="n">metric_class_probabilities</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_span_f1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_f1_metric</span><span class="p">(</span><span class="n">metric_class_probabilities</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+            
+            <span class="c1"># Have to predict the POS tags to get a POS loss</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_loss</span> <span class="ow">and</span> <span class="n">pos_tags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pos_logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_projection_layer</span><span class="p">(</span><span class="n">encoded_text</span><span class="p">)</span>
+                <span class="c1"># Uses the same decoding as the main task either CRF or greedy</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_crf</span><span class="p">:</span>
+                    <span class="n">pos_log_likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_crf</span><span class="p">(</span><span class="n">pos_logits</span><span class="p">,</span> <span class="n">pos_tags</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                    <span class="n">output</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_loss</span> <span class="o">*</span> <span class="n">pos_log_likelihood</span><span class="p">)</span>
+                    <span class="c1"># Represent viterbi tags as &quot;class probabilities&quot; that we can</span>
+                    <span class="c1"># feed into the metrics</span>
+                    <span class="n">pos_best_paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_crf</span><span class="o">.</span><span class="n">viterbi_tags</span><span class="p">(</span><span class="n">pos_logits</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                    <span class="n">pos_predicted_tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">pos_best_paths</span><span class="p">]</span>
+                    <span class="n">pos_metric_class_probabilities</span> <span class="o">=</span> <span class="n">pos_logits</span> <span class="o">*</span> <span class="mf">0.</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pos_instance_tags</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos_predicted_tags</span><span class="p">):</span>
+                        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">pos_tag_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pos_instance_tags</span><span class="p">):</span>
+                            <span class="n">pos_metric_class_probabilities</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">pos_tag_id</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">pos_loss</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">sequence_cross_entropy_with_logits</span><span class="p">(</span><span class="n">pos_logits</span><span class="p">,</span> <span class="n">pos_tags</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+                    <span class="n">output</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_loss</span> <span class="o">*</span> <span class="n">pos_loss</span>
+                    <span class="n">pos_metric_class_probabilities</span> <span class="o">=</span> <span class="n">pos_logits</span>
+                
+                <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;POS_accuracy&#39;</span><span class="p">](</span><span class="n">pos_metric_class_probabilities</span><span class="p">,</span> 
+                                             <span class="n">pos_tags</span><span class="p">,</span> <span class="n">mask</span><span class="o">.</span><span class="n">float</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pos_tag_loss</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;Model uses a POS Auxilary loss, &quot;</span>
+                                         <span class="s2">&quot;but no POS tags were passed.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">texts</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">metadata</span><span class="p">:</span>
+                <span class="n">words</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;words&#39;</span><span class="p">])</span>
+                <span class="n">texts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">])</span>
+            <span class="n">output</span><span class="p">[</span><span class="s2">&quot;words&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">words</span>
+            <span class="n">output</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">texts</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+
+<div class="viewcode-block" id="TargetTagger.make_output_human_readable"><a class="viewcode-back" href="../../../../target_extraction.allen.models.html#target_extraction.allen.models.target_tagger.TargetTagger.make_output_human_readable">[docs]</a>    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">make_output_human_readable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+                                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts the tag ids to the actual tags.</span>
+<span class="sd">        ``output_dict[&quot;tags&quot;]`` is a list of lists of tag_ids,</span>
+<span class="sd">        so we use an ugly nested list comprehension.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output_dict</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vocab</span><span class="o">.</span><span class="n">get_token_from_index</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">label_namespace</span><span class="p">)</span>
+                 <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">instance_tags</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">instance_tags</span> <span class="ow">in</span> <span class="n">output_dict</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">output_dict</span></div>
+
+<div class="viewcode-block" id="TargetTagger.get_metrics"><a class="viewcode-back" href="../../../../target_extraction.allen.models.html#target_extraction.allen.models.target_tagger.TargetTagger.get_metrics">[docs]</a>    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">get_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reset</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="n">metrics_to_return</span> <span class="o">=</span> <span class="p">{</span><span class="n">metric_name</span><span class="p">:</span> <span class="n">metric</span><span class="o">.</span><span class="n">get_metric</span><span class="p">(</span><span class="n">reset</span><span class="p">)</span> <span class="k">for</span>
+                             <span class="n">metric_name</span><span class="p">,</span> <span class="n">metric</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_span_f1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">f1_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_f1_metric</span><span class="o">.</span><span class="n">get_metric</span><span class="p">(</span><span class="n">reset</span><span class="o">=</span><span class="n">reset</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_verbose_metrics</span><span class="p">:</span>
+                <span class="n">metrics_to_return</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">f1_dict</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">metrics_to_return</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                        <span class="n">x</span><span class="p">:</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">f1_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span>
+                        <span class="s2">&quot;overall&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">metrics_to_return</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

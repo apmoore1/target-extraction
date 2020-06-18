@@ -1,0 +1,29 @@
+target\_extraction.allen.modules.inter\_target package
+======================================================
+
+Submodules
+----------
+
+target\_extraction.allen.modules.inter\_target.inter\_target module
+-------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.modules.inter_target.inter_target
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.allen.modules.inter\_target.sequence\_inter\_target module
+-----------------------------------------------------------------------------
+
+.. automodule:: target_extraction.allen.modules.inter_target.sequence_inter_target
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen.modules.inter_target
+   :members:
+   :undoc-members:
+   :show-inheritance:

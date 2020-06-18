@@ -1,0 +1,344 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>target_extraction.allen.token_indexers.custom_elmo_indexer &mdash; Target Extraction 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> Target Extraction
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Target Extraction</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>target_extraction.allen.token_indexers.custom_elmo_indexer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for target_extraction.allen.token_indexers.custom_elmo_indexer</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">overrides</span> <span class="kn">import</span> <span class="n">overrides</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">allennlp.common.checks</span> <span class="kn">import</span> <span class="n">ConfigurationError</span>
+<span class="kn">from</span> <span class="nn">allennlp.common.util</span> <span class="kn">import</span> <span class="n">pad_sequence_to_length</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.tokenizers.token</span> <span class="kn">import</span> <span class="n">Token</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.token_indexers.token_indexer</span> <span class="kn">import</span> <span class="n">TokenIndexer</span><span class="p">,</span> <span class="n">IndexedTokenList</span>
+<span class="kn">from</span> <span class="nn">allennlp.data.vocabulary</span> <span class="kn">import</span> <span class="n">Vocabulary</span>
+
+
+<span class="k">def</span> <span class="nf">_make_bos_eos</span><span class="p">(</span>
+    <span class="n">character</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">padding_character</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">beginning_of_word_character</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">end_of_word_character</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">max_word_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">char_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">padding_character</span><span class="p">]</span> <span class="o">*</span> <span class="n">max_word_length</span>
+    <span class="n">char_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">beginning_of_word_character</span>
+    <span class="n">char_ids</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">character</span>
+    <span class="n">char_ids</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">end_of_word_character</span>
+    <span class="k">return</span> <span class="n">char_ids</span>
+
+
+<div class="viewcode-block" id="ELMoCharacterMapper"><a class="viewcode-back" href="../../../../target_extraction.allen.token_indexers.html#target_extraction.allen.token_indexers.custom_elmo_indexer.ELMoCharacterMapper">[docs]</a><span class="k">class</span> <span class="nc">ELMoCharacterMapper</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Maps individual tokens to sequences of character ids, compatible with ELMo.</span>
+<span class="sd">    To be consistent with previously trained models, we include it here as special of existing</span>
+<span class="sd">    character indexers.</span>
+<span class="sd">    We allow to add optional additional special tokens with designated</span>
+<span class="sd">    character ids with `tokens_to_add`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">max_word_length</span> <span class="o">=</span> <span class="mi">50</span>
+
+    <span class="c1"># char ids 0-255 come from utf-8 encoding bytes</span>
+    <span class="c1"># assign 256-300 to special chars</span>
+    <span class="n">beginning_of_sentence_character</span> <span class="o">=</span> <span class="mi">256</span>  <span class="c1"># &lt;begin sentence&gt;</span>
+    <span class="n">end_of_sentence_character</span> <span class="o">=</span> <span class="mi">257</span>  <span class="c1"># &lt;end sentence&gt;</span>
+    <span class="n">beginning_of_word_character</span> <span class="o">=</span> <span class="mi">258</span>  <span class="c1"># &lt;begin word&gt;</span>
+    <span class="n">end_of_word_character</span> <span class="o">=</span> <span class="mi">259</span>  <span class="c1"># &lt;end word&gt;</span>
+    <span class="n">padding_character</span> <span class="o">=</span> <span class="mi">260</span>  <span class="c1"># &lt;padding&gt;</span>
+
+    <span class="n">beginning_of_sentence_characters</span> <span class="o">=</span> <span class="n">_make_bos_eos</span><span class="p">(</span>
+        <span class="n">beginning_of_sentence_character</span><span class="p">,</span>
+        <span class="n">padding_character</span><span class="p">,</span>
+        <span class="n">beginning_of_word_character</span><span class="p">,</span>
+        <span class="n">end_of_word_character</span><span class="p">,</span>
+        <span class="n">max_word_length</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">end_of_sentence_characters</span> <span class="o">=</span> <span class="n">_make_bos_eos</span><span class="p">(</span>
+        <span class="n">end_of_sentence_character</span><span class="p">,</span>
+        <span class="n">padding_character</span><span class="p">,</span>
+        <span class="n">beginning_of_word_character</span><span class="p">,</span>
+        <span class="n">end_of_word_character</span><span class="p">,</span>
+        <span class="n">max_word_length</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">bos_token</span> <span class="o">=</span> <span class="s2">&quot;&lt;S&gt;&quot;</span>
+    <span class="n">eos_token</span> <span class="o">=</span> <span class="s2">&quot;&lt;/S&gt;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokens_to_add</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tokens_to_add</span> <span class="o">=</span> <span class="n">tokens_to_add</span> <span class="ow">or</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="ELMoCharacterMapper.convert_word_to_char_ids"><a class="viewcode-back" href="../../../../target_extraction.allen.token_indexers.html#target_extraction.allen.token_indexers.custom_elmo_indexer.ELMoCharacterMapper.convert_word_to_char_ids">[docs]</a>    <span class="k">def</span> <span class="nf">convert_word_to_char_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens_to_add</span><span class="p">:</span>
+            <span class="n">char_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">padding_character</span><span class="p">]</span> <span class="o">*</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">max_word_length</span>
+            <span class="n">char_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">beginning_of_word_character</span>
+            <span class="n">char_ids</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokens_to_add</span><span class="p">[</span><span class="n">word</span><span class="p">]</span>
+            <span class="n">char_ids</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">end_of_word_character</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">bos_token</span><span class="p">:</span>
+            <span class="n">char_ids</span> <span class="o">=</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">beginning_of_sentence_characters</span>
+        <span class="k">elif</span> <span class="n">word</span> <span class="o">==</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">eos_token</span><span class="p">:</span>
+            <span class="n">char_ids</span> <span class="o">=</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">end_of_sentence_characters</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">word_encoded</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="s2">&quot;ignore&quot;</span><span class="p">)[</span>
+                <span class="p">:</span> <span class="p">(</span><span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">max_word_length</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">char_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">padding_character</span><span class="p">]</span> <span class="o">*</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">max_word_length</span>
+            <span class="n">char_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">beginning_of_word_character</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">chr_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">word_encoded</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">char_ids</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">chr_id</span>
+            <span class="n">char_ids</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">word_encoded</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">end_of_word_character</span>
+
+        <span class="c1"># +1 one for masking</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">c</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">char_ids</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="vm">__class__</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="vm">__dict__</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+
+
+<div class="viewcode-block" id="CustomELMoTokenCharactersIndexer"><a class="viewcode-back" href="../../../../target_extraction.allen.token_indexers.html#target_extraction.allen.token_indexers.custom_elmo_indexer.CustomELMoTokenCharactersIndexer">[docs]</a><span class="nd">@TokenIndexer</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s2">&quot;custom_elmo_characters&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">CustomELMoTokenCharactersIndexer</span><span class="p">(</span><span class="n">TokenIndexer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a token to an array of character ids to compute ELMo representations.</span>
+<span class="sd">    # Parameters</span>
+<span class="sd">    namespace : `str`, optional (default=`elmo_characters`)</span>
+<span class="sd">    tokens_to_add : `Dict[str, int]`, optional (default=`None`)</span>
+<span class="sd">        If not None, then provides a mapping of special tokens to character</span>
+<span class="sd">        ids. When using pre-trained models, then the character id must be</span>
+<span class="sd">        less then 261, and we recommend using un-used ids (e.g. 1-32).</span>
+<span class="sd">    token_min_padding_length : `int`, optional (default=`0`)</span>
+<span class="sd">        See :class:`TokenIndexer`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;elmo_characters&quot;</span><span class="p">,</span>
+        <span class="n">tokens_to_add</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">token_min_padding_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">token_min_padding_length</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_namespace</span> <span class="o">=</span> <span class="n">namespace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mapper</span> <span class="o">=</span> <span class="n">ELMoCharacterMapper</span><span class="p">(</span><span class="n">tokens_to_add</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CustomELMoTokenCharactersIndexer.count_vocab_items"><a class="viewcode-back" href="../../../../target_extraction.allen.token_indexers.html#target_extraction.allen.token_indexers.custom_elmo_indexer.CustomELMoTokenCharactersIndexer.count_vocab_items">[docs]</a>    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">count_vocab_items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="n">Token</span><span class="p">,</span> <span class="n">counter</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="CustomELMoTokenCharactersIndexer.tokens_to_indices"><a class="viewcode-back" href="../../../../target_extraction.allen.token_indexers.html#target_extraction.allen.token_indexers.custom_elmo_indexer.CustomELMoTokenCharactersIndexer.tokens_to_indices">[docs]</a>    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">tokens_to_indices</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Token</span><span class="p">],</span> <span class="n">vocabulary</span><span class="p">:</span> <span class="n">Vocabulary</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]:</span>
+        <span class="c1"># TODO(brendanr): Retain the token to index mappings in the vocabulary and remove this</span>
+
+        <span class="c1"># https://github.com/allenai/allennlp/blob/master/allennlp/data/token_indexers/wordpiece_indexer.py#L113</span>
+
+        <span class="n">texts</span> <span class="o">=</span> <span class="p">[</span><span class="n">token</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">tokens</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">texts</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                <span class="s2">&quot;ELMoTokenCharactersIndexer needs a tokenizer that retains text&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;tokens&quot;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_mapper</span><span class="o">.</span><span class="n">convert_word_to_char_ids</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="k">for</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">texts</span><span class="p">]}</span></div>
+
+<div class="viewcode-block" id="CustomELMoTokenCharactersIndexer.get_empty_token_list"><a class="viewcode-back" href="../../../../target_extraction.allen.token_indexers.html#target_extraction.allen.token_indexers.custom_elmo_indexer.CustomELMoTokenCharactersIndexer.get_empty_token_list">[docs]</a>    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">get_empty_token_list</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IndexedTokenList</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;tokens&quot;</span><span class="p">:</span> <span class="p">[]}</span></div>
+
+<div class="viewcode-block" id="CustomELMoTokenCharactersIndexer.as_padded_tensor_dict"><a class="viewcode-back" href="../../../../target_extraction.allen.token_indexers.html#target_extraction.allen.token_indexers.custom_elmo_indexer.CustomELMoTokenCharactersIndexer.as_padded_tensor_dict">[docs]</a>    <span class="nd">@overrides</span>
+    <span class="k">def</span> <span class="nf">as_padded_tensor_dict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">IndexedTokenList</span><span class="p">,</span> <span class="n">padding_lengths</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="c1"># Overriding this method only because we need a different padding token than the default.</span>
+        <span class="n">tensor_dict</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">def</span> <span class="nf">padding_token</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">ELMoCharacterMapper</span><span class="o">.</span><span class="n">max_word_length</span>
+
+        <span class="n">tensor_dict</span><span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">(</span>
+            <span class="n">pad_sequence_to_length</span><span class="p">(</span>
+                <span class="n">tokens</span><span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">],</span> <span class="n">padding_lengths</span><span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">],</span> <span class="n">default_value</span><span class="o">=</span><span class="n">padding_token</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">tensor_dict</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Andrew Moore
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,65 @@
+target\_extraction package
+==========================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   target_extraction.allen
+   target_extraction.analysis
+
+Submodules
+----------
+
+target\_extraction.data\_types module
+-------------------------------------
+
+.. automodule:: target_extraction.data_types
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.data\_types\_util module
+-------------------------------------------
+
+.. automodule:: target_extraction.data_types_util
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.dataset\_parsers module
+------------------------------------------
+
+.. automodule:: target_extraction.dataset_parsers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.pos\_taggers module
+--------------------------------------
+
+.. automodule:: target_extraction.pos_taggers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.taggers\_helper module
+-----------------------------------------
+
+.. automodule:: target_extraction.taggers_helper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+target\_extraction.tokenizers module
+------------------------------------
+
+.. automodule:: target_extraction.tokenizers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction
+   :members:
+   :undoc-members:
+   :show-inheritance:

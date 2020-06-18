@@ -1,0 +1,30 @@
+target\_extraction.allen.modules package
+========================================
+
+Subpackages
+-----------
+
+.. toctree::
+
+   target_extraction.allen.modules.inter_target
+   target_extraction.allen.modules.target_position_weight
+
+Submodules
+----------
+
+target\_extraction.allen.modules.word\_dropout module
+-----------------------------------------------------
+
+.. automodule:: target_extraction.allen.modules.word_dropout
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: target_extraction.allen.modules
+   :members:
+   :undoc-members:
+   :show-inheritance:
