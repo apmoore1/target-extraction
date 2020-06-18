@@ -28,3 +28,4 @@ deploy:
   strategy: git
   local_dir: docs/build/html
   token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+  edge: true
