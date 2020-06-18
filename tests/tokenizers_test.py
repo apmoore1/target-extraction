@@ -99,8 +99,12 @@ class TestTokenizers:
             spacy_tok = spacy_tokenizer(lang=lang)
             
             emoji_tokens = spacy_tok(self._emoji_sentence())
-            assert emoji_tokens == ['Hello', 'how', 'are', 'you', ',', 'with',
-                                    "other", "'s", ':)']
+            if lang == 'en':
+                assert emoji_tokens == ['Hello', 'how', 'are', 'you', ',', 'with',
+                                        "other", "'s", ':)']
+            else:
+                assert emoji_tokens == ['Hello', 'how', 'are', 'you', ',', 'with',
+                                        "other's", ':)']
 
             no_sentence_tokens = spacy_tok(self._no_sentence())
             assert no_sentence_tokens == []

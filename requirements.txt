@@ -1,6 +1,6 @@
 allennlp==1.0.0
 allennlp-models==1.0.0
-spacy==2.1.9
+spacy>=2.1.0,<2.3
 stanfordnlp==0.2.0
 twokenize>=1.0.0
 pandas

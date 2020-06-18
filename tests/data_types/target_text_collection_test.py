@@ -661,8 +661,8 @@ class TestTargetTextCollection:
         # Test the normal case with one TargetText Instance in the collection
         test_collection = TargetTextCollection([self._target_text_example()])
         test_collection.pos_text(spacy_tagger())
-        pos_answer = ['DET', 'NOUN', 'NOUN', 'VERB', 'ADJ', 'CCONJ', 'NOUN', 
-                      'VERB', 'ADJ']
+        pos_answer = ['DET', 'NOUN', 'NOUN', 'AUX', 'ADJ', 'CCONJ', 'NOUN', 
+                      'AUX', 'NOUN']
         assert test_collection['2']['pos_tags'] == pos_answer
 
         # Test the normal case with multiple TargetText Instance in the 

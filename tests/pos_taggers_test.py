@@ -21,16 +21,16 @@ class TestPOSTaggers:
     def _spacy_ans(self, fine: bool, lang: str) -> List[str]:
         if lang == 'en':
             if fine:
-                return ['UH', 'WRB', 'VBP', 'PRP', ',', 'IN', 'JJ', 'POS', '.']
+                return ['UH', 'WRB', 'VBP', 'PRP', ',', 'IN', 'JJ', 'POS', 'NN']
             else:
-                return ['INTJ', 'ADV', 'VERB', 'PRON', 'PUNCT', 'ADP', 'ADJ', 
-                        'PART', 'PUNCT']
+                return ['INTJ', 'ADV', 'AUX', 'PRON', 'PUNCT', 'ADP', 'ADJ', 
+                        'PART', 'NOUN']
         elif lang == 'de':
             if fine:
-                return ['NE', 'PWAV', 'VVFIN', 'PPER', 'PPER', 'APPR', 'ADJA', 
+                return ['NE', 'PWAV', 'VVFIN', 'PPER', 'PPER', 'APPR', 'PIS', 
                         'NN']
             else:
-                return ['PROPN', 'ADV', 'VERB', 'PRON', 'PRON', 'ADP', 'ADJ', 
+                return ['PROPN', 'ADV', 'VERB', 'PRON', 'PRON', 'ADP', 'PRON', 
                         'NOUN']
         else:
             raise ValueError(f'Do not recognise this language {lang}')

@@ -966,8 +966,8 @@ class TestTargetText:
         test_target_text = TargetText(text=text, text_id=text_id)
         test_target_text.pos_text(pos_tagger, perform_type_checks=type_checks)
 
-        pos_answer = ['DET', 'NOUN', 'PART', 'NOUN', 'VERB', 'ADJ', 'CCONJ', 
-                      'NOUN', 'VERB', 'ADJ']
+        pos_answer = ['DET', 'NOUN', 'PART', 'NOUN', 'AUX', 'ADJ', 'CCONJ', 
+                      'NOUN', 'AUX', 'NOUN']
         tok_answer = ['The', 'laptop', "'s", 'case', 'was', 'great', 'and', 
                       'cover', 'was', 'rubbish']
         assert test_target_text['pos_tags'] == pos_answer
