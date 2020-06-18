@@ -1,6 +1,7 @@
 __pycache__
 .vscode
 .coverage*
+docs/build
 docs/make.bat
 docs/source/modules.rst
 docs/source/target_extraction.rst
