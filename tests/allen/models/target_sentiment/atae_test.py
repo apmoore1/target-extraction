@@ -16,9 +16,9 @@ import numpy
 import target_extraction
 from .util import loss_weights
 
-class ATAEClassifierTest(ModelTestCase):
-    def setUp(self):
-        super().setUp()
+class TestATAEClassifier(ModelTestCase):
+    def setup_method(self):
+        super().setup_method()
 
         test_dir = Path(__file__, '..', '..', '..', '..','data', 'allen',  
                         'models', 'target_sentiment').resolve()

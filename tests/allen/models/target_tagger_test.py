@@ -10,9 +10,10 @@ import pytest
 
 import target_extraction
 
-class TargetTaggerTest(ModelTestCase):
+class TestTargetTagger(ModelTestCase):
 
-    def setUp(self):
+    def setup_method(self):
+        super().setup_method()
         test_dir = Path(__file__, '..', '..', '..','data', 'allen')
         test_data_dir = Path(test_dir, 'dataset_readers', 'target_extraction')
         self.non_pos_data = str(Path(test_data_dir, 'non_pos_sequence.json').resolve())
@@ -34,7 +35,6 @@ class TargetTaggerTest(ModelTestCase):
                                 self.pos_embedding_param_file]
 
         self.set_up_model(self.crf_param_file, self.non_pos_data)
-        super().setUp()
 
     def test_batch_predictions_are_consistent(self):
         # This only uses the CRF tagger with no POS data.

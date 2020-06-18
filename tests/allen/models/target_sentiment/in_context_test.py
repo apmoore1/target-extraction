@@ -15,9 +15,9 @@ import pytest
 import target_extraction
 from .util import loss_weights
 
-class InContextClassifierTest(ModelTestCase):
-    def setUp(self):
-        super().setUp()
+class TestInContextClassifier(ModelTestCase):
+    def setup_method(self):
+        super().setup_method()
 
         test_dir = Path(__file__, '..', '..', '..', '..','data', 'allen',  
                         'models', 'target_sentiment').resolve()
